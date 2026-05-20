@@ -10,6 +10,9 @@ use crate::services::engagement::update_engagement_after_quiz_server;
 use crate::services::flashcard::add_flashcards_server;
 use crate::services::weakness::{log_weakness_server, log_skill_progress_server};
 use crate::routes::Route;
+const SFX_CORRECT: Asset = asset!("/assets/correct.mp3");
+const SFX_WRONG: Asset = asset!("/assets/wrong.mp3");
+const SFX_WINNER: Asset = asset!("/assets/winner.mp3");
 
 #[cfg(target_arch = "wasm32")]
 use std::cell::RefCell;
@@ -58,6 +61,10 @@ fn play_audio_src(src: &str) {
 
 #[cfg(not(target_arch = "wasm32"))]
 fn play_audio_src(_src: &str) {}
+
+fn play_sfx(src: Asset) {
+    play_audio_src(src.to_string().as_str());
+}
 
 #[cfg(target_arch = "wasm32")]
 fn speak_text(tts_lang_code: &str, text: &str) {
@@ -181,6 +188,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
     }
 
     if quiz_finished() {
+        play_sfx(SFX_WINNER);
         return rsx! {
             div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6",
                 div { class: "bg-slate-900 p-8 rounded-xl border border-slate-800 text-center max-w-md w-full shadow-2xl",
@@ -308,6 +316,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                     });
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
+                                    play_sfx(SFX_CORRECT);
                                     score_gained.set(score_gained() + 20);
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();
@@ -317,6 +326,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                         });
                                     }
                                 } else if let Some(user) = user_opt.clone() {
+                                    play_sfx(SFX_WRONG);
                                     let topic = classify_weakness_topic(&explanation_text);
                                     let skill = classify_skill(&current_q.question, &explanation_text);
                                     let note = format!(
