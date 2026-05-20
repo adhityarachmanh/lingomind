@@ -10,3 +10,4 @@ pub mod weakness;
 pub mod goal;
 
 pub mod mission;
+pub mod engagement;

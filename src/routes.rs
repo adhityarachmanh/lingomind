@@ -9,6 +9,7 @@ use crate::views::chat::ChatRoleplay;
 use crate::views::flashcard_review::FlashcardReview;
 use crate::views::weakness_practice::WeaknessPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
+use crate::views::placement::PlacementTest;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -32,4 +33,6 @@ pub enum Route {
     WeaknessPractice { language: String, level: String, goal: String },
     #[route("/analytics/:language")]
     WeaknessAnalytics { language: String },
+    #[route("/placement")]
+    PlacementTest {},
 }

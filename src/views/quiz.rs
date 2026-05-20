@@ -6,8 +6,9 @@ use crate::models::flashcard::NewFlashcard;
 use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::generate_tts_audio_server;
 use crate::services::auth::update_user_score;
+use crate::services::engagement::update_engagement_after_quiz_server;
 use crate::services::flashcard::add_flashcards_server;
-use crate::services::weakness::log_weakness_server;
+use crate::services::weakness::{log_weakness_server, log_skill_progress_server};
 use crate::routes::Route;
 
 #[cfg(target_arch = "wasm32")]
@@ -126,9 +127,22 @@ fn classify_weakness_topic(explanation: &str) -> String {
     }
 }
 
+fn classify_skill(question: &str, explanation: &str) -> String {
+    let q = question.to_lowercase();
+    let e = explanation.to_lowercase();
+    if q.contains("listen") || q.contains("audio") || e.contains("listening") || e.contains("pronunciation") {
+        "listening".to_string()
+    } else if e.contains("vocabulary") || e.contains("word choice") || q.contains("meaning") || q.contains("synonym") {
+        "vocabulary".to_string()
+    } else {
+        "grammar".to_string()
+    }
+}
+
 #[component]
 pub fn Quiz(language: String, level: String, goal: String) -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
 
     let mut current_question_idx = use_signal(|| 0);
@@ -205,6 +219,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                     span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({level})" }
                     span { class: "text-xs text-slate-500 font-medium", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
                 }
+                p { class: "text-[11px] text-slate-400 mb-4", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
 
                 div { class: "flex items-start justify-between gap-3 mb-4",
                     h2 { class: "text-lg font-semibold text-slate-100 leading-relaxed flex-1", "{current_q.question}" }
@@ -294,8 +309,16 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
                                     score_gained.set(score_gained() + 20);
+                                    if let Some(user) = user_opt.clone() {
+                                        let lang = language.clone();
+                                        let skill = classify_skill(&current_q.question, &explanation_text);
+                                        spawn(async move {
+                                            let _ = log_skill_progress_server(user.username, lang, skill, true).await;
+                                        });
+                                    }
                                 } else if let Some(user) = user_opt.clone() {
                                     let topic = classify_weakness_topic(&explanation_text);
+                                    let skill = classify_skill(&current_q.question, &explanation_text);
                                     let note = format!(
                                         "Q: {} | Selected: {} | Correct: {}",
                                         current_q.question,
@@ -303,8 +326,13 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                         correct_ans_check.clone()
                                     );
                                     let lang = language.clone();
+                                    let username2 = user.username.clone();
                                     spawn(async move {
                                         let _ = log_weakness_server(user.username, lang, topic, note).await;
+                                    });
+                                    let lang2 = language.clone();
+                                    spawn(async move {
+                                        let _ = log_skill_progress_server(username2, lang2, skill, false).await;
                                     });
                                 }
                                 show_explanation.set(true);
@@ -335,6 +363,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                 spawn(async move {
                                     if !username.is_empty() {
                                         if let Ok(updated_profile) = update_user_score(username, language, score).await {
+                                            let _ = update_engagement_after_quiz_server(updated_profile.username.clone(), score).await;
                                             session_state.set((Some(updated_profile), true));
                                             quiz_finished.set(true);
                                         }

@@ -8,6 +8,7 @@ use crate::routes::Route;
 #[component]
 pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
     let username = user_opt.as_ref().map(|u| u.username.clone()).unwrap_or_default();
 
@@ -92,6 +93,7 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
             div { class: "min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center",
                 div { class: "max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-center",
                     span { class: "text-xs font-extrabold bg-teal-500/10 text-teal-400 px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block", "Mode Roleplay • {language}" }
+                    p { class: "text-[11px] text-slate-400 mb-2", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
                     h2 { class: "text-2xl font-black text-slate-100 mb-2", "Pilih Skenario Obrolan" }
                     p { class: "text-slate-400 text-sm mb-6 leading-relaxed", "Pilih lokasi simulasi lingkungan. Gemini AI akan bertindak sebagai partner bicara Anda sesuai tingkat kesulitan {level}." }
                     
@@ -137,6 +139,7 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
                         div {
                             h3 { class: "text-sm font-bold text-slate-100", "Simulasi Peran: {setting_title}" }
                             p { class: "text-xs text-slate-500 uppercase font-mono tracking-wider", "{language} • {level}" }
+                            p { class: "text-[10px] text-teal-300 font-semibold", "Global language: {selected_language}" }
                         }
                     }
                     Link { to: Route::Dashboard {}, class: "text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded transition-colors", "Keluar Sesi" }
@@ -206,3 +209,6 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
         }
     }
 }
+
+
+

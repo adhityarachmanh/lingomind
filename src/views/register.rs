@@ -6,6 +6,7 @@ use crate::routes::Route;
 
 #[component]
 pub fn Register() -> Element {
+    let mut full_name_input = use_signal(String::new);
     let mut username_input = use_signal(String::new);
     let mut password_input = use_signal(String::new);
     let mut confirm_password_input = use_signal(String::new);
@@ -30,7 +31,9 @@ pub fn Register() -> Element {
         let password = password_input();
         let confirm_password = confirm_password_input();
 
-        if username.trim().is_empty() || password.is_empty() || confirm_password.is_empty() {
+        let full_name = full_name_input();
+
+        if full_name.trim().is_empty() || username.trim().is_empty() || password.is_empty() || confirm_password.is_empty() {
             error_message.set(Some("Seluruh kolom input wajib diisi!".to_string()));
             return;
         }
@@ -47,12 +50,12 @@ pub fn Register() -> Element {
 
         is_loading.set(true);
 
-        match register_user(username, password).await {
+        match register_user(full_name, username, password).await {
             Ok(profile) => {
                 // PERBAIKAN: Set state dalam bentuk tuple agar status inisialisasi bernilai true
                 user_state.set((Some(profile), true));
                 is_loading.set(false);
-                navigator.push(Route::Dashboard {});
+                navigator.push(Route::PlacementTest {});
             }
             Err(err) => {
                 is_loading.set(false); 
@@ -74,7 +77,17 @@ pub fn Register() -> Element {
                     }
                 }
 
-                // Input Username
+                                div { class: "mb-4 text-left",
+                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Nama Lengkap" }
+                    input {
+                        class: "w-full bg-slate-950 border border-slate-800 rounded px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                        placeholder: "Masukkan nama lengkap...",
+                        value: "{full_name_input}",
+                        disabled: is_loading(),
+                        oninput: move |e| full_name_input.set(e.value()),
+                    }
+                }
+// Input Username
                 div { class: "mb-4 text-left",
                     label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Username" }
                     input {
@@ -165,3 +178,4 @@ pub fn Register() -> Element {
         }
     }
 }
+

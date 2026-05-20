@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::models::weakness::{WeaknessItem, WeaknessAnalyticsItem};
+use crate::models::weakness::{WeaknessItem, WeaknessAnalyticsItem, SkillProgressPoint};
 
 #[server(LogWeakness)]
 pub async fn log_weakness_server(username: String, language: String, topic: String, note: String) -> Result<(), ServerFnError> {
@@ -98,4 +98,55 @@ pub async fn get_priority_weakness_server(username: String, language: String) ->
     .map_err(|e| ServerFnError::new(format!("Gagal mengambil priority weakness: {e}")))?;
 
     Ok(row.map(|r| r.get::<String, _>("topic")))
+}
+
+#[server(LogSkillProgress)]
+pub async fn log_skill_progress_server(username: String, language: String, skill: String, is_correct: bool) -> Result<(), ServerFnError> {
+    if username.trim().is_empty() || language.trim().is_empty() || skill.trim().is_empty() {
+        return Err(ServerFnError::new("Data progress skill tidak valid."));
+    }
+    let normalized = skill.to_lowercase();
+    if normalized != "grammar" && normalized != "vocabulary" && normalized != "listening" {
+        return Err(ServerFnError::new("Skill harus grammar/vocabulary/listening."));
+    }
+    let pool = super::db::get_pool();
+    sqlx::query("INSERT INTO skill_progress_logs (username, language, skill, is_correct) VALUES ($1, $2, $3, $4)")
+        .bind(username)
+        .bind(language)
+        .bind(normalized)
+        .bind(is_correct)
+        .execute(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal menyimpan skill progress: {e}")))?;
+    Ok(())
+}
+
+#[server(GetSkillProgress7d)]
+pub async fn get_skill_progress_7d_server(username: String, language: String) -> Result<Vec<SkillProgressPoint>, ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    use sqlx::Row;
+
+    let pool = super::db::get_pool();
+    let rows = sqlx::query(
+        "SELECT to_char(created_at::date, 'YYYY-MM-DD') AS day,
+            SUM(CASE WHEN skill = 'grammar' AND is_correct THEN 1 ELSE 0 END)::bigint AS grammar,
+            SUM(CASE WHEN skill = 'vocabulary' AND is_correct THEN 1 ELSE 0 END)::bigint AS vocabulary,
+            SUM(CASE WHEN skill = 'listening' AND is_correct THEN 1 ELSE 0 END)::bigint AS listening
+         FROM skill_progress_logs
+         WHERE username = $1 AND language = $2 AND created_at >= NOW() - INTERVAL '7 days'
+         GROUP BY created_at::date
+         ORDER BY created_at::date ASC"
+    )
+    .bind(username)
+    .bind(language)
+    .fetch_all(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal mengambil progress skill: {e}")))?;
+
+    Ok(rows.into_iter().map(|r| SkillProgressPoint {
+        day: r.get("day"),
+        grammar: r.get("grammar"),
+        vocabulary: r.get("vocabulary"),
+        listening: r.get("listening"),
+    }).collect())
 }

@@ -5,6 +5,7 @@ use crate::routes::Route;
 
 #[component]
 pub fn Lesson(language: String, level: String, goal: String) -> Element {
+    let selected_language = use_context::<Signal<String>>();
     let lang_clone = language.clone();
     let lvl_clone = level.clone();
     let goal_clone = goal.clone();
@@ -37,6 +38,7 @@ pub fn Lesson(language: String, level: String, goal: String) -> Element {
                 // Header
                 div { class: "mb-8 text-center",
                     span { class: "text-xs font-extrabold bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full uppercase tracking-wider mb-4 inline-block", "Materi {language} • {level}" }
+                    p { class: "text-[11px] text-slate-400 mb-3", "Global language: " span { class: "text-orange-300 font-semibold", "{selected_language}" } }
                     h1 { class: "text-3xl md:text-4xl font-black text-slate-100", "{lesson_data.title}" }
                 }
 
@@ -86,3 +88,7 @@ pub fn Lesson(language: String, level: String, goal: String) -> Element {
         }
     }
 }
+
+
+
+

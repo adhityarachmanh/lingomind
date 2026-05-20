@@ -1,11 +1,13 @@
 // src/components/app.rs
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
+use crate::models::constants::LANGUAGE_COURSES;
 use crate::routes::Route;
 
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 const LOCAL_STORAGE_KEY: &str = "lingomind_user_session";
+const LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
 
 #[component]
 pub fn App() -> Element {
@@ -14,6 +16,7 @@ pub fn App() -> Element {
         let initial_user: Option<UserProfile> = None;
         Signal::new((initial_user, false)) // false = Sesi belum siap/masih memuat data
     });
+    let mut selected_language = use_context_provider(|| Signal::new("English".to_string()));
 
     // 2. PERBAIKAN: Gunakan use_effect (bukan use_hook) untuk membaca LocalStorage sesaat setelah client-side aktif
     use_effect(move || {
@@ -23,6 +26,12 @@ pub fn App() -> Element {
             if let Some(window) = web_sys::window() {
                 if let Ok(Some(local_storage)) = window.local_storage() {
                     let storage: web_sys::Storage = local_storage;
+                    if let Ok(Some(stored_lang)) = storage.get_item(LANGUAGE_STORAGE_KEY) {
+                        let is_valid = LANGUAGE_COURSES.iter().any(|c| c.id == stored_lang);
+                        if is_valid {
+                            selected_language.set(stored_lang);
+                        }
+                    }
                     if let Ok(Some(stored_json)) = storage.get_item(LOCAL_STORAGE_KEY) {
                         if let Ok(profile) = serde_json::from_str::<UserProfile>(&stored_json) {
                             // Jika sesi ditemukan di LocalStorage, pasang data user dan ubah status ke true (siap)
@@ -48,6 +57,7 @@ pub fn App() -> Element {
                 if let Some(window) = web_sys::window() {
                     if let Ok(Some(local_storage)) = window.local_storage() {
                         let storage: web_sys::Storage = local_storage;
+                        let _ = storage.set_item(LANGUAGE_STORAGE_KEY, &selected_language());
                         if let Some(profile) = current_profile {
                             if let Ok(json_string) = serde_json::to_string(&profile) {
                                 let _ = storage.set_item(LOCAL_STORAGE_KEY, &json_string);

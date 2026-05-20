@@ -21,11 +21,11 @@ fn generate_default_levels() -> HashMap<String, String> {
 
 /// Fungsi Server untuk Mendaftarkan Pengguna Baru
 #[server(RegisterUser)]
-pub async fn register_user(username: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
+pub async fn register_user(full_name: String, username: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    if username.trim().is_empty() || password_plain.len() < 6 {
-        return Err(ServerFnError::new("Username tidak boleh kosong dan password minimal 6 karakter."));
+    if full_name.trim().is_empty() || username.trim().is_empty() || password_plain.len() < 6 {
+        return Err(ServerFnError::new("Nama lengkap, username wajib diisi dan password minimal 6 karakter."));
     }
 
     let hashed_password = match bcrypt::hash(&password_plain, bcrypt::DEFAULT_COST) {
@@ -38,8 +38,9 @@ pub async fn register_user(username: String, password_plain: String) -> Result<U
     let levels_json = serde_json::to_value(&default_levels).unwrap_or_default();
 
     let result = sqlx::query(
-        "INSERT INTO users (username, password_hash, score, current_level) VALUES ($1, $2, 0, $3) RETURNING username, score, current_level"
+        "INSERT INTO users (full_name, username, password_hash, score, current_level) VALUES ($1, $2, $3, 0, $4) RETURNING full_name, username, score, current_level"
     )
+    .bind(full_name.trim())
     .bind(username.trim())
     .bind(hashed_password)
     .bind(levels_json)
@@ -60,6 +61,7 @@ pub async fn register_user(username: String, password_plain: String) -> Result<U
         .unwrap_or_else(|_| default_levels);
 
     Ok(UserProfile {
+        full_name: row.get("full_name"),
         username: row.get("username"),
         score: row.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
@@ -71,7 +73,7 @@ pub async fn register_user(username: String, password_plain: String) -> Result<U
 pub async fn login_user(username: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    let row = sqlx::query("SELECT username, password_hash, score, current_level FROM users WHERE username = $1")
+    let row = sqlx::query("SELECT full_name, username, password_hash, score, current_level FROM users WHERE username = $1")
         .bind(username.trim())
         .fetch_optional(pool)
         .await
@@ -98,6 +100,7 @@ pub async fn login_user(username: String, password_plain: String) -> Result<User
         .unwrap_or_else(|_| generate_default_levels());
 
     Ok(UserProfile {
+        full_name: user_record.get("full_name"),
         username: user_record.get("username"),
         score: user_record.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
@@ -139,7 +142,7 @@ pub async fn update_user_score(username: String, language: String, score_delta: 
 
     // 3. Update database secara atomik untuk akumulasi score dan struktur JSONB yang baru
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1, current_level = $2 WHERE username = $3 RETURNING username, score"
+        "UPDATE users SET score = score + $1, current_level = $2 WHERE username = $3 RETURNING full_name, username, score"
     )
     .bind(score_delta)
     .bind(updated_levels_json)
@@ -149,6 +152,7 @@ pub async fn update_user_score(username: String, language: String, score_delta: 
     .map_err(|e| ServerFnError::new(format!("Gagal memperbarui nilai database: {}", e)))?;
 
     Ok(UserProfile {
+        full_name: update_row.get("full_name"),
         username: update_row.get("username"),
         score: final_score,
         current_level: level_map,
