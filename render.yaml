@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: lingomind
+    env: rust
+    plan: free
+    buildCommand: cargo build --release
+    startCommand: cargo run --release
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
