@@ -10,7 +10,7 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
-    let username = user_opt.as_ref().map(|u| u.username.clone()).unwrap_or_default();
+    let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
 
     let mut selected_setting = use_signal(|| None::<String>);
     let mut session_id = use_signal(|| 0_i32);
@@ -20,7 +20,7 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
     let mut error_msg = use_signal(|| None::<String>);
 
     // Kloning variabel untuk kebutuhan handle_select_setting
-    let user_for_setup = username.clone();
+    let user_for_setup = email.clone();
     let lang_for_setup = language.clone();
     let lvl_for_setup = level.clone();
 

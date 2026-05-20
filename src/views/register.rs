@@ -7,7 +7,7 @@ use crate::routes::Route;
 #[component]
 pub fn Register() -> Element {
     let mut full_name_input = use_signal(String::new);
-    let mut username_input = use_signal(String::new);
+    let mut email_input = use_signal(String::new);
     let mut password_input = use_signal(String::new);
     let mut confirm_password_input = use_signal(String::new);
     
@@ -27,13 +27,13 @@ pub fn Register() -> Element {
 
         error_message.set(None);
 
-        let username = username_input();
+        let email = email_input();
         let password = password_input();
         let confirm_password = confirm_password_input();
 
         let full_name = full_name_input();
 
-        if full_name.trim().is_empty() || username.trim().is_empty() || password.is_empty() || confirm_password.is_empty() {
+        if full_name.trim().is_empty() || email.trim().is_empty() || password.is_empty() || confirm_password.is_empty() {
             error_message.set(Some("Seluruh kolom input wajib diisi!".to_string()));
             return;
         }
@@ -50,7 +50,7 @@ pub fn Register() -> Element {
 
         is_loading.set(true);
 
-        match register_user(full_name, username, password).await {
+        match register_user(full_name, email, password).await {
             Ok(profile) => {
                 // PERBAIKAN: Set state dalam bentuk tuple agar status inisialisasi bernilai true
                 user_state.set((Some(profile), true));
@@ -87,15 +87,16 @@ pub fn Register() -> Element {
                         oninput: move |e| full_name_input.set(e.value()),
                     }
                 }
-// Input Username
+// Input Email
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Username" }
+                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Email" }
                     input {
+                        r#type: "email",
                         class: "w-full bg-slate-950 border border-slate-800 rounded px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                        placeholder: "Pilih nama pengguna...",
-                        value: "{username_input}",
+                        placeholder: "Masukkan email aktif Anda...",
+                        value: "{email_input}",
                         disabled: is_loading(),
-                        oninput: move |e| username_input.set(e.value()),
+                        oninput: move |e| email_input.set(e.value()),
                     }
                 }
 
@@ -178,4 +179,3 @@ pub fn Register() -> Element {
         }
     }
 }
-

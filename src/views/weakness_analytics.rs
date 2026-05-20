@@ -15,7 +15,7 @@ pub fn WeaknessAnalytics(language: String) -> Element {
         return rsx! { div { class: "p-6 text-slate-300", "Silakan login dulu." } };
     };
 
-    let u = user.username.clone();
+    let u = user.email.clone();
     let l = language.clone();
     let analytics = use_resource(move || {
         let user = u.clone();

@@ -127,7 +127,7 @@ pub async fn send_chat_message_server(
 
 #[server(GetOrCreateSession)]
 pub async fn get_or_create_session_server(
-    username: String,
+    email: String,
     language: String,
     level: String,
     setting: String,
@@ -137,8 +137,8 @@ pub async fn get_or_create_session_server(
 
     let pool = super::super::db::get_pool();
 
-    let row_opt = sqlx::query("SELECT id FROM chat_sessions WHERE username = $1 AND language = $2 AND level = $3 AND roleplay_setting = $4 LIMIT 1")
-        .bind(&username)
+    let row_opt = sqlx::query("SELECT id FROM chat_sessions WHERE email = $1 AND language = $2 AND level = $3 AND roleplay_setting = $4 LIMIT 1")
+        .bind(&email)
         .bind(&language)
         .bind(&level)
         .bind(&setting)
@@ -150,8 +150,8 @@ pub async fn get_or_create_session_server(
         return Ok(row.get::<i32, _>("id"));
     }
 
-    let row = sqlx::query("INSERT INTO chat_sessions (username, language, level, roleplay_setting) VALUES ($1, $2, $3, $4) RETURNING id")
-        .bind(&username)
+    let row = sqlx::query("INSERT INTO chat_sessions (email, language, level, roleplay_setting) VALUES ($1, $2, $3, $4) RETURNING id")
+        .bind(&email)
         .bind(&language)
         .bind(&level)
         .bind(&setting)

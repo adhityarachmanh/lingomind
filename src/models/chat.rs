@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ChatSession {
     pub id: i32,
-    pub username: String,
+    pub email: String,
     pub language: String,
     pub level: String,
     pub roleplay_setting: String,

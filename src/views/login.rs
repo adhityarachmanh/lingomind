@@ -6,7 +6,7 @@ use crate::routes::Route;
 
 #[component]
 pub fn Login() -> Element {
-    let mut username_input = use_signal(String::new);
+    let mut email_input = use_signal(String::new);
     let mut password_input = use_signal(String::new);
     let mut show_password = use_signal(|| false); 
     let mut error_message = use_signal(|| Option::<String>::None);
@@ -21,17 +21,17 @@ pub fn Login() -> Element {
 
         error_message.set(None);
 
-        let username = username_input();
+        let email = email_input();
         let password = password_input();
 
-        if username.trim().is_empty() || password.is_empty() {
-            error_message.set(Some("Username dan password tidak boleh kosong!".to_string()));
+        if email.trim().is_empty() || password.is_empty() {
+            error_message.set(Some("Email dan password tidak boleh kosong!".to_string()));
             return;
         }
 
         is_loading.set(true);
 
-        match login_user(username, password).await {
+        match login_user(email, password).await {
             Ok(profile) => {
                 // PERBAIKAN: Set state dalam bentuk tuple agar status inisialisasi tetap bernilai true
                 user_state.set((Some(profile), true));
@@ -58,15 +58,16 @@ pub fn Login() -> Element {
                     }
                 }
 
-                // Input Username
+                // Input Email
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Username" }
+                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Email" }
                     input {
+                        r#type: "email",
                         class: "w-full bg-slate-950 border border-slate-800 rounded px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
-                        placeholder: "Masukkan username Anda...",
-                        value: "{username_input}",
+                        placeholder: "Masukkan email Anda...",
+                        value: "{email_input}",
                         disabled: is_loading(),
-                        oninput: move |e| username_input.set(e.value()),
+                        oninput: move |e| email_input.set(e.value()),
                     }
                 }
 

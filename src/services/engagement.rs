@@ -2,12 +2,12 @@ use dioxus::prelude::*;
 use crate::models::engagement::UserEngagementStats;
 
 #[server(UpdateEngagementAfterQuiz)]
-pub async fn update_engagement_after_quiz_server(username: String, points_earned: i32) -> Result<(), ServerFnError> {
+pub async fn update_engagement_after_quiz_server(email: String, points_earned: i32) -> Result<(), ServerFnError> {
     let pool = super::db::get_pool();
     sqlx::query(
-        "INSERT INTO user_engagement_stats (username, current_streak, longest_streak, total_quiz_completed, total_points_earned, last_active_date)
+        "INSERT INTO user_engagement_stats (email, current_streak, longest_streak, total_quiz_completed, total_points_earned, last_active_date)
          VALUES ($1, 1, 1, 1, $2, CURRENT_DATE)
-         ON CONFLICT (username) DO UPDATE
+         ON CONFLICT (email) DO UPDATE
          SET total_quiz_completed = user_engagement_stats.total_quiz_completed + 1,
              total_points_earned = user_engagement_stats.total_points_earned + EXCLUDED.total_points_earned,
              current_streak = CASE
@@ -25,7 +25,7 @@ pub async fn update_engagement_after_quiz_server(username: String, points_earned
              ),
              last_active_date = CURRENT_DATE"
     )
-    .bind(username)
+    .bind(email)
     .bind(points_earned)
     .execute(pool)
     .await
@@ -34,12 +34,12 @@ pub async fn update_engagement_after_quiz_server(username: String, points_earned
 }
 
 #[server(GetEngagementStats)]
-pub async fn get_engagement_stats_server(username: String) -> Result<UserEngagementStats, ServerFnError> {
+pub async fn get_engagement_stats_server(email: String) -> Result<UserEngagementStats, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
     let pool = super::db::get_pool();
-    let row_opt = sqlx::query("SELECT current_streak, longest_streak, total_quiz_completed, total_points_earned FROM user_engagement_stats WHERE username = $1 LIMIT 1")
-        .bind(username)
+    let row_opt = sqlx::query("SELECT current_streak, longest_streak, total_quiz_completed, total_points_earned FROM user_engagement_stats WHERE email = $1 LIMIT 1")
+        .bind(email)
         .fetch_optional(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal ambil stats: {e}")))?;

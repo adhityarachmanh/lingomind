@@ -1,7 +1,7 @@
 -- Tabel untuk menyimpan sesi roleplay
 CREATE TABLE IF NOT EXISTS chat_sessions (
     id SERIAL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL,
     language VARCHAR(20) NOT NULL,
     level VARCHAR(10) NOT NULL,
     roleplay_setting VARCHAR(50) NOT NULL, -- Contoh: "Cafe", "Hotel", "Airport"

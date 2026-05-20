@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Flashcard {
     pub id: i32,
-    pub username: String,
+    pub email: String,
     pub language: String,
     pub front_text: String,
     pub back_text: String,

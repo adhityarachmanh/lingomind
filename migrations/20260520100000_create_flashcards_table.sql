@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS flashcards (
     id SERIAL PRIMARY KEY,
-    username TEXT NOT NULL,
+    email TEXT NOT NULL,
     language TEXT NOT NULL,
     front_text TEXT NOT NULL,
     back_text TEXT NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS flashcards (
     due_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     last_reviewed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (username, language, front_text, back_text)
+    UNIQUE (email, language, front_text, back_text)
 );
 
-CREATE INDEX IF NOT EXISTS idx_flashcards_due ON flashcards (username, due_at);
+CREATE INDEX IF NOT EXISTS idx_flashcards_due ON flashcards (email, due_at);

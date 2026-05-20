@@ -24,11 +24,11 @@ fn sm2_next(ease_factor: f64, interval_days: i32, repetition: i32, quality: i32)
 }
 
 #[server(AddFlashcards)]
-pub async fn add_flashcards_server(username: String, cards: Vec<NewFlashcard>) -> Result<(), ServerFnError> {
+pub async fn add_flashcards_server(email: String, cards: Vec<NewFlashcard>) -> Result<(), ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
 
-    if username.trim().is_empty() {
+    if email.trim().is_empty() {
         return Err(ServerFnError::new("User tidak valid."));
     }
 
@@ -40,9 +40,9 @@ pub async fn add_flashcards_server(username: String, cards: Vec<NewFlashcard>) -
         }
 
         let _ = sqlx::query(
-            "INSERT INTO flashcards (username, language, front_text, back_text) VALUES ($1, $2, $3, $4) ON CONFLICT (username, language, front_text, back_text) DO NOTHING"
+            "INSERT INTO flashcards (email, language, front_text, back_text) VALUES ($1, $2, $3, $4) ON CONFLICT (email, language, front_text, back_text) DO NOTHING"
         )
-        .bind(&username)
+        .bind(&email)
         .bind(card.language)
         .bind(card.front_text)
         .bind(card.back_text)
@@ -55,7 +55,7 @@ pub async fn add_flashcards_server(username: String, cards: Vec<NewFlashcard>) -
 }
 
 #[server(GetDueFlashcards)]
-pub async fn get_due_flashcards_server(username: String, language: String, limit: i64) -> Result<Vec<Flashcard>, ServerFnError> {
+pub async fn get_due_flashcards_server(email: String, language: String, limit: i64) -> Result<Vec<Flashcard>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
 
@@ -63,9 +63,9 @@ pub async fn get_due_flashcards_server(username: String, language: String, limit
     let pool = super::db::get_pool();
 
     let rows = sqlx::query(
-        "SELECT id, username, language, front_text, back_text, ease_factor, interval_days, repetition FROM flashcards WHERE username = $1 AND language = $2 AND due_at <= NOW() ORDER BY due_at ASC LIMIT $3"
+        "SELECT id, email, language, front_text, back_text, ease_factor, interval_days, repetition FROM flashcards WHERE email = $1 AND language = $2 AND due_at <= NOW() ORDER BY due_at ASC LIMIT $3"
     )
-    .bind(username)
+    .bind(email)
     .bind(language)
     .bind(safe_limit)
     .fetch_all(pool)
@@ -76,7 +76,7 @@ pub async fn get_due_flashcards_server(username: String, language: String, limit
     for row in rows {
         cards.push(Flashcard {
             id: row.get("id"),
-            username: row.get("username"),
+            email: row.get("email"),
             language: row.get("language"),
             front_text: row.get("front_text"),
             back_text: row.get("back_text"),
@@ -90,15 +90,15 @@ pub async fn get_due_flashcards_server(username: String, language: String, limit
 }
 
 #[server(GetDueFlashcardCount)]
-pub async fn get_due_flashcard_count_server(username: String, language: String) -> Result<i64, ServerFnError> {
+pub async fn get_due_flashcard_count_server(email: String, language: String) -> Result<i64, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
 
     let pool = super::db::get_pool();
     let row = sqlx::query(
-        "SELECT COUNT(*)::bigint AS cnt FROM flashcards WHERE username = $1 AND language = $2 AND due_at <= NOW()"
+        "SELECT COUNT(*)::bigint AS cnt FROM flashcards WHERE email = $1 AND language = $2 AND due_at <= NOW()"
     )
-    .bind(username)
+    .bind(email)
     .bind(language)
     .fetch_one(pool)
     .await

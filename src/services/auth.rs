@@ -19,13 +19,24 @@ fn generate_default_levels() -> HashMap<String, String> {
     default_map
 }
 
+fn is_valid_email(email: &str) -> bool {
+    let trimmed = email.trim();
+    let mut parts = trimmed.split('@');
+    let local = parts.next().unwrap_or_default();
+    let domain = parts.next().unwrap_or_default();
+    local.len() >= 1 && domain.contains('.') && parts.next().is_none()
+}
+
 /// Fungsi Server untuk Mendaftarkan Pengguna Baru
 #[server(RegisterUser)]
-pub async fn register_user(full_name: String, username: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
+pub async fn register_user(full_name: String, email: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    if full_name.trim().is_empty() || username.trim().is_empty() || password_plain.len() < 6 {
-        return Err(ServerFnError::new("Nama lengkap, username wajib diisi dan password minimal 6 karakter."));
+    if full_name.trim().is_empty() || email.trim().is_empty() || password_plain.len() < 6 {
+        return Err(ServerFnError::new("Nama lengkap, email wajib diisi dan password minimal 6 karakter."));
+    }
+    if !is_valid_email(&email) {
+        return Err(ServerFnError::new("Format email tidak valid."));
     }
 
     let hashed_password = match bcrypt::hash(&password_plain, bcrypt::DEFAULT_COST) {
@@ -38,10 +49,10 @@ pub async fn register_user(full_name: String, username: String, password_plain: 
     let levels_json = serde_json::to_value(&default_levels).unwrap_or_default();
 
     let result = sqlx::query(
-        "INSERT INTO users (full_name, username, password_hash, score, current_level) VALUES ($1, $2, $3, 0, $4) RETURNING full_name, username, score, current_level"
+        "INSERT INTO users (full_name, email, password_hash, score, current_level) VALUES ($1, $2, $3, 0, $4) RETURNING full_name, email, score, current_level"
     )
     .bind(full_name.trim())
-    .bind(username.trim())
+    .bind(email.trim())
     .bind(hashed_password)
     .bind(levels_json)
     .fetch_one(pool)
@@ -50,7 +61,7 @@ pub async fn register_user(full_name: String, username: String, password_plain: 
     let row = match result {
         Ok(r) => r,
         Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
-            return Err(ServerFnError::new("Username sudah digunakan, silakan pilih nama lain."));
+            return Err(ServerFnError::new("Email sudah digunakan, silakan gunakan email lain."));
         }
         Err(e) => return Err(ServerFnError::new(format!("Database error: {}", e))),
     };
@@ -62,7 +73,7 @@ pub async fn register_user(full_name: String, username: String, password_plain: 
 
     Ok(UserProfile {
         full_name: row.get("full_name"),
-        username: row.get("username"),
+        email: row.get("email"),
         score: row.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
     })
@@ -70,18 +81,21 @@ pub async fn register_user(full_name: String, username: String, password_plain: 
 
 /// Fungsi Server untuk Masuk Log (Login) Kontrol Password
 #[server(LoginUser)]
-pub async fn login_user(username: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
+pub async fn login_user(email: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
+    if !is_valid_email(&email) {
+        return Err(ServerFnError::new("Format email tidak valid."));
+    }
 
-    let row = sqlx::query("SELECT full_name, username, password_hash, score, current_level FROM users WHERE username = $1")
-        .bind(username.trim())
+    let row = sqlx::query("SELECT full_name, email, password_hash, score, current_level FROM users WHERE email = $1")
+        .bind(email.trim())
         .fetch_optional(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
 
     let user_record = match row {
         Some(u) => u,
-        None => return Err(ServerFnError::new("Username atau password salah.")),
+        None => return Err(ServerFnError::new("Email atau password salah.")),
     };
 
     let db_password_hash: String = user_record.get("password_hash");
@@ -91,7 +105,7 @@ pub async fn login_user(username: String, password_plain: String) -> Result<User
     };
 
     if !is_password_match {
-        return Err(ServerFnError::new("Username atau password salah."));
+        return Err(ServerFnError::new("Email atau password salah."));
     }
 
     // Ekstraksi nilai JSONB ke HashMap, fallback ke dinamis generator jika kosong
@@ -101,7 +115,7 @@ pub async fn login_user(username: String, password_plain: String) -> Result<User
 
     Ok(UserProfile {
         full_name: user_record.get("full_name"),
-        username: user_record.get("username"),
+        email: user_record.get("email"),
         score: user_record.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
     })
@@ -109,12 +123,12 @@ pub async fn login_user(username: String, password_plain: String) -> Result<User
 
 /// Fungsi Server untuk Memperbarui Skor & Evaluasi Naik Level Spesifik per Bahasa setelah Kuis Selesai
 #[server(UpdateUserScore)]
-pub async fn update_user_score(username: String, language: String, score_delta: i32) -> Result<UserProfile, ServerFnError> {
+pub async fn update_user_score(email: String, language: String, score_delta: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
     // 1. Ambil data skor global dan map level saat ini dari database
-    let row = sqlx::query("SELECT score, current_level FROM users WHERE username = $1")
-        .bind(&username)
+    let row = sqlx::query("SELECT score, current_level FROM users WHERE email = $1")
+        .bind(&email)
         .fetch_one(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
@@ -142,18 +156,18 @@ pub async fn update_user_score(username: String, language: String, score_delta: 
 
     // 3. Update database secara atomik untuk akumulasi score dan struktur JSONB yang baru
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1, current_level = $2 WHERE username = $3 RETURNING full_name, username, score"
+        "UPDATE users SET score = score + $1, current_level = $2 WHERE email = $3 RETURNING full_name, email, score"
     )
     .bind(score_delta)
     .bind(updated_levels_json)
-    .bind(username)
+    .bind(email)
     .fetch_one(pool)
     .await
     .map_err(|e| ServerFnError::new(format!("Gagal memperbarui nilai database: {}", e)))?;
 
     Ok(UserProfile {
         full_name: update_row.get("full_name"),
-        username: update_row.get("username"),
+        email: update_row.get("email"),
         score: final_score,
         current_level: level_map,
     })

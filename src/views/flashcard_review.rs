@@ -16,11 +16,11 @@ pub fn FlashcardReview(language: String) -> Element {
         return rsx! { div { class: "p-6 text-slate-300", "Silakan login dulu." } };
     };
 
-    let username = user.username.clone();
+    let email = user.email.clone();
     let lang_clone = language.clone();
 
     let cards_resource = use_resource(move || {
-        let u = username.clone();
+        let u = email.clone();
         let l = lang_clone.clone();
         async move { get_due_flashcards_server(u, l, 20).await }
     });

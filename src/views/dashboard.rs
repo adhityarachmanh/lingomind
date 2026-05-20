@@ -28,39 +28,39 @@ pub fn Dashboard() -> Element {
         .unwrap_or(&LANGUAGE_COURSES[0]);
 
     let lang_level = user.current_level.get(course.id).cloned().unwrap_or_else(|| "A1".to_string());
-    let username = user.username.clone();
+    let email = user.email.clone();
     let lang_id = course.id.to_string();
 
     let due_resource = use_resource(move || {
-        let u = username.clone();
+        let u = email.clone();
         let l = lang_id.clone();
         async move { get_due_flashcard_count_server(u, l).await }
     });
     let due_count = due_resource.value()().and_then(|r| r.ok()).unwrap_or(0);
 
-    let username2 = user.username.clone();
+    let email2 = user.email.clone();
     let lang_id2 = course.id.to_string();
     let weak_resource = use_resource(move || {
-        let u = username2.clone();
+        let u = email2.clone();
         let l = lang_id2.clone();
         async move { get_top_weaknesses_server(u, l, 2).await }
     });
     let weaknesses = weak_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
     let weak_text = if weaknesses.is_empty() { "belum ada".to_string() } else { weaknesses.iter().map(|w| w.topic.clone()).collect::<Vec<_>>().join(", ") };
 
-    let username3 = user.username.clone();
+    let email3 = user.email.clone();
     let lang_id3 = course.id.to_string();
     let mission_resource = use_resource(move || {
-        let u = username3.clone();
+        let u = email3.clone();
         let l = lang_id3.clone();
         async move { get_daily_mission_server(u, l).await }
     });
     let mission = mission_resource.value()().and_then(|r| r.ok());
 
-    let username4 = user.username.clone();
+    let email4 = user.email.clone();
     let lang_id4 = course.id.to_string();
     let trend_resource = use_resource(move || {
-        let u = username4.clone();
+        let u = email4.clone();
         let l = lang_id4.clone();
         async move { get_weakness_analytics_server(u, l, 1).await }
     });
@@ -72,19 +72,19 @@ pub fn Dashboard() -> Element {
         "belum ada"
     };
 
-    let username5 = user.username.clone();
+    let email5 = user.email.clone();
     let lang_id5 = course.id.to_string();
     let skill_progress_resource = use_resource(move || {
-        let u = username5.clone();
+        let u = email5.clone();
         let l = lang_id5.clone();
         async move { get_skill_progress_7d_server(u, l).await }
     });
     let skill_points = skill_progress_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
 
     let goal = "General".to_string();
-    let username6 = user.username.clone();
+    let email6 = user.email.clone();
     let engagement_resource = use_resource(move || {
-        let u = username6.clone();
+        let u = email6.clone();
         async move { get_engagement_stats_server(u).await }
     });
     let engagement = engagement_resource.value()().and_then(|r| r.ok());

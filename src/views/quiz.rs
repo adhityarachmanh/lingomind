@@ -304,7 +304,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                         back_text: format!("Jawaban benar: {} | Penjelasan: {}", correct_ans_check.clone(), explanation_text.clone()),
                                     }];
                                     spawn(async move {
-                                        let _ = add_flashcards_server(user.username, cards).await;
+                                        let _ = add_flashcards_server(user.email, cards).await;
                                     });
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
@@ -313,7 +313,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                         let lang = language.clone();
                                         let skill = classify_skill(&current_q.question, &explanation_text);
                                         spawn(async move {
-                                            let _ = log_skill_progress_server(user.username, lang, skill, true).await;
+                                            let _ = log_skill_progress_server(user.email, lang, skill, true).await;
                                         });
                                     }
                                 } else if let Some(user) = user_opt.clone() {
@@ -326,13 +326,13 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                                         correct_ans_check.clone()
                                     );
                                     let lang = language.clone();
-                                    let username2 = user.username.clone();
+                                    let email2 = user.email.clone();
                                     spawn(async move {
-                                        let _ = log_weakness_server(user.username, lang, topic, note).await;
+                                        let _ = log_weakness_server(user.email, lang, topic, note).await;
                                     });
                                     let lang2 = language.clone();
                                     spawn(async move {
-                                        let _ = log_skill_progress_server(username2, lang2, skill, false).await;
+                                        let _ = log_skill_progress_server(email2, lang2, skill, false).await;
                                     });
                                 }
                                 show_explanation.set(true);
@@ -355,15 +355,15 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                             class: "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2 rounded text-sm transition-colors shadow-lg",
                             onclick: move |_| {
                                 stop_speech();
-                                let username = user_opt.as_ref().map(|u| u.username.clone()).unwrap_or_default();
+                                let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
                                 let language = language.clone();
                                 let score = score_gained();
                                 let mut session_state = session_state;
                                 let mut quiz_finished = quiz_finished;
                                 spawn(async move {
-                                    if !username.is_empty() {
-                                        if let Ok(updated_profile) = update_user_score(username, language, score).await {
-                                            let _ = update_engagement_after_quiz_server(updated_profile.username.clone(), score).await;
+                                    if !email.is_empty() {
+                                        if let Ok(updated_profile) = update_user_score(email, language, score).await {
+                                            let _ = update_engagement_after_quiz_server(updated_profile.email.clone(), score).await;
                                             session_state.set((Some(updated_profile), true));
                                             quiz_finished.set(true);
                                         }

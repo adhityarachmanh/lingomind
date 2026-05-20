@@ -2,7 +2,7 @@ ALTER TABLE users
 ADD COLUMN IF NOT EXISTS full_name VARCHAR(120);
 
 UPDATE users
-SET full_name = username
+SET full_name = email
 WHERE full_name IS NULL OR btrim(full_name) = '';
 
 ALTER TABLE users
