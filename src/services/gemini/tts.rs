@@ -21,16 +21,22 @@ fn voice_from_lang(lang_code: &str) -> &'static str {
 }
 
 #[server(GenerateTtsAudio)]
-pub async fn generate_tts_audio_server(text: String, lang_code: String) -> Result<String, ServerFnError> {
+pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f32) -> Result<String, ServerFnError> {
     #[cfg(target_arch = "wasm32")]
     {
-        let _ = (text, lang_code);
+        let _ = (text, lang_code, speed);
         return Err(ServerFnError::new("TTS hanya berjalan di server."));
     }
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let cleaned = text.trim();
+        let cleaned = text
+            .replace("____", " ")
+            .replace("___", " ")
+            .replace("__", " ")
+            .replace('_', " ")
+            .trim()
+            .to_string();
         if cleaned.is_empty() {
             return Err(ServerFnError::new("Teks kosong."));
         }
@@ -43,11 +49,20 @@ pub async fn generate_tts_audio_server(text: String, lang_code: String) -> Resul
         output_path.push(format!("lingomind-tts-{stamp}.mp3"));
 
         let voice = voice_from_lang(&lang_code);
+        let rate = if speed < 0.9 {
+            "-25%"
+        } else if speed > 1.0 {
+            "+20%"
+        } else {
+            "+0%"
+        };
         let status = tokio::process::Command::new("edge-tts")
             .arg("--voice")
             .arg(voice)
+            .arg("--rate")
+            .arg(rate)
             .arg("--text")
-            .arg(cleaned)
+            .arg(&cleaned)
             .arg("--write-media")
             .arg(std::path::PathBuf::from(&output_path))
             .status()

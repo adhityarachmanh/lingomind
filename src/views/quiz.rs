@@ -76,12 +76,12 @@ fn speak_text(tts_lang_code: &str, text: &str) {
 #[cfg(not(target_arch = "wasm32"))]
 fn speak_text(_tts_lang_code: &str, _text: &str) {}
 
-fn speak_with_edge_or_fallback(tts_lang_code: String, text: String) {
+fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) {
     #[cfg(target_arch = "wasm32")]
     let request_id = AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
 
     spawn(async move {
-        match generate_tts_audio_server(text.clone(), tts_lang_code.clone()).await {
+        match generate_tts_audio_server(text.clone(), tts_lang_code.clone(), speed).await {
             Ok(audio_src) => {
                 #[cfg(target_arch = "wasm32")]
                 if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
@@ -89,7 +89,24 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String) {
                 }
                 play_audio_src(&audio_src)
             }
-            Err(_) => speak_text(&tts_lang_code, &text),
+            Err(_) => {
+                #[cfg(target_arch = "wasm32")]
+                {
+                    if let Some(window) = web_sys::window() {
+                        if let Ok(synth) = window.speech_synthesis() {
+                            synth.cancel();
+                            if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(&text) {
+                                utterance.set_lang(&tts_lang_code);
+                                utterance.set_rate(speed);
+                                utterance.set_pitch(1.0);
+                                synth.speak(&utterance);
+                            }
+                        }
+                    }
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                speak_text(&tts_lang_code, &text);
+            }
         }
     });
 }
@@ -119,6 +136,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
     let mut score_gained = use_signal(|| 0);
     let mut quiz_finished = use_signal(|| false);
     let mut show_explanation = use_signal(|| false);
+    let mut listen_speed = use_signal(|| 0.95_f32);
 
     let lang_clone = language.clone();
     let lvl_clone = level.clone();
@@ -190,16 +208,35 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
 
                 div { class: "flex items-start justify-between gap-3 mb-4",
                     h2 { class: "text-lg font-semibold text-slate-100 leading-relaxed flex-1", "{current_q.question}" }
-                    div { class: "flex gap-2 shrink-0",
+                    div { class: "flex flex-col gap-2 shrink-0 items-end",
+                    select {
+                        class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-2 py-1",
+                        value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
+                        onchange: move |e| {
+                            let v = e.value();
+                            if v == "slow" {
+                                listen_speed.set(0.8);
+                            } else if v == "fast" {
+                                listen_speed.set(1.1);
+                            } else {
+                                listen_speed.set(0.95);
+                            }
+                        },
+                        option { value: "slow", "Slow" }
+                        option { value: "normal", "Normal" }
+                        option { value: "fast", "Fast" }
+                    }
+                    div { class: "flex gap-2",
                     button {
                         class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded text-xs font-semibold transition-colors",
-                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), tts_question.clone()),
+                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), tts_question.clone(), listen_speed()),
                         "Listen"
                     }
                     button {
                         class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 rounded text-xs font-semibold transition-colors",
                         onclick: move |_| stop_speech(),
                         "Stop"
+                    }
                     }
                     }
                 }
@@ -219,7 +256,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
                             disabled: show_explanation(),
                             onclick: move |_| {
                                 selected_option.set(Some(option.clone()));
-                                speak_with_edge_or_fallback(tts_lang_code.to_string(), option.clone());
+                                speak_with_edge_or_fallback(tts_lang_code.to_string(), option.clone(), listen_speed());
                             },
                             "{option}"
                         }
