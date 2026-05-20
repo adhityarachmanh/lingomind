@@ -7,63 +7,95 @@ use crate::routes::Route;
 const FAVICON: Asset = asset!("/assets/favicon.ico");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 const LOCAL_STORAGE_KEY: &str = "lingomind_user_session";
-const LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
+const LEGACY_LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
+
+fn canonical_language_id(input: &str) -> String {
+    let trimmed = input.trim();
+    LANGUAGE_COURSES
+        .iter()
+        .find(|c| c.id.eq_ignore_ascii_case(trimmed))
+        .map(|c| c.id.to_string())
+        .unwrap_or_else(|| "English".to_string())
+}
 
 #[component]
 pub fn App() -> Element {
-    // 1. Sediakan Global State Context. Default diisi (None, false) agar server tidak salah render data.
     let mut session_state = use_context_provider(|| {
         let initial_user: Option<UserProfile> = None;
-        Signal::new((initial_user, false)) // false = Sesi belum siap/masih memuat data
+        Signal::new((initial_user, false))
     });
     let mut selected_language = use_context_provider(|| Signal::new("English".to_string()));
 
-    // 2. PERBAIKAN: Gunakan use_effect (bukan use_hook) untuk membaca LocalStorage sesaat setelah client-side aktif
     use_effect(move || {
         #[cfg(target_arch = "wasm32")]
         {
-            // Logika ini berjalan murni di browser setelah komponen terpasang di layar
+            #[derive(serde::Deserialize)]
+            struct LegacyUserProfile {
+                email: String,
+                full_name: String,
+                score: i32,
+                current_level: std::collections::HashMap<String, String>,
+            }
+
             if let Some(window) = web_sys::window() {
                 if let Ok(Some(local_storage)) = window.local_storage() {
                     let storage: web_sys::Storage = local_storage;
-                    if let Ok(Some(stored_lang)) = storage.get_item(LANGUAGE_STORAGE_KEY) {
-                        let is_valid = LANGUAGE_COURSES.iter().any(|c| c.id == stored_lang);
-                        if is_valid {
-                            selected_language.set(stored_lang);
-                        }
-                    }
                     if let Ok(Some(stored_json)) = storage.get_item(LOCAL_STORAGE_KEY) {
-                        if let Ok(profile) = serde_json::from_str::<UserProfile>(&stored_json) {
-                            // Jika sesi ditemukan di LocalStorage, pasang data user dan ubah status ke true (siap)
+                        if let Ok(mut profile) = serde_json::from_str::<UserProfile>(&stored_json) {
+                            let preferred_lang = canonical_language_id(&profile.preferred_language);
+                            profile.preferred_language = preferred_lang.clone();
+                            selected_language.set(preferred_lang);
                             session_state.set((Some(profile), true));
+                            return;
+                        }
+
+                        if let Ok(legacy_profile) = serde_json::from_str::<LegacyUserProfile>(&stored_json) {
+                            let fallback_lang = match storage.get_item(LEGACY_LANGUAGE_STORAGE_KEY) {
+                                Ok(Some(lang)) => canonical_language_id(&lang),
+                                _ => "English".to_string(),
+                            };
+                            let migrated = UserProfile {
+                                email: legacy_profile.email,
+                                full_name: legacy_profile.full_name,
+                                preferred_language: fallback_lang.clone(),
+                                score: legacy_profile.score,
+                                current_level: legacy_profile.current_level,
+                            };
+                            selected_language.set(fallback_lang);
+                            session_state.set((Some(migrated), true));
                             return;
                         }
                     }
                 }
             }
-            // Jika tidak ada data tersimpan, buka gerbang proteksi dengan (None, true)
             session_state.set((None, true));
         }
     });
 
-    // 3. Efek otomatis untuk sinkronisasi data state ke LocalStorage setiap kali ada mutasi data (Login/Logout/Score Update)
     use_effect(move || {
         let (current_profile, is_ready) = session_state();
-        
-        // Sinkronisasi hanya berjalan jika fase pembacaan awal (fase 2) sudah sukses diselesaikan
         if is_ready {
+            if let Some(profile) = current_profile.clone() {
+                let preferred_lang = canonical_language_id(&profile.preferred_language);
+                if selected_language() != preferred_lang {
+                    selected_language.set(preferred_lang);
+                    return;
+                }
+            }
+
             #[cfg(target_arch = "wasm32")]
             {
                 if let Some(window) = web_sys::window() {
                     if let Ok(Some(local_storage)) = window.local_storage() {
                         let storage: web_sys::Storage = local_storage;
-                        let _ = storage.set_item(LANGUAGE_STORAGE_KEY, &selected_language());
                         if let Some(profile) = current_profile {
                             if let Ok(json_string) = serde_json::to_string(&profile) {
                                 let _ = storage.set_item(LOCAL_STORAGE_KEY, &json_string);
                             }
+                            let _ = storage.remove_item(LEGACY_LANGUAGE_STORAGE_KEY);
                         } else {
                             let _ = storage.remove_item(LOCAL_STORAGE_KEY);
+                            let _ = storage.remove_item(LEGACY_LANGUAGE_STORAGE_KEY);
                         }
                     }
                 }

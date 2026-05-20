@@ -55,7 +55,7 @@ pub fn Register() -> Element {
                 // PERBAIKAN: Set state dalam bentuk tuple agar status inisialisasi bernilai true
                 user_state.set((Some(profile), true));
                 is_loading.set(false);
-                navigator.push(Route::PlacementTest {});
+                navigator.push(Route::Dashboard {});
             }
             Err(err) => {
                 is_loading.set(false); 

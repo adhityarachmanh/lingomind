@@ -1,42 +1,52 @@
-// src/views/chat.rs
 use dioxus::prelude::*;
-use crate::models::user::UserProfile;
 use crate::models::chat::ChatMessage;
-use crate::services::gemini::chat::{get_or_create_session_server, send_chat_message_server};
+use crate::models::user::UserProfile;
 use crate::routes::Route;
+use crate::services::gemini::chat::{get_or_create_session_server, send_chat_message_server};
 
 #[component]
-pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
+pub fn ChatRoleplay(level: String, goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
+
+    let language = selected_language();
+    let active_level = user_opt
+        .as_ref()
+        .and_then(|u| u.current_level.get(&language).cloned())
+        .unwrap_or_else(|| level.clone());
     let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
 
     let mut selected_setting = use_signal(|| None::<String>);
     let mut session_id = use_signal(|| 0_i32);
-    let mut chat_messages = use_signal(|| Vec::<ChatMessage>::new());
+    let mut chat_messages = use_signal(Vec::<ChatMessage>::new);
     let mut input_text = use_signal(|| "".to_string());
     let mut is_loading = use_signal(|| false);
     let mut error_msg = use_signal(|| None::<String>);
 
-    // Kloning variabel untuk kebutuhan handle_select_setting
     let user_for_setup = email.clone();
     let lang_for_setup = language.clone();
-    let lvl_for_setup = level.clone();
+    let lvl_for_setup = active_level.clone();
+    let goal_for_setup = goal.clone();
 
     let mut handle_select_setting = move |setting: String| {
         let user = user_for_setup.clone();
         let lang = lang_for_setup.clone();
         let lvl = lvl_for_setup.clone();
+        let goal_value = goal_for_setup.clone();
         selected_setting.set(Some(setting.clone()));
+        error_msg.set(None);
+        chat_messages.set(Vec::new());
+        session_id.set(0);
         is_loading.set(true);
 
         spawn(async move {
-            match get_or_create_session_server(user, lang, lvl, setting).await {
-                Ok(id) => {
-                    session_id.set(id);
+            match get_or_create_session_server(user, lang, lvl, goal_value, setting).await {
+                Ok(bootstrap) => {
+                    session_id.set(bootstrap.session_id);
+                    chat_messages.set(bootstrap.messages);
                     is_loading.set(false);
-                },
+                }
                 Err(e) => {
                     error_msg.set(Some(format!("Gagal memuat sesi obrolan: {}", e)));
                     is_loading.set(false);
@@ -45,18 +55,26 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
         });
     };
 
-    // Kloning variabel untuk kebutuhan handle_send_message
     let lang_for_send = language.clone();
-    let lvl_for_send = level.clone();
+    let lvl_for_send = active_level.clone();
     let goal_for_send = goal.clone();
+    let email_for_send = email.clone();
 
     let handle_send_message = move |_| {
-        if input_text().trim().is_empty() || is_loading() { return; }
+        if input_text().trim().is_empty() || is_loading() {
+            return;
+        }
 
+        if session_id() <= 0 {
+            error_msg.set(Some("Sesi chat belum siap. Coba pilih ulang skenario.".to_string()));
+            return;
+        }
+
+        let email_value = email_for_send.clone();
         let id = session_id();
         let lang = lang_for_send.clone();
         let lvl = lvl_for_send.clone();
-        let goal = goal_for_send.clone();
+        let goal_value = goal_for_send.clone();
         let setting = selected_setting().unwrap_or_default();
         let msg = input_text().clone();
 
@@ -71,11 +89,11 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
         is_loading.set(true);
 
         spawn(async move {
-            match send_chat_message_server(id, lang, lvl, goal, setting, msg).await {
+            match send_chat_message_server(email_value, id, lang, lvl, goal_value, setting, msg).await {
                 Ok(updated_history) => {
                     chat_messages.set(updated_history);
                     is_loading.set(false);
-                },
+                }
                 Err(e) => {
                     error_msg.set(Some(format!("Gagal mengirim pesan: {}", e)));
                     is_loading.set(false);
@@ -85,36 +103,35 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
     };
 
     if selected_setting().is_none() {
-        // Buat kloning fungsi agar tombol Cafe dan Hotel bisa memanggilnya secara bergantian
         let mut click_cafe = handle_select_setting.clone();
         let mut click_hotel = handle_select_setting.clone();
 
         return rsx! {
             div { class: "min-h-screen bg-slate-950 text-white p-6 flex flex-col justify-center items-center",
                 div { class: "max-w-md w-full bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl text-center",
-                    span { class: "text-xs font-extrabold bg-teal-500/10 text-teal-400 px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block", "Mode Roleplay • {language}" }
+                    span { class: "text-xs font-extrabold bg-teal-500/10 text-teal-400 px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block", "Mode Roleplay - {language}" }
                     p { class: "text-[11px] text-slate-400 mb-2", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
                     h2 { class: "text-2xl font-black text-slate-100 mb-2", "Pilih Skenario Obrolan" }
-                    p { class: "text-slate-400 text-sm mb-6 leading-relaxed", "Pilih lokasi simulasi lingkungan. Gemini AI akan bertindak sebagai partner bicara Anda sesuai tingkat kesulitan {level}." }
-                    
+                    p { class: "text-slate-400 text-sm mb-6 leading-relaxed", "Pilih lokasi simulasi. Partner AI menyesuaikan tingkat {active_level}." }
+
                     div { class: "flex flex-col gap-3",
-                        button { 
+                        button {
                             class: "w-full bg-slate-950 border border-slate-800 hover:border-teal-500/40 p-4 rounded-xl text-left font-bold text-sm transition-all flex justify-between items-center group",
                             onclick: move |_| click_cafe("Cafe".to_string()),
                             div {
-                                p { class: "text-slate-200 group-hover:text-teal-400 transition-colors", "☕ Kasir Kedai Kopi" }
+                                p { class: "text-slate-200 group-hover:text-teal-400 transition-colors", "Kasir Kedai Kopi" }
                                 p { class: "text-xs text-slate-500 font-normal mt-0.5", "Simulasi memesan minuman dan membayar di kasir." }
                             }
-                            span { class: "text-slate-600 group-hover:text-teal-400 transition-colors", "→" }
+                            span { class: "text-slate-600 group-hover:text-teal-400 transition-colors", "->" }
                         }
-                        button { 
+                        button {
                             class: "w-full bg-slate-950 border border-slate-800 hover:border-orange-500/40 p-4 rounded-xl text-left font-bold text-sm transition-all flex justify-between items-center group",
                             onclick: move |_| click_hotel("Hotel".to_string()),
                             div {
-                                p { class: "text-slate-200 group-hover:text-orange-400 transition-colors", "🛎️ Resepsionis Hotel" }
-                                p { class: "text-xs text-slate-500 font-normal mt-0.5", "Simulasi melakukan check-in kamar dan bertanya fasilitas." }
+                                p { class: "text-slate-200 group-hover:text-orange-400 transition-colors", "Resepsionis Hotel" }
+                                p { class: "text-xs text-slate-500 font-normal mt-0.5", "Simulasi check-in kamar dan bertanya fasilitas." }
                             }
-                            span { class: "text-slate-600 group-hover:text-orange-400 transition-colors", "→" }
+                            span { class: "text-slate-600 group-hover:text-orange-400 transition-colors", "->" }
                         }
                     }
 
@@ -126,19 +143,18 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
         };
     }
 
-    let setting_title = selected_setting().unwrap();
+    let setting_title = selected_setting().unwrap_or_default();
     let messages_list = chat_messages.cloned();
 
     rsx! {
         div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-between pt-16 pb-6 px-4 md:px-6",
             div { class: "max-w-3xl w-full mx-auto flex-1 flex flex-col justify-between bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden min-h-[500px]",
-                
                 div { class: "bg-slate-950/60 p-4 border-b border-slate-800 flex justify-between items-center backdrop-blur-sm",
                     div { class: "flex items-center gap-3",
                         div { class: "h-3 w-3 rounded-full bg-emerald-400 animate-pulse" }
                         div {
                             h3 { class: "text-sm font-bold text-slate-100", "Simulasi Peran: {setting_title}" }
-                            p { class: "text-xs text-slate-500 uppercase font-mono tracking-wider", "{language} • {level}" }
+                            p { class: "text-xs text-slate-500 uppercase font-mono tracking-wider", "{language} - {active_level}" }
                             p { class: "text-[10px] text-teal-300 font-semibold", "Global language: {selected_language}" }
                         }
                     }
@@ -153,13 +169,10 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
                     }
 
                     for msg in messages_list {
-                        div { 
+                        div {
                             key: "{msg.id}",
-                            class: format!(
-                                "flex w-full {}", 
-                                if msg.sender == "user" { "justify-end" } else { "justify-start" }
-                            ),
-                            div { 
+                            class: format!("flex w-full {}", if msg.sender == "user" { "justify-end" } else { "justify-start" }),
+                            div {
                                 class: format!(
                                     "max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap {}",
                                     if msg.sender == "user" {
@@ -182,14 +195,14 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
                 }
 
                 div { class: "p-4 bg-slate-950/80 border-t border-slate-800 backdrop-blur-sm",
-                    form { 
+                    form {
                         class: "flex gap-2 items-center",
                         onsubmit: handle_send_message,
-                        
+
                         input {
                             r#type: "text",
                             class: "flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 focus:border-teal-500/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all placeholder-slate-600 disabled:opacity-50",
-                            placeholder: "Ketik balasan kalimat Anda dalam Bahasa {language}...",
+                            placeholder: "Ketik balasan dalam bahasa {language}...",
                             value: "{input_text}",
                             disabled: is_loading(),
                             oninput: move |e| input_text.set(e.value()),
@@ -198,17 +211,14 @@ pub fn ChatRoleplay(language: String, level: String, goal: String) -> Element {
                             r#type: "submit",
                             class: "bg-teal-500 hover:bg-teal-600 disabled:bg-slate-800 text-slate-950 disabled:text-slate-600 font-bold px-5 py-3 rounded-xl text-sm transition-all shadow-md cursor-pointer",
                             disabled: input_text().trim().is_empty() || is_loading(),
-                            "Kirim 🚀"
+                            "Kirim"
                         }
                     }
                     if let Some(err) = error_msg() {
-                        p { class: "text-[11px] text-rose-400 mt-2 text-center font-medium", "⚠️ {err}" }
+                        p { class: "text-[11px] text-rose-400 mt-2 text-center font-medium", "{err}" }
                     }
                 }
             }
         }
     }
 }
-
-
-

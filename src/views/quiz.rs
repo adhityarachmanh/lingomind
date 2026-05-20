@@ -5,6 +5,7 @@ use crate::models::constants::LANGUAGE_COURSES;
 use crate::models::flashcard::NewFlashcard;
 use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::generate_tts_audio_server;
+use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::update_user_score;
 use crate::services::engagement::update_engagement_after_quiz_server;
 use crate::services::flashcard::add_flashcards_server;
@@ -85,11 +86,16 @@ fn speak_text(tts_lang_code: &str, text: &str) {
 fn speak_text(_tts_lang_code: &str, _text: &str) {}
 
 fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) {
+    let normalized_text = sanitize_tts_text(&text);
+    if normalized_text.is_empty() {
+        return;
+    }
+
     #[cfg(target_arch = "wasm32")]
     let request_id = AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
 
     spawn(async move {
-        match generate_tts_audio_server(text.clone(), tts_lang_code.clone(), speed).await {
+        match generate_tts_audio_server(normalized_text.clone(), tts_lang_code.clone(), speed).await {
             Ok(audio_src) => {
                 #[cfg(target_arch = "wasm32")]
                 if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
@@ -103,7 +109,7 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
                     if let Some(window) = web_sys::window() {
                         if let Ok(synth) = window.speech_synthesis() {
                             synth.cancel();
-                            if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(&text) {
+                            if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(&normalized_text) {
                                 utterance.set_lang(&tts_lang_code);
                                 utterance.set_rate(speed);
                                 utterance.set_pitch(1.0);
@@ -113,7 +119,7 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
                     }
                 }
                 #[cfg(not(target_arch = "wasm32"))]
-                speak_text(&tts_lang_code, &text);
+                speak_text(&tts_lang_code, &normalized_text);
             }
         }
     });
@@ -147,10 +153,15 @@ fn classify_skill(question: &str, explanation: &str) -> String {
 }
 
 #[component]
-pub fn Quiz(language: String, level: String, goal: String) -> Element {
+pub fn Quiz(level: String, goal: String) -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
+    let language = selected_language();
+    let active_level = user_opt
+        .as_ref()
+        .and_then(|u| u.current_level.get(&language).cloned())
+        .unwrap_or_else(|| level.clone());
 
     let mut current_question_idx = use_signal(|| 0);
     let mut selected_option = use_signal(|| None::<String>);
@@ -159,14 +170,23 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
     let mut show_explanation = use_signal(|| false);
     let mut listen_speed = use_signal(|| 0.95_f32);
 
-    let lang_clone = language.clone();
-    let lvl_clone = level.clone();
+    let mut selected_lang_for_resource = selected_language;
+    let session_for_resource = session_state;
+    let fallback_level = level.clone();
 
     let quiz_resource = use_resource(move || {
-        let lang = lang_clone.clone();
-        let lvl = lvl_clone.clone();
+        let lang = selected_lang_for_resource();
+        let (resource_user_opt, _) = session_for_resource();
+        let email_value = resource_user_opt
+            .as_ref()
+            .map(|u| u.email.clone())
+            .unwrap_or_default();
+        let lvl = resource_user_opt
+            .as_ref()
+            .and_then(|u| u.current_level.get(&lang).cloned())
+            .unwrap_or_else(|| fallback_level.clone());
         let goal_value = goal.clone();
-        async move { generate_quiz_server(lang, lvl, goal_value).await }
+        async move { generate_quiz_server(email_value, lang, lvl, goal_value).await }
     });
 
     let Some(quiz_result) = quiz_resource.value()() else {
@@ -224,7 +244,7 @@ pub fn Quiz(language: String, level: String, goal: String) -> Element {
             div { class: "max-w-xl w-full bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl",
                 
                 div { class: "flex justify-between items-center border-b border-slate-800 pb-4 mb-6",
-                    span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({level})" }
+                    span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({active_level})" }
                     span { class: "text-xs text-slate-500 font-medium", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
                 }
                 p { class: "text-[11px] text-slate-400 mb-4", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }

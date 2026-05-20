@@ -6,6 +6,7 @@ use std::collections::HashMap;
 pub struct UserProfile {
     pub email: String,
     pub full_name: String,
+    pub preferred_language: String,
     pub score: i32,
     // Menggunakan HashMap -> {"English": "A2", "German": "A1"}
     pub current_level: HashMap<String, String>,

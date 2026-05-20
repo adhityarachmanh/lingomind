@@ -49,11 +49,12 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
     let levels_json = serde_json::to_value(&default_levels).unwrap_or_default();
 
     let result = sqlx::query(
-        "INSERT INTO users (full_name, email, password_hash, score, current_level) VALUES ($1, $2, $3, 0, $4) RETURNING full_name, email, score, current_level"
+        "INSERT INTO users (full_name, email, password_hash, preferred_language, score, current_level) VALUES ($1, $2, $3, $4, 0, $5) RETURNING full_name, email, preferred_language, score, current_level"
     )
     .bind(full_name.trim())
     .bind(email.trim())
     .bind(hashed_password)
+    .bind("English")
     .bind(levels_json)
     .fetch_one(pool)
     .await;
@@ -74,6 +75,7 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
     Ok(UserProfile {
         full_name: row.get("full_name"),
         email: row.get("email"),
+        preferred_language: row.get("preferred_language"),
         score: row.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
     })
@@ -87,7 +89,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         return Err(ServerFnError::new("Format email tidak valid."));
     }
 
-    let row = sqlx::query("SELECT full_name, email, password_hash, score, current_level FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, current_level FROM users WHERE email = $1")
         .bind(email.trim())
         .fetch_optional(pool)
         .await
@@ -116,6 +118,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
     Ok(UserProfile {
         full_name: user_record.get("full_name"),
         email: user_record.get("email"),
+        preferred_language: user_record.get("preferred_language"),
         score: user_record.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
     })
@@ -156,7 +159,7 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
 
     // 3. Update database secara atomik untuk akumulasi score dan struktur JSONB yang baru
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1, current_level = $2 WHERE email = $3 RETURNING full_name, email, score"
+        "UPDATE users SET score = score + $1, current_level = $2 WHERE email = $3 RETURNING full_name, email, preferred_language, score"
     )
     .bind(score_delta)
     .bind(updated_levels_json)
@@ -168,7 +171,41 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     Ok(UserProfile {
         full_name: update_row.get("full_name"),
         email: update_row.get("email"),
+        preferred_language: update_row.get("preferred_language"),
         score: final_score,
         current_level: level_map,
+    })
+}
+
+#[server(UpdatePreferredLanguage)]
+pub async fn update_preferred_language_server(email: String, preferred_language: String) -> Result<UserProfile, ServerFnError> {
+    let pool = super::db::get_pool();
+    let canonical_lang = LANGUAGE_COURSES
+        .iter()
+        .find(|course| course.id.eq_ignore_ascii_case(preferred_language.trim()))
+        .map(|course| course.id.to_string());
+    let Some(trimmed_lang) = canonical_lang else {
+        return Err(ServerFnError::new("Bahasa tidak valid."));
+    };
+
+    let row = sqlx::query(
+        "UPDATE users SET preferred_language = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, current_level"
+    )
+    .bind(&trimmed_lang)
+    .bind(email.trim())
+    .fetch_one(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal memperbarui bahasa aktif: {}", e)))?;
+
+    let raw_level: serde_json::Value = row.get("current_level");
+    let current_level_map: HashMap<String, String> = serde_json::from_value(raw_level)
+        .unwrap_or_else(|_| generate_default_levels());
+
+    Ok(UserProfile {
+        full_name: row.get("full_name"),
+        email: row.get("email"),
+        preferred_language: row.get("preferred_language"),
+        score: row.get::<Option<i32>, _>("score").unwrap_or(0),
+        current_level: current_level_map,
     })
 }

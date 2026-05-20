@@ -2,6 +2,38 @@ use dioxus::prelude::*;
 #[cfg(not(target_arch = "wasm32"))]
 use base64::Engine;
 
+pub fn sanitize_tts_text(text: &str) -> String {
+    let mut out = String::with_capacity(text.len() + 16);
+    let chars: Vec<char> = text.chars().collect();
+    let mut i = 0usize;
+
+    while i < chars.len() {
+        if chars[i] == '_' {
+            let mut j = i;
+            while j < chars.len() && chars[j] == '_' {
+                j += 1;
+            }
+            let run_len = j - i;
+            if run_len >= 2 {
+                if !out.is_empty() && !out.ends_with(' ') {
+                    out.push(' ');
+                }
+                out.push_str("bla bla bla");
+                out.push(' ');
+            } else {
+                out.push(' ');
+            }
+            i = j;
+            continue;
+        }
+
+        out.push(chars[i]);
+        i += 1;
+    }
+
+    out.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn voice_from_lang(lang_code: &str) -> &'static str {
     match lang_code {
@@ -30,13 +62,7 @@ pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f
 
     #[cfg(not(target_arch = "wasm32"))]
     {
-        let cleaned = text
-            .replace("____", " ")
-            .replace("___", " ")
-            .replace("__", " ")
-            .replace('_', " ")
-            .trim()
-            .to_string();
+        let cleaned = sanitize_tts_text(&text);
         if cleaned.is_empty() {
             return Err(ServerFnError::new("Teks kosong."));
         }

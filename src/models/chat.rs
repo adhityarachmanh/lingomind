@@ -8,6 +8,7 @@ pub struct ChatSession {
     pub language: String,
     pub level: String,
     pub roleplay_setting: String,
+    pub goal: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -16,4 +17,10 @@ pub struct ChatMessage {
     pub session_id: i32,
     pub sender: String, // "user" atau "ai"
     pub content: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ChatSessionBootstrap {
+    pub session_id: i32,
+    pub messages: Vec<ChatMessage>,
 }

@@ -6,10 +6,11 @@ use crate::services::flashcard::get_due_flashcard_count_server;
 use crate::services::mission::get_daily_mission_server;
 use crate::services::weakness::{get_top_weaknesses_server, get_weakness_analytics_server, get_skill_progress_7d_server};
 use crate::services::engagement::get_engagement_stats_server;
+use crate::services::auth::update_preferred_language_server;
 
 #[component]
 pub fn Dashboard() -> Element {
-    let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let mut selected_language = use_context::<Signal<String>>();
     let (user_opt, is_session_ready) = session_state();
 
@@ -20,7 +21,32 @@ pub fn Dashboard() -> Element {
         return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex justify-center items-center p-8", div { class: "bg-slate-900 p-6 rounded-xl border border-slate-800 text-center max-w-sm", p { class: "text-slate-400 mb-4", "Silakan login terlebih dahulu." } Link { to: Route::Login {}, class: "inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold py-2 px-4 rounded text-sm", "Kembali ke Login" } } } };
     }
 
+    let user_for_language_change = user_opt.clone();
     let user = user_opt.unwrap();
+    let mut handle_language_change = move |new_lang: String| {
+        let selected = new_lang.trim().to_string();
+        if selected.is_empty() {
+            return;
+        }
+        if !LANGUAGE_COURSES.iter().any(|course| course.id == selected) {
+            return;
+        }
+
+        selected_language.set(selected.clone());
+        if let Some(mut profile) = user_for_language_change.clone() {
+            profile.preferred_language = selected.clone();
+            session_state.set((Some(profile.clone()), true));
+
+            let email = profile.email.clone();
+            let mut session_state_after_save = session_state;
+            spawn(async move {
+                if let Ok(updated_profile) = update_preferred_language_server(email, selected).await {
+                    session_state_after_save.set((Some(updated_profile), true));
+                }
+            });
+        }
+    };
+
     let selected = selected_language();
     let course = LANGUAGE_COURSES
         .iter()
@@ -29,39 +55,39 @@ pub fn Dashboard() -> Element {
 
     let lang_level = user.current_level.get(course.id).cloned().unwrap_or_else(|| "A1".to_string());
     let email = user.email.clone();
-    let lang_id = course.id.to_string();
+    let mut selected_lang_for_resources = selected_language;
 
     let due_resource = use_resource(move || {
         let u = email.clone();
-        let l = lang_id.clone();
+        let l = selected_lang_for_resources();
         async move { get_due_flashcard_count_server(u, l).await }
     });
     let due_count = due_resource.value()().and_then(|r| r.ok()).unwrap_or(0);
 
     let email2 = user.email.clone();
-    let lang_id2 = course.id.to_string();
+    let mut selected_lang_for_weak = selected_language;
     let weak_resource = use_resource(move || {
         let u = email2.clone();
-        let l = lang_id2.clone();
+        let l = selected_lang_for_weak();
         async move { get_top_weaknesses_server(u, l, 2).await }
     });
     let weaknesses = weak_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
     let weak_text = if weaknesses.is_empty() { "belum ada".to_string() } else { weaknesses.iter().map(|w| w.topic.clone()).collect::<Vec<_>>().join(", ") };
 
     let email3 = user.email.clone();
-    let lang_id3 = course.id.to_string();
+    let mut selected_lang_for_mission = selected_language;
     let mission_resource = use_resource(move || {
         let u = email3.clone();
-        let l = lang_id3.clone();
+        let l = selected_lang_for_mission();
         async move { get_daily_mission_server(u, l).await }
     });
     let mission = mission_resource.value()().and_then(|r| r.ok());
 
     let email4 = user.email.clone();
-    let lang_id4 = course.id.to_string();
+    let mut selected_lang_for_trend = selected_language;
     let trend_resource = use_resource(move || {
         let u = email4.clone();
-        let l = lang_id4.clone();
+        let l = selected_lang_for_trend();
         async move { get_weakness_analytics_server(u, l, 1).await }
     });
     let trend = trend_resource.value()().and_then(|r| r.ok()).and_then(|v| v.into_iter().next());
@@ -73,10 +99,10 @@ pub fn Dashboard() -> Element {
     };
 
     let email5 = user.email.clone();
-    let lang_id5 = course.id.to_string();
+    let mut selected_lang_for_skill = selected_language;
     let skill_progress_resource = use_resource(move || {
         let u = email5.clone();
-        let l = lang_id5.clone();
+        let l = selected_lang_for_skill();
         async move { get_skill_progress_7d_server(u, l).await }
     });
     let skill_points = skill_progress_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
@@ -105,8 +131,8 @@ pub fn Dashboard() -> Element {
                         }
                         select {
                             class: "px-3 py-2 rounded-lg border border-slate-700 bg-slate-950 text-sm text-slate-200",
-                            value: "{selected_language}",
-                            onchange: move |e| selected_language.set(e.value()),
+                            value: "{selected_language()}",
+                            onchange: move |e| handle_language_change(e.value()),
                             for c in LANGUAGE_COURSES {
                                 option { value: "{c.id}", "{c.flag} {c.id}" }
                             }
@@ -172,12 +198,12 @@ pub fn Dashboard() -> Element {
                 }
 
                 div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
-                    Link { to: Route::Lesson { language: course.id.to_string(), level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-orange-400/50 transition", h3 { class: "font-bold text-orange-300", "Lesson" } p { class: "text-xs text-slate-400 mt-1", "Belajar materi terstruktur." } }
-                    Link { to: Route::Quiz { language: course.id.to_string(), level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-teal-400/50 transition", h3 { class: "font-bold text-teal-300", "Quiz" } p { class: "text-xs text-slate-400 mt-1", "Latihan soal + evaluasi." } }
-                    Link { to: Route::ChatRoleplay { language: course.id.to_string(), level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-indigo-400/50 transition", h3 { class: "font-bold text-indigo-300", "Chat AI" } p { class: "text-xs text-slate-400 mt-1", "Simulasi percakapan." } }
-                    Link { to: Route::WeaknessPractice { language: course.id.to_string(), level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-amber-400/50 transition", h3 { class: "font-bold text-amber-300", "Practice Weakness" } p { class: "text-xs text-slate-400 mt-1", "Fokus topik paling lemah." } }
-                    Link { to: Route::WeaknessAnalytics { language: course.id.to_string() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-fuchsia-400/50 transition", h3 { class: "font-bold text-fuchsia-300", "Weakness Analytics" } p { class: "text-xs text-slate-400 mt-1", "Lihat tren kelemahan." } }
-                    Link { to: Route::FlashcardReview { language: course.id.to_string() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-emerald-400/50 transition", h3 { class: "font-bold text-emerald-300", "Flashcard Review" } p { class: "text-xs text-slate-400 mt-1", "Review kartu jatuh tempo." } }
+                    Link { to: Route::Lesson { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-orange-400/50 transition", h3 { class: "font-bold text-orange-300", "Lesson" } p { class: "text-xs text-slate-400 mt-1", "Belajar materi terstruktur." } }
+                    Link { to: Route::Quiz { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-teal-400/50 transition", h3 { class: "font-bold text-teal-300", "Quiz" } p { class: "text-xs text-slate-400 mt-1", "Latihan soal + evaluasi." } }
+                    Link { to: Route::ChatRoleplay { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-indigo-400/50 transition", h3 { class: "font-bold text-indigo-300", "Chat AI" } p { class: "text-xs text-slate-400 mt-1", "Simulasi percakapan." } }
+                    Link { to: Route::WeaknessPractice { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-amber-400/50 transition", h3 { class: "font-bold text-amber-300", "Practice Weakness" } p { class: "text-xs text-slate-400 mt-1", "Fokus topik paling lemah." } }
+                    Link { to: Route::WeaknessAnalytics {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-fuchsia-400/50 transition", h3 { class: "font-bold text-fuchsia-300", "Weakness Analytics" } p { class: "text-xs text-slate-400 mt-1", "Lihat tren kelemahan." } }
+                    Link { to: Route::FlashcardReview {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-emerald-400/50 transition", h3 { class: "font-bold text-emerald-300", "Flashcard Review" } p { class: "text-xs text-slate-400 mt-1", "Review kartu jatuh tempo." } }
                 }
             }
         }

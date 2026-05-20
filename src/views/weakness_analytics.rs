@@ -1,11 +1,12 @@
-use dioxus::prelude::*;
+﻿use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::services::weakness::get_weakness_analytics_server;
 use crate::routes::Route;
+use crate::services::weakness::get_weakness_analytics_server;
 
 #[component]
-pub fn WeaknessAnalytics(language: String) -> Element {
+pub fn WeaknessAnalytics() -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let selected_language = use_context::<Signal<String>>();
     let (user_opt, ready) = session_state();
 
     if !ready {
@@ -16,11 +17,11 @@ pub fn WeaknessAnalytics(language: String) -> Element {
     };
 
     let u = user.email.clone();
-    let l = language.clone();
+    let mut selected_lang_for_analytics = selected_language;
     let analytics = use_resource(move || {
-        let user = u.clone();
-        let lang = l.clone();
-        async move { get_weakness_analytics_server(user, lang, 8).await }
+        let user_email = u.clone();
+        let lang = selected_lang_for_analytics();
+        async move { get_weakness_analytics_server(user_email, lang, 8).await }
     });
 
     let Some(data) = analytics.value()() else {
@@ -31,6 +32,8 @@ pub fn WeaknessAnalytics(language: String) -> Element {
         Ok(v) => v,
         Err(e) => return rsx! { div { class: "p-6 text-rose-400", "Gagal memuat analytics: {e}" } },
     };
+
+    let language = selected_language();
 
     rsx! {
         div { class: "min-h-screen bg-slate-950 text-white p-6 flex items-center justify-center",

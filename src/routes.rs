@@ -9,7 +9,6 @@ use crate::views::chat::ChatRoleplay;
 use crate::views::flashcard_review::FlashcardReview;
 use crate::views::weakness_practice::WeaknessPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
-use crate::views::placement::PlacementTest;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -21,18 +20,16 @@ pub enum Route {
     Register {},
     #[route("/dashboard")]
     Dashboard {},
-    #[route("/lesson/:language/:level/:goal")]
-    Lesson { language: String, level: String, goal: String },
-    #[route("/quiz/:language/:level/:goal")]
-    Quiz { language: String, level: String, goal: String },
-    #[route("/chat/:language/:level/:goal")]
-    ChatRoleplay { language: String, level: String, goal: String },
-    #[route("/review/:language")]
-    FlashcardReview { language: String },
-    #[route("/practice/:language/:level/:goal")]
-    WeaknessPractice { language: String, level: String, goal: String },
-    #[route("/analytics/:language")]
-    WeaknessAnalytics { language: String },
-    #[route("/placement")]
-    PlacementTest {},
+    #[route("/lesson/:level/:goal")]
+    Lesson { level: String, goal: String },
+    #[route("/quiz/:level/:goal")]
+    Quiz { level: String, goal: String },
+    #[route("/chat/:level/:goal")]
+    ChatRoleplay { level: String, goal: String },
+    #[route("/review")]
+    FlashcardReview {},
+    #[route("/practice/:level/:goal")]
+    WeaknessPractice { level: String, goal: String },
+    #[route("/analytics")]
+    WeaknessAnalytics {},
 }
