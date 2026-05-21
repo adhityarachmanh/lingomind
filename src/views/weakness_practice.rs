@@ -10,8 +10,46 @@ const SFX_WRONG: Asset = asset!("/assets/wrong.mp3");
 const SFX_WINNER: Asset = asset!("/assets/winner.mp3");
 
 #[cfg(target_arch = "wasm32")]
+use std::cell::RefCell;
+#[cfg(target_arch = "wasm32")]
+use std::sync::atomic::{AtomicU64, Ordering};
+
+#[cfg(target_arch = "wasm32")]
+thread_local! {
+    static ACTIVE_AUDIO: RefCell<Option<web_sys::HtmlAudioElement>> = const { RefCell::new(None) };
+}
+
+#[cfg(target_arch = "wasm32")]
+static AUDIO_REQUEST_SEQ: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(target_arch = "wasm32")]
+fn stop_speech() {
+    if let Some(window) = web_sys::window() {
+        if let Ok(synth) = window.speech_synthesis() {
+            synth.cancel();
+        }
+    }
+    ACTIVE_AUDIO.with(|audio| {
+        if let Some(a) = audio.borrow_mut().take() {
+            let _ = a.pause();
+            a.set_src("");
+        }
+    });
+    AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn stop_speech() {}
+
+#[cfg(target_arch = "wasm32")]
 fn play_audio_src(src: &str) {
     if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src(src) {
+        ACTIVE_AUDIO.with(|slot| {
+            if let Some(prev) = slot.borrow_mut().take() {
+                let _ = prev.pause();
+            }
+            *slot.borrow_mut() = Some(audio.clone());
+        });
         let _ = audio.play();
     }
 }
@@ -30,9 +68,18 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
         return;
     }
 
+    #[cfg(target_arch = "wasm32")]
+    let request_id = AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
+
     spawn(async move {
         match generate_tts_audio_server(normalized_text.clone(), tts_lang_code.clone(), speed).await {
-            Ok(audio_src) => play_audio_src(&audio_src),
+            Ok(audio_src) => {
+                #[cfg(target_arch = "wasm32")]
+                if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
+                    return;
+                }
+                play_audio_src(&audio_src)
+            }
             Err(_) => {
                 #[cfg(target_arch = "wasm32")]
                 if let Some(window) = web_sys::window() {
@@ -117,11 +164,11 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
 
     if finished() {
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white p-6 flex items-center justify-center",
-                div { class: "max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-6 text-center",
+            div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-center justify-center",
+                div { class: "max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 text-center",
                     h2 { class: "text-2xl font-bold text-emerald-300 mb-2", "Practice Selesai" }
                     p { class: "text-sm text-slate-400 mb-5", "Kamu sudah menyelesaikan practice topik: {weakness_topic}" }
-                    Link { to: Route::Dashboard {}, class: "inline-block bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-5 py-2 rounded font-bold", "Kembali ke Dashboard" }
+                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-5 py-3 rounded font-bold", "Kembali ke Dashboard" }
                 }
             }
         };
@@ -140,17 +187,17 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
         .unwrap_or("en-US");
 
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white p-6 flex items-center justify-center",
-            div { class: "max-w-xl w-full bg-slate-900 border border-slate-800 rounded-xl p-6",
+        div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
+            div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6",
                 p { class: "text-xs text-amber-300 mb-1", "Weakness focus: {weakness_topic}" }
                 p { class: "text-[11px] text-slate-400 mb-3", "Global language: {language} - Level {active_level}" }
                 p { class: "text-xs text-slate-500 mb-4", "Soal {idx() + 1}/{quiz.questions.len()}" }
 
-                div { class: "flex items-start justify-between gap-3 mb-4",
-                    h2 { class: "text-lg font-semibold flex-1", "{current.question}" }
-                    div { class: "flex gap-2",
+                div { class: "flex flex-col gap-3 mb-5",
+                    h2 { class: "text-base sm:text-lg font-semibold leading-relaxed", "{current.question}" }
+                    div { class: "flex flex-wrap items-center gap-2",
                         select {
-                            class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-2 py-1",
+                            class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-3 py-2 min-h-9",
                             value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
                             onchange: move |e| {
                                 let v = e.value();
@@ -167,18 +214,23 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                             option { value: "fast", "Fast" }
                         }
                         button {
-                            class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded text-xs font-semibold",
+                            class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold",
                             onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), current.question.clone(), listen_speed()),
                             "Listen"
+                        }
+                        button {
+                            class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 min-h-9 rounded text-xs font-semibold",
+                            onclick: move |_| stop_speech(),
+                            "Stop"
                         }
                     }
                 }
 
-                div { class: "flex flex-col gap-2 mb-4",
+                div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5",
                     for opt in current.options.clone() {
                         button {
                             class: format!(
-                                "text-left px-4 py-3 rounded border {}",
+                                "text-left px-4 py-3.5 rounded border text-sm sm:text-[15px] leading-relaxed {}",
                                 if selected() == Some(opt.clone()) {
                                     "bg-teal-500/10 border-teal-500"
                                 } else {
@@ -196,18 +248,19 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                 }
 
                 if show_expl() {
-                    div { class: "bg-slate-950 border border-slate-800 rounded p-3 text-sm mb-4",
+                    div { class: "bg-slate-950 border border-slate-800 rounded p-3.5 text-sm mb-5",
                         p { class: "text-slate-300", "Kunci: {current.correct_answer}" }
                         p { class: "text-slate-400 mt-1", "{current.explanation}" }
                     }
                 }
 
-                div { class: "flex justify-end",
+                div { class: "border-t border-slate-800 pt-4",
                     if !show_expl() {
                         button {
-                            class: "bg-teal-500 text-slate-950 px-5 py-2 rounded font-bold disabled:opacity-40",
+                            class: "w-full sm:w-auto sm:ml-auto bg-teal-500 text-slate-950 px-5 py-3 rounded font-bold disabled:opacity-40",
                             disabled: selected().is_none(),
                             onclick: move |_| {
+                                stop_speech();
                                 if selected() != Some(current.correct_answer.clone()) {
                                     play_sfx(SFX_WRONG);
                                     let email_log = user.email.clone();
@@ -231,8 +284,9 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                         }
                     } else if idx() + 1 < quiz.questions.len() {
                         button {
-                            class: "bg-slate-800 hover:bg-slate-700 px-5 py-2 rounded font-bold",
+                            class: "w-full sm:w-auto sm:ml-auto bg-slate-800 hover:bg-slate-700 px-5 py-3 rounded font-bold",
                             onclick: move |_| {
+                                stop_speech();
                                 idx.set(idx() + 1);
                                 selected.set(None);
                                 show_expl.set(false);
@@ -241,8 +295,9 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                         }
                     } else {
                         button {
-                            class: "bg-emerald-500 text-slate-950 px-5 py-2 rounded font-bold",
+                            class: "w-full sm:w-auto sm:ml-auto bg-emerald-500 text-slate-950 px-5 py-3 rounded font-bold",
                             onclick: move |_| {
+                                stop_speech();
                                 play_sfx(SFX_WINNER);
                                 finished.set(true);
                             },

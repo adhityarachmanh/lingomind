@@ -101,9 +101,10 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
         .build()
         .map_err(|e| ServerFnError::new(format!("Gagal menyiapkan HTTP client: {e}")))?;
 
+    let gemini_model = super::model_for_lesson();
     let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        gemini_api_key
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
     );
 
     let prompt = format!(

@@ -2,6 +2,17 @@
 use dioxus::prelude::*;
 use crate::models::chat::{ChatMessage, ChatSessionBootstrap};
 
+fn normalize_setting_value(raw: &str) -> Result<String, ServerFnError> {
+    let normalized = raw.split_whitespace().collect::<Vec<_>>().join(" ");
+    if normalized.is_empty() {
+        return Err(ServerFnError::new("Nama skenario tidak boleh kosong."));
+    }
+    if normalized.chars().count() > 50 {
+        return Err(ServerFnError::new("Nama skenario maksimal 50 karakter."));
+    }
+    Ok(normalized)
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 fn extract_gemini_text(json: &serde_json::Value) -> Option<String> {
     json.get("candidates")
@@ -22,6 +33,7 @@ fn extract_gemini_text(json: &serde_json::Value) -> Option<String> {
 async fn generate_ai_opening_message(
     client_http: &reqwest::Client,
     gemini_api_key: &str,
+    gemini_model: &str,
     language: &str,
     level: &str,
     goal: &str,
@@ -30,8 +42,8 @@ async fn generate_ai_opening_message(
     use serde_json::json;
 
     let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        gemini_api_key
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
     );
     let system_instruction = format!(
         "Anda adalah partner roleplay native untuk bahasa {}. Tugas Anda hanya membuat SATU kalimat pembuka obrolan yang natural untuk skenario {}. \
@@ -116,6 +128,7 @@ async fn refresh_legacy_opening_if_needed(
     pool: &sqlx::PgPool,
     client_http: &reqwest::Client,
     gemini_api_key: &str,
+    gemini_model: &str,
     session_id: i32,
     language: &str,
     level: &str,
@@ -166,6 +179,7 @@ async fn refresh_legacy_opening_if_needed(
     let refreshed = generate_ai_opening_message(
         client_http,
         gemini_api_key,
+        gemini_model,
         language,
         level,
         goal,
@@ -207,11 +221,13 @@ pub async fn send_chat_message_server(
     if trimmed_email.is_empty() {
         return Err(ServerFnError::new("Email pengguna tidak ditemukan."));
     }
+    let normalized_setting = normalize_setting_value(&setting)?;
 
     let pool = super::super::db::get_pool();
 
     let gemini_api_key = std::env::var("GEMINI_API_KEY")
         .map_err(|_| ServerFnError::new("Kunci GEMINI_API_KEY belum dikonfigurasi di file .env!"))?;
+    let gemini_model = super::model_for_chat();
     let client_http = Client::builder()
         .timeout(std::time::Duration::from_secs(25))
         .build()
@@ -227,7 +243,7 @@ pub async fn send_chat_message_server(
     .bind(trimmed_email)
     .bind(&language)
     .bind(&level)
-    .bind(&setting)
+    .bind(&normalized_setting)
     .bind(&goal)
     .fetch_optional(pool)
     .await
@@ -258,12 +274,12 @@ pub async fn send_chat_message_server(
         "Anda adalah partner roleplay penutur asli bahasa {0} di lingkungan '{1}'. User belajar level CEFR {2} dengan goal {3}. \
 Balas utama dalam bahasa {0}, natural, dan sesuai konteks skenario.\n\
 Setelah balasan utama, tambahkan bagian 'Koreksi:' dalam Bahasa Indonesia (maksimal 2 poin ringkas) untuk memperbaiki pesan user terakhir.",
-        language, setting, level, goal
+        language, normalized_setting, level, goal
     );
 
     let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        gemini_api_key
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
     );
 
     let payload = json!({
@@ -327,10 +343,12 @@ pub async fn get_or_create_session_server(
     if trimmed_email.is_empty() {
         return Err(ServerFnError::new("Email pengguna tidak ditemukan."));
     }
+    let normalized_setting = normalize_setting_value(&setting)?;
 
     let pool = super::super::db::get_pool();
     let gemini_api_key = std::env::var("GEMINI_API_KEY")
         .map_err(|_| ServerFnError::new("Kunci GEMINI_API_KEY belum dikonfigurasi di file .env!"))?;
+    let gemini_model = super::model_for_chat();
     let client_http = Client::builder()
         .timeout(std::time::Duration::from_secs(20))
         .build()
@@ -346,7 +364,7 @@ pub async fn get_or_create_session_server(
         .bind(&language)
         .bind(&level)
         .bind(&goal)
-        .bind(&setting)
+        .bind(&normalized_setting)
         .fetch_optional(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal query session: {e}")))?;
@@ -357,11 +375,12 @@ pub async fn get_or_create_session_server(
             pool,
             &client_http,
             &gemini_api_key,
+            &gemini_model,
             id,
             &language,
             &level,
             &goal,
-            &setting,
+            &normalized_setting,
         )
         .await?;
         let messages = fetch_session_history(pool, id, 120).await?;
@@ -377,7 +396,7 @@ pub async fn get_or_create_session_server(
         .bind(&language)
         .bind(&level)
         .bind(&goal)
-        .bind(&setting)
+        .bind(&normalized_setting)
         .fetch_one(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal membuat sesi baru: {e}")))?;
@@ -387,10 +406,11 @@ pub async fn get_or_create_session_server(
     let ai_opening = generate_ai_opening_message(
         &client_http,
         &gemini_api_key,
+        &gemini_model,
         &language,
         &level,
         &goal,
-        &setting,
+        &normalized_setting,
     )
     .await?;
 

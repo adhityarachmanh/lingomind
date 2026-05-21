@@ -1,4 +1,4 @@
-﻿use dioxus::prelude::*;
+use dioxus::prelude::*;
 use crate::models::quiz::QuizContainer;
 use std::collections::{HashMap, HashSet};
 
@@ -512,9 +512,10 @@ pub async fn generate_quiz_server(email: String, language: String, level: String
         .build()
         .map_err(|e| ServerFnError::new(format!("Gagal menyiapkan HTTP client: {e}")))?;
 
+    let gemini_model = super::model_for_quiz();
     let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        gemini_api_key
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
     );
 
     let weakness_context = build_quiz_context(&email, &language).await;
@@ -543,9 +544,10 @@ pub async fn generate_weakness_practice_quiz_server(
         .build()
         .map_err(|e| ServerFnError::new(format!("Gagal menyiapkan HTTP client: {e}")))?;
 
+    let gemini_model = super::model_for_quiz();
     let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        gemini_api_key
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
     );
 
     let weakness_context = build_weakness_context(&email, &language, &weakness_topic).await;

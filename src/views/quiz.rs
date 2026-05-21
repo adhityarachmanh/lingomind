@@ -210,8 +210,8 @@ pub fn Quiz(level: String, goal: String) -> Element {
     if quiz_finished() {
         play_sfx(SFX_WINNER);
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6",
-                div { class: "bg-slate-900 p-8 rounded-xl border border-slate-800 text-center max-w-md w-full shadow-2xl",
+            div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center px-3 py-4 sm:p-6",
+                div { class: "bg-slate-900 p-5 sm:p-8 rounded-xl border border-slate-800 text-center max-w-md w-full shadow-2xl",
                     h2 { class: "text-4xl mb-2", "🎉" }
                     h3 { class: "text-2xl font-bold text-teal-400 mb-1", "Kuis Selesai!" }
                     p { class: "text-slate-400 text-sm mb-6", "Skor Anda berhasil dikirim ke database Neon." }
@@ -219,7 +219,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                         p { class: "text-xs uppercase tracking-widest text-slate-500 font-semibold mb-1", "Tambahan Skor" }
                         p { class: "text-3xl font-black text-white", "+{score_gained} Poin" }
                     }
-                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-700 text-white py-2.5 rounded font-bold transition-colors text-sm", "Kembali ke Dashboard" }
+                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded font-bold transition-colors text-sm", "Kembali ke Dashboard" }
                 }
             }
         };
@@ -240,20 +240,20 @@ pub fn Quiz(level: String, goal: String) -> Element {
         .unwrap_or("en-US");
 
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white p-6 flex items-center justify-center",
-            div { class: "max-w-xl w-full bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-xl",
+        div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
+            div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl",
                 
-                div { class: "flex justify-between items-center border-b border-slate-800 pb-4 mb-6",
+                div { class: "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-3 sm:pb-4 mb-4 sm:mb-6",
                     span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({active_level})" }
                     span { class: "text-xs text-slate-500 font-medium", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
                 }
                 p { class: "text-[11px] text-slate-400 mb-4", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
 
-                div { class: "flex items-start justify-between gap-3 mb-4",
-                    h2 { class: "text-lg font-semibold text-slate-100 leading-relaxed flex-1", "{current_q.question}" }
-                    div { class: "flex flex-col gap-2 shrink-0 items-end",
+                div { class: "flex flex-col gap-3 mb-5",
+                    h2 { class: "text-base sm:text-lg font-semibold text-slate-100 leading-relaxed", "{current_q.question}" }
+                    div { class: "flex flex-wrap items-center gap-2",
                     select {
-                        class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-2 py-1",
+                        class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-3 py-2 min-h-9",
                         value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
                         onchange: move |e| {
                             let v = e.value();
@@ -269,14 +269,14 @@ pub fn Quiz(level: String, goal: String) -> Element {
                         option { value: "normal", "Normal" }
                         option { value: "fast", "Fast" }
                     }
-                    div { class: "flex gap-2",
+                    div { class: "flex flex-wrap gap-2",
                     button {
-                        class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 rounded text-xs font-semibold transition-colors",
+                        class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold transition-colors",
                         onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), tts_question.clone(), listen_speed()),
                         "Listen"
                     }
                     button {
-                        class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 rounded text-xs font-semibold transition-colors",
+                        class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 min-h-9 rounded text-xs font-semibold transition-colors",
                         onclick: move |_| stop_speech(),
                         "Stop"
                     }
@@ -284,12 +284,12 @@ pub fn Quiz(level: String, goal: String) -> Element {
                     }
                 }
 
-                div { class: "flex flex-col gap-3 mb-6",
+                div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5 sm:mb-6",
                     // Lakukan perulangan langsung dari Vec mandiri hasil kloning di atas
                     for option in quiz_options {
                         button {
                             class: format!(
-                                "w-full text-left px-4 py-3 rounded-lg border text-sm transition-all font-medium {}",
+                                "w-full text-left px-4 py-3.5 rounded-lg border text-sm sm:text-[15px] leading-relaxed transition-all font-medium {}",
                                 if selected_option() == Some(option.clone()) {
                                     "bg-teal-500/10 border-teal-500 text-teal-400"
                                 } else {
@@ -307,7 +307,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                 }
 
                 if show_explanation() {
-                    div { class: "bg-slate-950 p-4 rounded-lg border border-slate-800 mb-6 text-sm",
+                    div { class: "bg-slate-950 p-4 rounded-lg border border-slate-800 mb-5 sm:mb-6 text-sm",
                         if selected_option() == Some(correct_ans.clone()) {
                             p { class: "text-emerald-400 font-bold mb-1", "✓ Jawaban Benar!" }
                         } else {
@@ -318,10 +318,10 @@ pub fn Quiz(level: String, goal: String) -> Element {
                     }
                 }
 
-                div { class: "flex justify-end border-t border-slate-800 pt-4",
+                div { class: "border-t border-slate-800 pt-4",
                     if !show_explanation() {
                         button {
-                            class: "bg-teal-500 text-slate-950 font-bold px-6 py-2 rounded text-sm disabled:opacity-50 transition-colors",
+                            class: "w-full sm:w-auto sm:ml-auto bg-teal-500 text-slate-950 font-bold px-6 py-3 rounded text-sm disabled:opacity-50 transition-colors",
                             disabled: selected_option().is_none(),
                             onclick: move |_| {
                                 stop_speech();
@@ -371,7 +371,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                         }
                     } else if current_question_idx() + 1 < quiz_container.questions.len() {
                         button {
-                            class: "bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-2 rounded text-sm transition-colors",
+                            class: "w-full sm:w-auto sm:ml-auto bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded text-sm transition-colors",
                             onclick: move |_| {
                                 stop_speech();
                                 current_question_idx.set(current_question_idx() + 1);
@@ -382,7 +382,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                         }
                     } else {
                         button {
-                            class: "bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-2 rounded text-sm transition-colors shadow-lg",
+                            class: "w-full sm:w-auto sm:ml-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded text-sm transition-colors shadow-lg",
                             onclick: move |_| {
                                 stop_speech();
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
