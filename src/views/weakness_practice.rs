@@ -98,6 +98,27 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
     });
 }
 
+fn format_question_for_display(question: &str) -> Vec<String> {
+    let mut formatted = question
+        .replace("Read the dialogue:", "Read the dialogue:\n")
+        .replace("Read the dialog:", "Read the dialog:\n")
+        .replace("read the dialogue:", "read the dialogue:\n")
+        .replace("read the dialog:", "read the dialog:\n");
+
+    for marker in ["A:", "B:", "C:", "D:", "E:"] {
+        let from = format!(" {marker}");
+        let to = format!("\n{marker}");
+        formatted = formatted.replace(&from, &to);
+    }
+
+    formatted
+        .lines()
+        .map(|line| line.trim())
+        .filter(|line| !line.is_empty())
+        .map(|line| line.to_string())
+        .collect()
+}
+
 #[component]
 pub fn WeaknessPractice(level: String, goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
@@ -180,6 +201,7 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
 
     let current = quiz.questions[idx()].clone();
     let question_text = current.question.clone();
+    let question_lines = format_question_for_display(&current.question);
     let tts_lang_code = LANGUAGE_COURSES
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
@@ -194,7 +216,23 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                 p { class: "text-xs text-slate-500 mb-4", "Soal {idx() + 1}/{quiz.questions.len()}" }
 
                 div { class: "flex flex-col gap-3 mb-5",
-                    h2 { class: "text-base sm:text-lg font-semibold leading-relaxed", "{current.question}" }
+                    h2 { class: "text-base sm:text-lg font-semibold leading-relaxed space-y-1",
+                        for line in question_lines {
+                            p {
+                                class: if line.starts_with("A:")
+                                    || line.starts_with("B:")
+                                    || line.starts_with("C:")
+                                    || line.starts_with("D:")
+                                    || line.starts_with("E:")
+                                {
+                                    "text-slate-200 font-medium"
+                                } else {
+                                    "text-slate-100"
+                                },
+                                "{line}"
+                            }
+                        }
+                    }
                     div { class: "flex flex-wrap items-center gap-2",
                         select {
                             class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-3 py-2 min-h-9",
