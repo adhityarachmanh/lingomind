@@ -47,5 +47,8 @@ To run for a different platform, use the `--platform platform` flag. E.g.
 ```bash
 dx serve --platform desktop
 ```
+```bash
+ssh deploy@ip_vps_kamu "nohup /home/deploy/deploy.sh > /dev/null 2>&1 &"
+```
 
 
