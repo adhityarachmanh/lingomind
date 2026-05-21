@@ -57,10 +57,39 @@ if ($sshKey.StartsWith("~")) {
 }
 $sshKey = $sshKey -replace '^\$HOME', $HOME
 $sshKey = $sshKey -replace '^\$\{HOME\}', $HOME
+$sshKey = $sshKey -replace '/', '\'
 
-if (-not (Test-Path $sshKey)) {
-    throw "SSH key not found: $sshKey"
+function Resolve-ExistingSshKeyPath {
+    param([string]$ConfiguredPath)
+
+    $candidates = @(
+        $ConfiguredPath,
+        "$ConfiguredPath.pem",
+        (Join-Path $HOME ".ssh\lingomind_deploy"),
+        (Join-Path $HOME ".ssh\id_ed25519"),
+        (Join-Path $HOME ".ssh\id_rsa")
+    ) | Select-Object -Unique
+
+    foreach ($candidate in $candidates) {
+        if (-not [string]::IsNullOrWhiteSpace($candidate) -and (Test-Path $candidate)) {
+            return (Resolve-Path $candidate).Path
+        }
+    }
+
+    return $null
 }
+
+$resolvedSshKey = Resolve-ExistingSshKeyPath -ConfiguredPath $sshKey
+if (-not $resolvedSshKey) {
+    $sshDir = Join-Path $HOME ".ssh"
+    $available = @()
+    if (Test-Path $sshDir) {
+        $available = Get-ChildItem $sshDir -File | Where-Object { $_.Name -notlike "*.pub" } | Select-Object -ExpandProperty FullName
+    }
+    $availableText = if ($available.Count -gt 0) { $available -join ", " } else { "(tidak ada private key terdeteksi di ~/.ssh)" }
+    throw "SSH key not found from config path: $sshKey. Available private keys: $availableText"
+}
+$sshKey = $resolvedSshKey
 
 $sshTarget = "$vpsUser@$vpsHost"
 Write-Host "[1/5] Testing SSH connection to $sshTarget"
