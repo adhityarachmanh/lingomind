@@ -14,7 +14,105 @@ fn normalize_markdown_line(line: &str) -> String {
     s
 }
 
+fn is_section_label(label: &str) -> bool {
+    let trimmed = label.trim();
+    !trimmed.is_empty()
+        && trimmed.len() <= 40
+        && trimmed
+            .chars()
+            .all(|c| c.is_alphanumeric() || c.is_whitespace() || c == '/' || c == '-' || c == '_')
+}
+
+fn split_compact_line(line: &str) -> Vec<String> {
+    let normalized = line
+        .replace(". ", ".\n")
+        .replace("! ", "!\n")
+        .replace("? ", "?\n")
+        .replace(": ", ":\n");
+
+    normalized
+        .lines()
+        .map(normalize_markdown_line)
+        .filter(|x| !x.is_empty())
+        .collect()
+}
+
+fn expand_section_lines(content: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    for raw in content.lines() {
+        let base = normalize_markdown_line(raw);
+        if base.is_empty() {
+            continue;
+        }
+        if base.len() > 110 {
+            lines.extend(split_compact_line(&base));
+        } else {
+            lines.push(base);
+        }
+    }
+    lines
+}
+
+fn extract_inline_sections(content: &str) -> Vec<(String, String)> {
+    let mut sections = Vec::new();
+    let mut cursor = 0usize;
+    let mut current_title: Option<String> = None;
+    let mut current_body = String::new();
+
+    while cursor < content.len() {
+        let Some(start_rel) = content[cursor..].find('[') else {
+            break;
+        };
+        let start = cursor + start_rel;
+        let Some(end_rel) = content[start + 1..].find(']') else {
+            break;
+        };
+        let end = start + 1 + end_rel;
+        let label = content[start + 1..end].trim();
+
+        if !is_section_label(label) {
+            cursor = end + 1;
+            continue;
+        }
+
+        if let Some(title) = current_title.take() {
+            sections.push((title, current_body.trim().to_string()));
+            current_body.clear();
+        }
+        current_title = Some(label.to_string());
+
+        let content_start = end + 1;
+        let next_start = content[content_start..]
+            .find('[')
+            .map(|v| content_start + v)
+            .unwrap_or(content.len());
+        let chunk = content[content_start..next_start].trim();
+        if !chunk.is_empty() {
+            if !current_body.is_empty() {
+                current_body.push('\n');
+            }
+            current_body.push_str(chunk);
+        }
+        cursor = next_start;
+    }
+
+    if let Some(title) = current_title {
+        sections.push((title, current_body.trim().to_string()));
+    }
+
+    sections
+}
+
 fn parse_lesson_sections(content: &str) -> Vec<(String, Vec<String>)> {
+    let inline_sections = extract_inline_sections(content);
+    if !inline_sections.is_empty() {
+        return inline_sections
+            .into_iter()
+            .map(|(title, body)| (title, expand_section_lines(&body)))
+            .filter(|(_, lines)| !lines.is_empty())
+            .collect();
+    }
+
     let mut sections: Vec<(String, Vec<String>)> = Vec::new();
     let mut current_title = "Ringkasan".to_string();
     let mut current_lines: Vec<String> = Vec::new();
@@ -34,9 +132,15 @@ fn parse_lesson_sections(content: &str) -> Vec<(String, Vec<String>)> {
             continue;
         }
 
-        let cleaned = normalize_markdown_line(line);
-        if !cleaned.is_empty() {
-            current_lines.push(cleaned);
+        let expanded = if line.len() > 110 {
+            split_compact_line(line)
+        } else {
+            vec![normalize_markdown_line(line)]
+        };
+        for cleaned in expanded {
+            if !cleaned.is_empty() {
+                current_lines.push(cleaned);
+            }
         }
     }
 
@@ -59,7 +163,7 @@ fn split_example(sentence: &str) -> (String, Option<String>) {
 }
 
 #[component]
-pub fn Lesson(level: String, goal: String) -> Element {
+pub fn Lesson(goal: String) -> Element {
     let selected_language = use_context::<Signal<String>>();
     let session_state = use_context::<Signal<(Option<crate::models::user::UserProfile>, bool)>>();
     let (user_opt, _ready) = session_state();
@@ -68,12 +172,13 @@ pub fn Lesson(level: String, goal: String) -> Element {
     let active_level = user_opt
         .as_ref()
         .and_then(|u| u.current_level.get(&language).cloned())
-        .unwrap_or_else(|| level.clone());
+        .unwrap_or_else(|| "A1".to_string());
 
+    let mut lesson_part = use_signal(|| 1_i32);
     let goal_clone = goal.clone();
     let selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
-    let fallback_level = level.clone();
+    let lesson_part_signal = lesson_part;
 
     let lesson_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
@@ -81,12 +186,16 @@ pub fn Lesson(level: String, goal: String) -> Element {
         let lvl = resource_user_opt
             .as_ref()
             .and_then(|u| u.current_level.get(&lang).cloned())
-            .unwrap_or_else(|| fallback_level.clone());
+            .unwrap_or_else(|| "A1".to_string());
+        let part_value = lesson_part_signal();
         let goal_value = goal_clone.clone();
-        async move { generate_lesson_server(lang, lvl, goal_value).await }
+        async move { generate_lesson_server(lang, lvl, goal_value, part_value).await }
     });
 
-    let Some(lesson_result) = lesson_resource.value()() else {
+    let lesson_value = lesson_resource.value()();
+    let is_loading_next_lesson = lesson_resource.pending() && lesson_value.is_some();
+
+    let Some(lesson_result) = lesson_value else {
         return rsx! {
             div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center gap-4",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-orange-400" }
@@ -113,9 +222,16 @@ pub fn Lesson(level: String, goal: String) -> Element {
                     div { class: "flex flex-wrap items-center gap-2 mb-3",
                         span { class: "text-[11px] font-extrabold bg-orange-500/20 text-orange-300 px-3 py-1 rounded-full uppercase tracking-wider", "Materi {language} • {active_level}" }
                         span { class: "text-[11px] font-semibold bg-teal-500/15 text-teal-300 px-3 py-1 rounded-full", "Goal: {goal}" }
+                        span { class: "text-[11px] font-semibold bg-indigo-500/15 text-indigo-300 px-3 py-1 rounded-full", "Bagian {lesson_part}" }
                     }
                     h1 { class: "text-2xl sm:text-3xl font-black text-slate-100 mb-2", "{lesson_data.title}" }
                     p { class: "text-xs text-slate-400", "Bahasa aktif global: " span { class: "text-orange-300 font-semibold", "{selected_language()}" } }
+                    if is_loading_next_lesson {
+                        div { class: "mt-3 inline-flex items-center gap-2 text-xs text-indigo-300 bg-indigo-500/10 border border-indigo-500/30 rounded-lg px-3 py-2",
+                            span { class: "inline-block h-3.5 w-3.5 rounded-full border-2 border-indigo-300 border-t-transparent animate-spin" }
+                            span { "Memuat lesson berikutnya..." }
+                        }
+                    }
                 }
 
                 div { class: "grid grid-cols-1 lg:grid-cols-12 gap-5",
@@ -182,8 +298,18 @@ pub fn Lesson(level: String, goal: String) -> Element {
                         div { class: "bg-slate-900 border border-slate-800 rounded-2xl p-5",
                             p { class: "text-sm text-slate-300 mb-3", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
                             div { class: "space-y-2",
+                                button {
+                                    class: if is_loading_next_lesson {
+                                        "block w-full text-center bg-indigo-400/60 text-white font-bold px-4 py-2.5 rounded-lg cursor-not-allowed"
+                                    } else {
+                                        "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-2.5 rounded-lg transition-colors"
+                                    },
+                                    disabled: is_loading_next_lesson,
+                                    onclick: move |_| lesson_part.set(lesson_part() + 1),
+                                    if is_loading_next_lesson { "Memuat..." } else { "Lesson Selanjutnya" }
+                                }
                                 Link {
-                                    to: Route::Quiz { level: active_level.clone(), goal: goal.clone() },
+                                    to: Route::Quiz { goal: goal.clone() },
                                     class: "block w-full text-center bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold px-4 py-2.5 rounded-lg transition-colors",
                                     "Mulai Quiz"
                                 }

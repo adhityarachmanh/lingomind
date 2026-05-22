@@ -21,15 +21,67 @@ pub enum Route {
     #[route("/dashboard")]
     Dashboard {},
     #[route("/lesson/:level/:goal")]
-    Lesson { level: String, goal: String },
+    LessonLegacy { level: String, goal: String },
+    #[route("/lesson/:goal")]
+    Lesson { goal: String },
     #[route("/quiz/:level/:goal")]
-    Quiz { level: String, goal: String },
+    QuizLegacy { level: String, goal: String },
+    #[route("/quiz/:goal")]
+    Quiz { goal: String },
     #[route("/chat/:level/:goal")]
-    ChatRoleplay { level: String, goal: String },
+    ChatRoleplayLegacy { level: String, goal: String },
+    #[route("/chat/:goal")]
+    ChatRoleplay { goal: String },
     #[route("/review")]
     FlashcardReview {},
     #[route("/practice/:level/:goal")]
-    WeaknessPractice { level: String, goal: String },
+    WeaknessPracticeLegacy { level: String, goal: String },
+    #[route("/practice/:goal")]
+    WeaknessPractice { goal: String },
     #[route("/analytics")]
     WeaknessAnalytics {},
+}
+
+#[component]
+fn LessonLegacy(level: String, goal: String) -> Element {
+    let _ = level;
+    let navigator = use_navigator();
+    use_effect(move || {
+        navigator.replace(Route::Lesson { goal: goal.clone() });
+    });
+
+    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route lesson terbaru..." } }
+}
+
+#[component]
+fn QuizLegacy(level: String, goal: String) -> Element {
+    let _ = level;
+    let navigator = use_navigator();
+    use_effect(move || {
+        navigator.replace(Route::Quiz { goal: goal.clone() });
+    });
+
+    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route quiz terbaru..." } }
+}
+
+#[component]
+fn ChatRoleplayLegacy(level: String, goal: String) -> Element {
+    let _ = level;
+    let navigator = use_navigator();
+    use_effect(move || {
+        navigator.replace(Route::ChatRoleplay { goal: goal.clone() });
+    });
+
+    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route chat terbaru..." } }
+}
+
+#[component]
+fn WeaknessPracticeLegacy(level: String, goal: String) -> Element {
+    let _ = level;
+    let navigator = use_navigator();
+    use_effect(move || {
+        navigator.replace(Route::WeaknessPractice { goal: goal.clone() });
+    });
+
+    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route practice terbaru..." } }
 }

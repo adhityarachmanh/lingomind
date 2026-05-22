@@ -8,6 +8,41 @@ use crate::services::weakness::{get_top_weaknesses_server, get_weakness_analytic
 use crate::services::engagement::get_engagement_stats_server;
 use crate::services::auth::update_preferred_language_server;
 
+fn format_date_id(date: &str) -> String {
+    let parts: Vec<&str> = date.split('-').collect();
+    if parts.len() != 3 {
+        return date.to_string();
+    }
+
+    let year = parts[0];
+    let month = match parts[1].parse::<u8>() {
+        Ok(v) => v,
+        Err(_) => return date.to_string(),
+    };
+    let day = match parts[2].parse::<u8>() {
+        Ok(v) => v,
+        Err(_) => return date.to_string(),
+    };
+
+    let month_name = match month {
+        1 => "Januari",
+        2 => "Februari",
+        3 => "Maret",
+        4 => "April",
+        5 => "Mei",
+        6 => "Juni",
+        7 => "Juli",
+        8 => "Agustus",
+        9 => "September",
+        10 => "Oktober",
+        11 => "November",
+        12 => "Desember",
+        _ => return date.to_string(),
+    };
+
+    format!("{day} {month_name} {year}")
+}
+
 #[component]
 pub fn Dashboard() -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
@@ -178,7 +213,7 @@ pub fn Dashboard() -> Element {
                             for point in skill_points {
                                 div { class: "bg-slate-950 border border-slate-800 rounded p-2.5",
                                     div { class: "flex justify-between text-[11px] text-slate-400 mb-1",
-                                        span { "{point.day}" }
+                                        span { "{format_date_id(&point.day)}" }
                                         span { "G:{point.grammar} • V:{point.vocabulary} • L:{point.listening}" }
                                     }
                                     div { class: "grid grid-cols-3 gap-2",
@@ -198,10 +233,10 @@ pub fn Dashboard() -> Element {
                 }
 
                 div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
-                    Link { to: Route::Lesson { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-orange-400/50 transition", h3 { class: "font-bold text-orange-300", "Lesson" } p { class: "text-xs text-slate-400 mt-1", "Belajar materi terstruktur." } }
-                    Link { to: Route::Quiz { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-teal-400/50 transition", h3 { class: "font-bold text-teal-300", "Quiz" } p { class: "text-xs text-slate-400 mt-1", "Latihan soal + evaluasi." } }
-                    Link { to: Route::ChatRoleplay { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-indigo-400/50 transition", h3 { class: "font-bold text-indigo-300", "Chat AI" } p { class: "text-xs text-slate-400 mt-1", "Simulasi percakapan." } }
-                    Link { to: Route::WeaknessPractice { level: lang_level.clone(), goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-amber-400/50 transition", h3 { class: "font-bold text-amber-300", "Practice Weakness" } p { class: "text-xs text-slate-400 mt-1", "Fokus topik paling lemah." } }
+                    Link { to: Route::Lesson { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-orange-400/50 transition", h3 { class: "font-bold text-orange-300", "Lesson" } p { class: "text-xs text-slate-400 mt-1", "Belajar materi terstruktur." } }
+                    Link { to: Route::Quiz { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-teal-400/50 transition", h3 { class: "font-bold text-teal-300", "Quiz" } p { class: "text-xs text-slate-400 mt-1", "Latihan soal + evaluasi." } }
+                    Link { to: Route::ChatRoleplay { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-indigo-400/50 transition", h3 { class: "font-bold text-indigo-300", "Chat AI" } p { class: "text-xs text-slate-400 mt-1", "Simulasi percakapan." } }
+                    Link { to: Route::WeaknessPractice { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-amber-400/50 transition", h3 { class: "font-bold text-amber-300", "Practice Weakness" } p { class: "text-xs text-slate-400 mt-1", "Fokus topik paling lemah." } }
                     Link { to: Route::WeaknessAnalytics {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-fuchsia-400/50 transition", h3 { class: "font-bold text-fuchsia-300", "Weakness Analytics" } p { class: "text-xs text-slate-400 mt-1", "Lihat tren kelemahan." } }
                     Link { to: Route::FlashcardReview {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-emerald-400/50 transition", h3 { class: "font-bold text-emerald-300", "Flashcard Review" } p { class: "text-xs text-slate-400 mt-1", "Review kartu jatuh tempo." } }
                 }

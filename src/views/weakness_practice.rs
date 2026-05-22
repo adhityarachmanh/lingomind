@@ -1,5 +1,6 @@
 ﻿use dioxus::prelude::*;
 use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::quiz::QuizQuestion;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
 use crate::services::gemini::{generate_tts_audio_server, generate_weakness_practice_quiz_server, sanitize_tts_text};
@@ -98,12 +99,39 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
     });
 }
 
+fn insert_newline_after_marker_case_insensitive(text: &str, marker: &str) -> String {
+    let text_lower = text.to_lowercase();
+    let marker_lower = marker.to_lowercase();
+
+    if let Some(idx) = text_lower.find(&marker_lower) {
+        let split_at = idx + marker.len();
+        let left = text[..split_at].trim_end();
+        let right = text[split_at..].trim_start();
+        format!("{left}\n{right}")
+    } else {
+        text.to_string()
+    }
+}
+
 fn format_question_for_display(question: &str) -> Vec<String> {
     let mut formatted = question
         .replace("Read the dialogue:", "Read the dialogue:\n")
         .replace("Read the dialog:", "Read the dialog:\n")
         .replace("read the dialogue:", "read the dialogue:\n")
         .replace("read the dialog:", "read the dialog:\n");
+
+    for marker in [
+        "based on the context:",
+        "based on context:",
+        "based on the sentence:",
+        "in the context:",
+    ] {
+        formatted = insert_newline_after_marker_case_insensitive(&formatted, marker);
+    }
+
+    formatted = formatted
+        .replace(": '", ":\n'")
+        .replace(": \"", ":\n\"");
 
     for marker in ["A:", "B:", "C:", "D:", "E:"] {
         let from = format!(" {marker}");
@@ -119,8 +147,16 @@ fn format_question_for_display(question: &str) -> Vec<String> {
         .collect()
 }
 
+fn question_audio_text(question: &QuizQuestion) -> String {
+    if question.question_type.eq_ignore_ascii_case("listening") && !question.listen_text.trim().is_empty() {
+        question.listen_text.clone()
+    } else {
+        question.question.clone()
+    }
+}
+
 #[component]
-pub fn WeaknessPractice(level: String, goal: String) -> Element {
+pub fn WeaknessPractice(goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, ready) = session_state();
@@ -137,7 +173,7 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
         .current_level
         .get(&language)
         .cloned()
-        .unwrap_or_else(|| level.clone());
+        .unwrap_or_else(|| "A1".to_string());
 
     let email = user.email.clone();
     let mut selected_lang_for_weakness = selected_language;
@@ -154,7 +190,6 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
 
     let mut selected_lang_for_quiz = selected_language;
     let session_for_level = session_state;
-    let fallback_level = level.clone();
     let topic2 = weakness_topic.clone();
     let email_for_quiz = user.email.clone();
     let quiz_res = use_resource(move || {
@@ -164,7 +199,7 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
         let lv = resource_user_opt
             .as_ref()
             .and_then(|u| u.current_level.get(&l).cloned())
-            .unwrap_or_else(|| fallback_level.clone());
+            .unwrap_or_else(|| "A1".to_string());
         let t = topic2.clone();
         async move { generate_weakness_practice_quiz_server(email_value, l, lv, t).await }
     });
@@ -201,6 +236,8 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
 
     let current = quiz.questions[idx()].clone();
     let question_text = current.question.clone();
+    let is_listening_question = current.question_type.eq_ignore_ascii_case("listening");
+    let tts_question = question_audio_text(&current);
     let question_lines = format_question_for_display(&current.question);
     let tts_lang_code = LANGUAGE_COURSES
         .iter()
@@ -211,7 +248,12 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
             div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6",
-                p { class: "text-xs text-amber-300 mb-1", "Weakness focus: {weakness_topic}" }
+                div { class: "flex flex-wrap items-center gap-2 mb-1",
+                    p { class: "text-xs text-amber-300", "Weakness focus: {weakness_topic}" }
+                    if is_listening_question {
+                        span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full", "Listening Test" }
+                    }
+                }
                 p { class: "text-[11px] text-slate-400 mb-3", "Global language: {language} - Level {active_level}" }
                 p { class: "text-xs text-slate-500 mb-4", "Soal {idx() + 1}/{quiz.questions.len()}" }
 
@@ -226,6 +268,8 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                                     || line.starts_with("E:")
                                 {
                                     "text-slate-200 font-medium"
+                                } else if line.starts_with('\'') || line.starts_with('"') {
+                                    "text-amber-100/90 italic"
                                 } else {
                                     "text-slate-100"
                                 },
@@ -253,7 +297,7 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                         }
                         button {
                             class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold",
-                            onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), current.question.clone(), listen_speed()),
+                            onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), tts_question.clone(), listen_speed()),
                             "Listen"
                         }
                         button {
@@ -262,25 +306,40 @@ pub fn WeaknessPractice(level: String, goal: String) -> Element {
                             "Stop"
                         }
                     }
+                    p { class: "text-[11px] text-slate-500", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
+                    if is_listening_question {
+                        p { class: "text-[11px] text-amber-300/90", "Mode listening aktif: dengarkan audio dulu, kemudian pilih jawaban yang paling sesuai." }
+                    }
                 }
 
                 div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5",
                     for opt in current.options.clone() {
-                        button {
-                            class: format!(
-                                "text-left px-4 py-3.5 rounded border text-sm sm:text-[15px] leading-relaxed {}",
-                                if selected() == Some(opt.clone()) {
-                                    "bg-teal-500/10 border-teal-500"
-                                } else {
-                                    "bg-slate-950 border-slate-800"
+                        {
+                            let opt_for_select = opt.clone();
+                            let opt_for_listen = opt.clone();
+                            rsx! {
+                                div { class: "flex items-stretch gap-2",
+                                    button {
+                                        class: format!(
+                                            "flex-1 text-left px-4 py-3.5 rounded border text-sm sm:text-[15px] leading-relaxed {}",
+                                            if selected() == Some(opt_for_select.clone()) {
+                                                "bg-teal-500/10 border-teal-500"
+                                            } else {
+                                                "bg-slate-950 border-slate-800"
+                                            }
+                                        ),
+                                        disabled: show_expl(),
+                                        onclick: move |_| selected.set(Some(opt_for_select.clone())),
+                                        "{opt}"
+                                    }
+                                    button {
+                                        class: "shrink-0 px-3 py-2 rounded border border-slate-700 bg-slate-900 hover:border-slate-600 text-slate-300 text-xs font-semibold min-w-16",
+                                        disabled: show_expl(),
+                                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), opt_for_listen.clone(), listen_speed()),
+                                        "Listen"
+                                    }
                                 }
-                            ),
-                            disabled: show_expl(),
-                            onclick: move |_| {
-                                selected.set(Some(opt.clone()));
-                                speak_with_edge_or_fallback(tts_lang_code.to_string(), opt.clone(), listen_speed());
-                            },
-                            "{opt}"
+                            }
                         }
                     }
                 }

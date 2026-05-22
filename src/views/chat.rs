@@ -16,7 +16,7 @@ fn normalize_setting_input_for_ui(raw: &str) -> Result<String, String> {
 }
 
 #[component]
-pub fn ChatRoleplay(level: String, goal: String) -> Element {
+pub fn ChatRoleplay(goal: String) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
@@ -25,7 +25,7 @@ pub fn ChatRoleplay(level: String, goal: String) -> Element {
     let active_level = user_opt
         .as_ref()
         .and_then(|u| u.current_level.get(&language).cloned())
-        .unwrap_or_else(|| level.clone());
+        .unwrap_or_else(|| "A1".to_string());
     let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
 
     let mut selected_setting = use_signal(|| None::<String>);

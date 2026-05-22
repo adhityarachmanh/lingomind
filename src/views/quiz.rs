@@ -3,6 +3,7 @@ use dioxus::prelude::*;
 use crate::models::user::UserProfile;
 use crate::models::constants::LANGUAGE_COURSES;
 use crate::models::flashcard::NewFlashcard;
+use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::generate_tts_audio_server;
 use crate::services::gemini::sanitize_tts_text;
@@ -140,7 +141,11 @@ fn classify_weakness_topic(explanation: &str) -> String {
     }
 }
 
-fn classify_skill(question: &str, explanation: &str) -> String {
+fn classify_skill(question: &str, explanation: &str, question_type: &str) -> String {
+    if question_type.eq_ignore_ascii_case("listening") {
+        return "listening".to_string();
+    }
+
     let q = question.to_lowercase();
     let e = explanation.to_lowercase();
     if q.contains("listen") || q.contains("audio") || e.contains("listening") || e.contains("pronunciation") {
@@ -152,12 +157,47 @@ fn classify_skill(question: &str, explanation: &str) -> String {
     }
 }
 
+fn question_audio_text(question: &QuizQuestion) -> String {
+    if question.question_type.eq_ignore_ascii_case("listening") && !question.listen_text.trim().is_empty() {
+        question.listen_text.clone()
+    } else {
+        question.question.clone()
+    }
+}
+
+fn insert_newline_after_marker_case_insensitive(text: &str, marker: &str) -> String {
+    let text_lower = text.to_lowercase();
+    let marker_lower = marker.to_lowercase();
+
+    if let Some(idx) = text_lower.find(&marker_lower) {
+        let split_at = idx + marker.len();
+        let left = text[..split_at].trim_end();
+        let right = text[split_at..].trim_start();
+        format!("{left}\n{right}")
+    } else {
+        text.to_string()
+    }
+}
+
 fn format_question_for_display(question: &str) -> Vec<String> {
     let mut formatted = question
         .replace("Read the dialogue:", "Read the dialogue:\n")
         .replace("Read the dialog:", "Read the dialog:\n")
         .replace("read the dialogue:", "read the dialogue:\n")
         .replace("read the dialog:", "read the dialog:\n");
+
+    for marker in [
+        "based on the context:",
+        "based on context:",
+        "based on the sentence:",
+        "in the context:",
+    ] {
+        formatted = insert_newline_after_marker_case_insensitive(&formatted, marker);
+    }
+
+    formatted = formatted
+        .replace(": '", ":\n'")
+        .replace(": \"", ":\n\"");
 
     for marker in ["A:", "B:", "C:", "D:", "E:"] {
         let from = format!(" {marker}");
@@ -174,7 +214,7 @@ fn format_question_for_display(question: &str) -> Vec<String> {
 }
 
 #[component]
-pub fn Quiz(level: String, goal: String) -> Element {
+pub fn Quiz(goal: String) -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
@@ -182,7 +222,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
     let active_level = user_opt
         .as_ref()
         .and_then(|u| u.current_level.get(&language).cloned())
-        .unwrap_or_else(|| level.clone());
+        .unwrap_or_else(|| "A1".to_string());
 
     let mut current_question_idx = use_signal(|| 0);
     let mut selected_option = use_signal(|| None::<String>);
@@ -193,7 +233,6 @@ pub fn Quiz(level: String, goal: String) -> Element {
 
     let mut selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
-    let fallback_level = level.clone();
 
     let quiz_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
@@ -205,7 +244,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
         let lvl = resource_user_opt
             .as_ref()
             .and_then(|u| u.current_level.get(&lang).cloned())
-            .unwrap_or_else(|| fallback_level.clone());
+            .unwrap_or_else(|| "A1".to_string());
         let goal_value = goal.clone();
         async move { generate_quiz_server(email_value, lang, lvl, goal_value).await }
     });
@@ -253,7 +292,9 @@ pub fn Quiz(level: String, goal: String) -> Element {
     
     // PERBAIKAN LIFETIME: Alokasikan opsi ke dalam Vec mandiri agar umurnya panjang ('static) saat dikonsumsi event onclick
     let quiz_options = current_q.options.clone();
-    let tts_question = current_q.question.clone();
+    let tts_question = question_audio_text(&current_q);
+    let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
+    let question_type_for_skill = current_q.question_type.clone();
     let question_lines = format_question_for_display(&current_q.question);
     let tts_lang_code = LANGUAGE_COURSES
         .iter()
@@ -266,7 +307,12 @@ pub fn Quiz(level: String, goal: String) -> Element {
             div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl",
                 
                 div { class: "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-3 sm:pb-4 mb-4 sm:mb-6",
-                    span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({active_level})" }
+                    div { class: "flex flex-wrap items-center gap-2",
+                        span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({active_level})" }
+                        if is_listening_question {
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full", "Listening Test" }
+                        }
+                    }
                     span { class: "text-xs text-slate-500 font-medium", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
                 }
                 p { class: "text-[11px] text-slate-400 mb-4", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
@@ -282,6 +328,8 @@ pub fn Quiz(level: String, goal: String) -> Element {
                                     || line.starts_with("E:")
                                 {
                                     "text-slate-200 font-medium"
+                                } else if line.starts_with('\'') || line.starts_with('"') {
+                                    "text-amber-100/90 italic"
                                 } else {
                                     "text-slate-100"
                                 },
@@ -320,26 +368,41 @@ pub fn Quiz(level: String, goal: String) -> Element {
                     }
                     }
                     }
+                    p { class: "text-[11px] text-slate-500", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
+                    if is_listening_question {
+                        p { class: "text-[11px] text-amber-300/90", "Mode listening aktif: dengarkan audio terlebih dahulu, lalu pilih jawaban yang paling tepat." }
+                    }
                 }
 
                 div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5 sm:mb-6",
                     // Lakukan perulangan langsung dari Vec mandiri hasil kloning di atas
                     for option in quiz_options {
-                        button {
-                            class: format!(
-                                "w-full text-left px-4 py-3.5 rounded-lg border text-sm sm:text-[15px] leading-relaxed transition-all font-medium {}",
-                                if selected_option() == Some(option.clone()) {
-                                    "bg-teal-500/10 border-teal-500 text-teal-400"
-                                } else {
-                                    "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
+                        {
+                            let option_for_select = option.clone();
+                            let option_for_listen = option.clone();
+                            rsx! {
+                                div { class: "flex items-stretch gap-2",
+                                    button {
+                                        class: format!(
+                                            "flex-1 text-left px-4 py-3.5 rounded-lg border text-sm sm:text-[15px] leading-relaxed transition-all font-medium {}",
+                                            if selected_option() == Some(option_for_select.clone()) {
+                                                "bg-teal-500/10 border-teal-500 text-teal-400"
+                                            } else {
+                                                "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
+                                            }
+                                        ),
+                                        disabled: show_explanation(),
+                                        onclick: move |_| selected_option.set(Some(option_for_select.clone())),
+                                        "{option}"
+                                    }
+                                    button {
+                                        class: "shrink-0 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:border-slate-600 text-slate-300 text-xs font-semibold min-w-16",
+                                        disabled: show_explanation(),
+                                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), option_for_listen.clone(), listen_speed()),
+                                        "Listen"
+                                    }
                                 }
-                            ),
-                            disabled: show_explanation(),
-                            onclick: move |_| {
-                                selected_option.set(Some(option.clone()));
-                                speak_with_edge_or_fallback(tts_lang_code.to_string(), option.clone(), listen_speed());
-                            },
-                            "{option}"
+                            }
                         }
                     }
                 }
@@ -378,7 +441,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                                     score_gained.set(score_gained() + 20);
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();
-                                        let skill = classify_skill(&current_q.question, &explanation_text);
+                                        let skill = classify_skill(&current_q.question, &explanation_text, &question_type_for_skill);
                                         spawn(async move {
                                             let _ = log_skill_progress_server(user.email, lang, skill, true).await;
                                         });
@@ -386,7 +449,7 @@ pub fn Quiz(level: String, goal: String) -> Element {
                                 } else if let Some(user) = user_opt.clone() {
                                     play_sfx(SFX_WRONG);
                                     let topic = classify_weakness_topic(&explanation_text);
-                                    let skill = classify_skill(&current_q.question, &explanation_text);
+                                    let skill = classify_skill(&current_q.question, &explanation_text, &question_type_for_skill);
                                     let note = format!(
                                         "Q: {} | Selected: {} | Correct: {}",
                                         current_q.question,

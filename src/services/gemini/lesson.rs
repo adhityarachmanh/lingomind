@@ -87,7 +87,7 @@ fn is_rich_lesson(lesson: &LessonContainer) -> bool {
 }
 
 #[server(GenerateLesson)]
-pub async fn generate_lesson_server(language: String, level: String, goal: String) -> Result<LessonContainer, ServerFnError> {
+pub async fn generate_lesson_server(language: String, level: String, goal: String, part: i32) -> Result<LessonContainer, ServerFnError> {
     use reqwest::Client;
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -107,19 +107,36 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
         gemini_model, gemini_api_key
     );
 
+    let part_value = part.max(1);
+    let part_note = if part_value <= 1 {
+        "Ini bagian pertama."
+    } else {
+        "Ini materi lanjutan. Hindari mengulang penjelasan inti yang sama persis dengan bagian sebelumnya. Tambahkan variasi pola, konteks, dan contoh berbeda."
+    };
+
     let prompt = format!(
         "Buat satu materi pelajaran KOMPREHENSIF untuk bahasa {} level CEFR {} dengan tujuan belajar: {}.\
+        \n\nSerial materi: Bagian ke-{}. {}\
         \n\nPedoman level:\
         \n- A1/A2: konkret, sederhana, fokus pola dasar.\
         \n- B1/B2: lebih variatif, kontras penggunaan, situasi nyata.\
         \n- C1/C2: nuansa makna, register formal/informal, konteks natural.\
         \n\nKualitas wajib:\
         \n- content harus cukup detail untuk belajar mandiri 10-15 menit.\
-        \n- content tulis dalam Bahasa Indonesia dan pecah jelas dengan label bagian: [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik].\
+        \n- content tulis dalam Bahasa Indonesia.\
+        \n- content WAJIB dipisah rapi dengan format persis seperti ini (label ada di baris sendiri):\
+        \n[Konsep Inti]\
+        \n<isi konsep inti>\
+        \n[Pola]\
+        \n<isi pola>\
+        \n[Kesalahan Umum]\
+        \n<isi kesalahan umum>\
+        \n[Tips Praktik]\
+        \n<isi tips praktik>.\
         \n- vocabulary minimal 8 item relevan topik.\
         \n- example_sentences minimal 8 kalimat; setiap item format: \"<kalimat target> || <arti Indonesia>\".\
         \n- hindari penjelasan terlalu umum.",
-        language, level, goal
+        language, level, goal, part_value, part_note
     );
 
     let mut lesson = request_lesson_from_gemini(&client, &url, prompt).await?;
@@ -127,7 +144,7 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
     if !is_rich_lesson(&lesson) {
         let enrich_prompt = format!(
             "Perbaiki JSON materi berikut agar lebih kaya dan tetap satu topik.\n\
-            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, punya label bagian [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik], vocabulary minimal 8, example_sentences minimal 8 format \"kalimat || arti\".\n\
+            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, label bagian [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik] harus ada dan masing-masing berada di baris sendiri, vocabulary minimal 8, example_sentences minimal 8 format \"kalimat || arti\".\n\
             Kembalikan JSON dengan schema yang sama, tanpa teks lain.\n\
             JSON awal:\n{}",
             serde_json::to_string(&lesson).unwrap_or_default()

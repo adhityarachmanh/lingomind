@@ -22,7 +22,12 @@ fn strip_choice_prefix(input: &str) -> String {
 fn normalize_quiz(mut quiz: QuizContainer) -> QuizContainer {
     for q in &mut quiz.questions {
         q.question = normalize_ws(&q.question);
+        q.listen_text = normalize_ws(&q.listen_text);
         q.explanation = normalize_ws(&q.explanation);
+        q.question_type = match q.question_type.trim().to_lowercase().as_str() {
+            "listening" => "listening".to_string(),
+            _ => "text".to_string(),
+        };
 
         q.options = q
             .options
@@ -41,6 +46,10 @@ fn normalize_quiz(mut quiz: QuizContainer) -> QuizContainer {
         } else {
             q.correct_answer = answer_raw;
         }
+
+        if q.question_type == "text" && q.listen_text.is_empty() {
+            q.listen_text = q.question.clone();
+        }
     }
     quiz
 }
@@ -52,6 +61,7 @@ fn validate_quiz_shape(quiz: &QuizContainer, expected_count: usize, label: &str)
         )));
     }
 
+    let mut listening_count = 0usize;
     for (idx, q) in quiz.questions.iter().enumerate() {
         if q.question.trim().is_empty() {
             return Err(ServerFnError::new(format!(
@@ -98,6 +108,30 @@ fn validate_quiz_shape(quiz: &QuizContainer, expected_count: usize, label: &str)
                 idx + 1
             )));
         }
+
+        let question_type = q.question_type.trim().to_lowercase();
+        if question_type != "text" && question_type != "listening" {
+            return Err(ServerFnError::new(format!(
+                "Format {label} tidak valid: question_type pertanyaan ke-{} harus 'text' atau 'listening'.",
+                idx + 1
+            )));
+        }
+        if question_type == "listening" && q.listen_text.trim().chars().count() < 6 {
+            return Err(ServerFnError::new(format!(
+                "Format {label} tidak valid: listen_text pertanyaan listening ke-{} terlalu singkat/kosong.",
+                idx + 1
+            )));
+        }
+        if question_type == "listening" {
+            listening_count += 1;
+        }
+    }
+
+    let min_listening = if expected_count >= 5 { 2 } else { 1 };
+    if listening_count < min_listening {
+        return Err(ServerFnError::new(format!(
+            "Format {label} tidak valid: minimal {min_listening} soal listening dari {expected_count} soal."
+        )));
     }
 
     Ok(())
@@ -111,7 +145,11 @@ fn tokenize_lower(input: &str) -> HashSet<String> {
         .collect()
 }
 
-fn detect_skill(question: &str, explanation: &str) -> &'static str {
+fn detect_skill(question: &str, explanation: &str, question_type: &str) -> &'static str {
+    if question_type.eq_ignore_ascii_case("listening") {
+        return "listening";
+    }
+
     let q = question.to_lowercase();
     let e = explanation.to_lowercase();
     if q.contains("listen")
@@ -142,6 +180,7 @@ fn quality_issues(
     let mut unique_questions = HashSet::new();
     let mut skill_counts: HashMap<&'static str, usize> = HashMap::new();
     let mut answer_position_counts: HashMap<usize, usize> = HashMap::new();
+    let mut listening_count = 0usize;
 
     for (idx, q) in quiz.questions.iter().enumerate() {
         let q_norm = q.question.trim().to_lowercase();
@@ -165,7 +204,11 @@ fn quality_issues(
             issues.push(format!("Pertanyaan ke-{} mengandung pola opsi ambigu.", idx + 1));
         }
 
-        let skill = detect_skill(&q.question, &q.explanation);
+        if q.question_type.eq_ignore_ascii_case("listening") {
+            listening_count += 1;
+        }
+
+        let skill = detect_skill(&q.question, &q.explanation, &q.question_type);
         *skill_counts.entry(skill).or_insert(0) += 1;
 
         if let Some(pos) = q
@@ -181,6 +224,14 @@ fn quality_issues(
         issues.push("Komposisi skill kurang variatif (minimal 2 skill berbeda).".to_string());
     }
 
+    let min_listening = if expected_count >= 5 { 2 } else { 1 };
+    if listening_count < min_listening {
+        issues.push(format!(
+            "Jumlah soal listening kurang: minimal {} dari {} soal.",
+            min_listening, expected_count
+        ));
+    }
+
     let max_answer_bias = answer_position_counts.values().copied().max().unwrap_or(0);
     if max_answer_bias >= expected_count.saturating_sub(1) && expected_count >= 3 {
         issues.push("Posisi jawaban benar terlalu bias pada pilihan yang sama.".to_string());
@@ -191,7 +242,7 @@ fn quality_issues(
         if !focus_tokens.is_empty() {
             let mut matched = 0usize;
             for q in &quiz.questions {
-                let combined = format!("{} {}", q.question, q.explanation);
+                let combined = format!("{} {} {}", q.question, q.listen_text, q.explanation);
                 let q_tokens = tokenize_lower(&combined);
                 if !focus_tokens.is_disjoint(&q_tokens) {
                     matched += 1;
@@ -235,11 +286,13 @@ async fn request_quiz_from_gemini(
                             "type": "OBJECT",
                             "properties": {
                                 "question": { "type": "STRING" },
+                                "question_type": { "type": "STRING" },
+                                "listen_text": { "type": "STRING" },
                                 "options": { "type": "ARRAY", "items": { "type": "STRING" } },
                                 "correct_answer": { "type": "STRING" },
                                 "explanation": { "type": "STRING" }
                             },
-                            "required": ["question", "options", "correct_answer", "explanation"]
+                            "required": ["question", "question_type", "listen_text", "options", "correct_answer", "explanation"]
                         }
                     }
                 },
@@ -295,10 +348,16 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
         1) Setiap soal 4 opsi, hanya 1 benar.\n\
         2) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         3) Explanation dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
-        4) Variasikan tipe soal: grammar, vocabulary, dan contextual comprehension.\n\
-        5) Pertahankan kosakata sesuai level CEFR.\n\
-        6) Sertakan minimal 1 soal model cloze (isian) dengan placeholder '__'.\n\
-        7) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
+        4) Variasikan tipe soal: grammar, vocabulary, contextual comprehension, dan listening.\n\
+        5) Minimal 2 soal harus bertipe listening.\n\
+        6) Pertahankan kosakata sesuai level CEFR.\n\
+        7) Sertakan minimal 1 soal model cloze (isian) dengan placeholder '__'.\n\
+        8) Gunakan field JSON ini dengan konsisten:\n\
+           - question_type: isi 'listening' atau 'text'.\n\
+           - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
+           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
+           - untuk question_type='text', listen_text boleh diisi string kosong.\n\
+        9) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
         Konteks kelemahan user:\n{}",
         language, level, goal, weakness_context
     )
@@ -313,8 +372,14 @@ fn build_weakness_prompt(language: &str, level: &str, weakness_topic: &str, weak
         1) Semua soal harus fokus pada topik kelemahan di atas.\n\
         2) Kesulitan bertahap: soal 1 mudah, soal 2 menengah, soal 3 menengah+ (masih sesuai level).\n\
         3) Tiap soal 4 opsi, 1 kunci benar.\n\
-        4) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
-        5) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
+        4) Minimal 1 soal harus bertipe listening yang tetap relevan dengan topik kelemahan.\n\
+        5) Gunakan field JSON ini dengan konsisten:\n\
+           - question_type: isi 'listening' atau 'text'.\n\
+           - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).\n\
+           - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
+           - untuk question_type='text', listen_text boleh string kosong.\n\
+        6) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
+        7) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
         language,
         level,
         weakness_topic,
