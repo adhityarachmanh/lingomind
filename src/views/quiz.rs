@@ -5,7 +5,7 @@ use crate::models::constants::LANGUAGE_COURSES;
 use crate::models::flashcard::NewFlashcard;
 use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_quiz_server;
-use crate::services::gemini::generate_tts_audio_server;
+use crate::services::gemini::resolve_tts_lang_code;
 use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::update_user_score;
 use crate::services::engagement::update_engagement_after_quiz_server;
@@ -20,6 +20,10 @@ const SFX_WINNER: Asset = asset!("/assets/winner.mp3");
 use std::cell::RefCell;
 #[cfg(target_arch = "wasm32")]
 use std::sync::atomic::{AtomicU64, Ordering};
+#[cfg(target_arch = "wasm32")]
+use crate::services::gemini::generate_tts_audio_server;
+#[cfg(target_arch = "wasm32")]
+use crate::services::gemini::split_tts_segments;
 
 #[cfg(target_arch = "wasm32")]
 thread_local! {
@@ -86,43 +90,100 @@ fn speak_text(tts_lang_code: &str, text: &str) {
 #[cfg(not(target_arch = "wasm32"))]
 fn speak_text(_tts_lang_code: &str, _text: &str) {}
 
+#[cfg(target_arch = "wasm32")]
+async fn play_edge_audio_segments(
+    segments: Vec<(String, String)>,
+    speed: f32,
+    request_id: u64,
+) -> Result<(), ()> {
+    use gloo_timers::future::TimeoutFuture;
+
+    for (segment_text, segment_lang) in segments {
+        if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
+            return Ok(());
+        }
+
+        let audio_src = generate_tts_audio_server(segment_text, segment_lang, speed)
+            .await
+            .map_err(|_| ())?;
+
+        if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
+            return Ok(());
+        }
+
+        let audio = web_sys::HtmlAudioElement::new_with_src(&audio_src).map_err(|_| ())?;
+        ACTIVE_AUDIO.with(|slot| {
+            if let Some(prev) = slot.borrow_mut().take() {
+                let _ = prev.pause();
+            }
+            *slot.borrow_mut() = Some(audio.clone());
+        });
+        let _ = audio.play();
+
+        loop {
+            if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
+                let _ = audio.pause();
+                return Ok(());
+            }
+            if audio.ended() {
+                break;
+            }
+            TimeoutFuture::new(35).await;
+        }
+    }
+
+    Ok(())
+}
+
 fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) {
     let normalized_text = sanitize_tts_text(&text);
     if normalized_text.is_empty() {
         return;
     }
+    #[cfg(not(target_arch = "wasm32"))]
+    let _ = speed;
+
+    #[cfg(target_arch = "wasm32")]
+    let segments = split_tts_segments(&tts_lang_code, &normalized_text)
+        .into_iter()
+        .map(|seg| (seg.text, seg.lang_code))
+        .collect::<Vec<(String, String)>>();
 
     #[cfg(target_arch = "wasm32")]
     let request_id = AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
 
     spawn(async move {
-        match generate_tts_audio_server(normalized_text.clone(), tts_lang_code.clone(), speed).await {
-            Ok(audio_src) => {
-                #[cfg(target_arch = "wasm32")]
-                if AUDIO_REQUEST_SEQ.load(Ordering::SeqCst) != request_id {
-                    return;
-                }
-                play_audio_src(&audio_src)
+        #[cfg(target_arch = "wasm32")]
+        {
+            if play_edge_audio_segments(segments.clone(), speed, request_id)
+                .await
+                .is_ok()
+            {
+                return;
             }
-            Err(_) => {
-                #[cfg(target_arch = "wasm32")]
-                {
-                    if let Some(window) = web_sys::window() {
-                        if let Ok(synth) = window.speech_synthesis() {
-                            synth.cancel();
-                            if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(&normalized_text) {
-                                utterance.set_lang(&tts_lang_code);
-                                utterance.set_rate(speed);
-                                utterance.set_pitch(1.0);
-                                synth.speak(&utterance);
-                            }
+        }
+
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(window) = web_sys::window() {
+                if let Ok(synth) = window.speech_synthesis() {
+                    synth.cancel();
+                    for (segment_text, segment_lang) in segments {
+                        if let Ok(utterance) =
+                            web_sys::SpeechSynthesisUtterance::new_with_text(&segment_text)
+                        {
+                            utterance.set_lang(&segment_lang);
+                            utterance.set_rate(speed);
+                            utterance.set_pitch(1.0);
+                            synth.speak(&utterance);
                         }
                     }
                 }
-                #[cfg(not(target_arch = "wasm32"))]
-                speak_text(&tts_lang_code, &normalized_text);
             }
         }
+
+        #[cfg(not(target_arch = "wasm32"))]
+        speak_text(&tts_lang_code, &normalized_text);
     });
 }
 
@@ -301,6 +362,7 @@ pub fn Quiz(goal: String) -> Element {
         .find(|course| course.id.eq_ignore_ascii_case(&language))
         .map(|course| course.tts_lang_code)
         .unwrap_or("en-US");
+    let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
 
     rsx! {
         div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
@@ -358,7 +420,7 @@ pub fn Quiz(goal: String) -> Element {
                     div { class: "flex flex-wrap gap-2",
                     button {
                         class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold transition-colors",
-                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), tts_question.clone(), listen_speed()),
+                        onclick: move |_| speak_with_edge_or_fallback(question_tts_lang_code.clone(), tts_question.clone(), listen_speed()),
                         "Listen"
                     }
                     button {
@@ -380,6 +442,7 @@ pub fn Quiz(goal: String) -> Element {
                         {
                             let option_for_select = option.clone();
                             let option_for_listen = option.clone();
+                            let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &option_for_listen);
                             rsx! {
                                 div { class: "flex items-stretch gap-2",
                                     button {
@@ -398,7 +461,7 @@ pub fn Quiz(goal: String) -> Element {
                                     button {
                                         class: "shrink-0 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:border-slate-600 text-slate-300 text-xs font-semibold min-w-16",
                                         disabled: show_explanation(),
-                                        onclick: move |_| speak_with_edge_or_fallback(tts_lang_code.to_string(), option_for_listen.clone(), listen_speed()),
+                                        onclick: move |_| speak_with_edge_or_fallback(option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed()),
                                         "Listen"
                                     }
                                 }

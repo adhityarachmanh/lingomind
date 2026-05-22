@@ -357,9 +357,10 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
            - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
            - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
            - untuk question_type='text', listen_text boleh diisi string kosong.\n\
-        9) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
+        9) Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text wajib ditulis dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
+        10) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
         Konteks kelemahan user:\n{}",
-        language, level, goal, weakness_context
+        language, level, goal, language, weakness_context
     )
 }
 
@@ -378,11 +379,13 @@ fn build_weakness_prompt(language: &str, level: &str, weakness_topic: &str, weak
            - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).\n\
            - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
            - untuk question_type='text', listen_text boleh string kosong.\n\
-        6) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
-        7) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
+        6) Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text wajib ditulis dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
+        7) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
+        8) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
         language,
         level,
         weakness_topic,
+        language,
         if weakness_context.trim().is_empty() {
             "(belum ada catatan detail)"
         } else {
