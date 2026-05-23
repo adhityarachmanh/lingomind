@@ -265,21 +265,28 @@ pub fn Lesson(goal: String) -> Element {
     let sections = parse_lesson_sections(&lesson_data.content);
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-6 pb-24 font-sans",
-            div { class: "max-w-6xl mx-auto mt-4",
-                div { class: "bg-white border border-slate-200 rounded-3xl p-6 sm:p-8 mb-6 shadow-sm",
-                    div { class: "flex flex-wrap items-center gap-3 mb-4",
-                        span { class: "text-[11px] font-bold bg-teal-50 text-teal-700 border border-teal-100 px-3 py-1 rounded-full uppercase tracking-wider", "Materi {language} • {active_level}" }
-                        span { class: "text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100 px-3 py-1 rounded-full", "Goal: {goal}" }
-                        span { class: "text-[11px] font-bold bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1 rounded-full", "Bagian {lesson_part}" }
+        div { class: "min-h-screen bg-white sm:bg-slate-50 text-slate-900 px-0 sm:px-6 py-0 sm:py-8 font-sans pb-24 sm:pb-8",
+            div { class: "max-w-5xl w-full mx-auto bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col min-h-screen sm:min-h-0",
+                
+                // Header (Duolingo style close button on mobile, clean details)
+                div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4",
+                    Link {
+                        to: Route::Dashboard {},
+                        class: "text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors cursor-pointer p-1",
+                        "✕"
                     }
-                    h1 { class: "text-2xl sm:text-4xl font-extrabold text-slate-800 mb-3", "{lesson_data.title}" }
-                    p { class: "text-sm text-slate-500 font-medium", "Bahasa aktif global: " span { class: "text-teal-600 font-bold", "{selected_language()}" } }
+                    div { class: "flex-1",
+                        h1 { class: "text-lg sm:text-2xl font-black text-slate-800 leading-tight", "{lesson_data.title}" }
+                    }
+                }
+
+                // Badges
+                div { class: "flex flex-wrap items-center gap-2 mb-6",
+                    span { class: "text-[10px] font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100", "Materi {language} ({active_level})" }
+                    span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100", "Goal: {goal}" }
+                    span { class: "text-[10px] font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100", "Bagian {lesson_part}" }
                     if is_loading_next_lesson {
-                        div { class: "mt-4 inline-flex items-center gap-2 text-xs font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-2",
-                            span { class: "inline-block h-4 w-4 rounded-full border-2 border-indigo-600 border-t-transparent animate-spin" }
-                            span { "Memuat lesson berikutnya..." }
-                        }
+                        span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100", "Memuat..." }
                     }
                 }
 
@@ -364,14 +371,14 @@ pub fn Lesson(goal: String) -> Element {
                             }
                         }
 
-                        div { class: "bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
+                        div { class: "hidden sm:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
                             p { class: "text-sm font-medium text-slate-600 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
                             div { class: "space-y-3",
                                 button {
                                     class: if is_loading_next_lesson {
                                         "block w-full text-center bg-indigo-100 text-indigo-800 font-bold px-4 py-3 rounded-xl cursor-not-allowed shadow-sm"
                                     } else {
-                                        "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-indigo-500/20"
+                                        "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-indigo-500/20 cursor-pointer"
                                     },
                                     disabled: is_loading_next_lesson,
                                     onclick: move |_| lesson_part.set(lesson_part() + 1),
@@ -389,6 +396,25 @@ pub fn Lesson(goal: String) -> Element {
                                 }
                             }
                         }
+                    }
+                }
+
+                // Sticky Bottom Action Container for Mobile
+                div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-slate-200 z-40 safe-bottom flex gap-3 sm:hidden",
+                    button {
+                        class: if is_loading_next_lesson {
+                            "flex-1 bg-indigo-100 text-indigo-800 font-bold px-4 py-3.5 rounded-2xl text-sm cursor-not-allowed text-center shadow-sm"
+                        } else {
+                            "flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer"
+                        },
+                        disabled: is_loading_next_lesson,
+                        onclick: move |_| lesson_part.set(lesson_part() + 1),
+                        if is_loading_next_lesson { "Memuat..." } else { "Lanjut Belajar" }
+                    }
+                    Link {
+                        to: Route::Quiz { goal: goal.clone() },
+                        class: "flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer",
+                        "Mulai Quiz"
                     }
                 }
             }

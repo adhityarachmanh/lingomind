@@ -1,18 +1,19 @@
-// src/services/auth.rs
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::models::constants::LANGUAGE_COURSES; // Import konstanta global dinamis
+use crate::models::constants::LANGUAGE_COURSES;
 use std::collections::HashMap;
 
-// Mengurung import sqlx dan penunjang server agar tidak dibaca oleh frontend WASM
 #[cfg(not(target_arch = "wasm32"))]
 use sqlx::Row;
+#[cfg(not(target_arch = "wasm32"))]
+use lettre::{
+    transport::smtp::authentication::Credentials,
+    Message, SmtpTransport, Transport,
+};
 
-/// Helper lokal server untuk membangun nilai level awal secara dinamis dari constants
 #[cfg(not(target_arch = "wasm32"))]
 fn generate_default_levels() -> HashMap<String, String> {
     let mut default_map = HashMap::new();
-    // Melakukan iterasi langsung dari konstanta global daftar kursus bahasa
     for course in LANGUAGE_COURSES {
         default_map.insert(course.id.to_string(), "A1".to_string());
     }
@@ -58,7 +59,6 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
     .bind(levels_json)
     .fetch_one(pool)
     .await;
-
     let row = match result {
         Ok(r) => r,
         Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
@@ -208,4 +208,141 @@ pub async fn update_preferred_language_server(email: String, preferred_language:
         score: row.get::<Option<i32>, _>("score").unwrap_or(0),
         current_level: current_level_map,
     })
+}
+
+#[server(SendResetPasswordEmail)]
+pub async fn send_reset_password_email(email: String) -> Result<String, ServerFnError> {
+    let pool = super::db::get_pool();
+    let email_trimmed = email.trim().to_string();
+
+    // 1. Verify if user exists
+    let user_exists = sqlx::query("SELECT email FROM users WHERE email = $1")
+        .bind(&email_trimmed)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?;
+
+    if user_exists.is_none() {
+        return Err(ServerFnError::new("Email tidak terdaftar di sistem kami."));
+    }
+
+    // 2. Generate a secure token
+    let token = uuid::Uuid::new_v4().to_string();
+
+    // 3. Save token in database
+    // Delete any old resets for this email to keep it clean
+    let _ = sqlx::query("DELETE FROM password_resets WHERE email = $1")
+        .bind(&email_trimmed)
+        .execute(pool)
+        .await;
+
+    sqlx::query(
+        "INSERT INTO password_resets (email, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL '1 hour')"
+    )
+    .bind(&email_trimmed)
+    .bind(&token)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal membuat token reset: {}", e)))?;
+
+    // 4. Send email
+    // Check if SMTP configuration is set in .env
+    let smtp_username = std::env::var("SMTP_USERNAME").unwrap_or_else(|_| "lingomindid@gmail.com".to_string());
+    let smtp_password = std::env::var("SMTP_PASSWORD").ok(); // Gmail app password
+
+    let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    let reset_link = format!("{}/reset-password?token={}", app_url, token);
+    
+    let subject = "Reset Password - LingoMind";
+    let body = format!(
+        "Halo,\n\nKami menerima permintaan untuk mereset password akun LingoMind Anda.\n\n\
+        Silakan klik link berikut untuk mereset password Anda (berlaku selama 1 jam):\n\
+        {}\n\n\
+        Jika Anda tidak merasa mengajukan ini, abaikan email ini.\n\n\
+        Salam,\nLingoMind Team",
+        reset_link
+    );
+
+    // If SMTP_PASSWORD is not provided, print to server console and return success
+    if let Some(pwd) = smtp_password {
+        let email_msg = Message::builder()
+            .from(format!("LingoMind <{}>", smtp_username).parse().unwrap())
+            .to(email_trimmed.parse().unwrap())
+            .subject(subject)
+            .body(body)
+            .map_err(|e| ServerFnError::new(format!("Gagal menyusun email: {}", e)))?;
+
+        let creds = Credentials::new(smtp_username.clone(), pwd);
+        let mailer = SmtpTransport::relay("smtp.gmail.com")
+            .unwrap()
+            .credentials(creds)
+            .port(587)
+            .build();
+
+        let mailer_clone = mailer.clone();
+        let email_msg_clone = email_msg.clone();
+        let send_res = tokio::task::spawn_blocking(move || {
+            mailer_clone.send(&email_msg_clone)
+        }).await;
+
+        match send_res {
+            Ok(Ok(_)) => {
+                println!("====== EMAIL RESET SENT TO {} (via SMTP) ======", email_trimmed);
+            }
+            _ => {
+                println!("====== SMTP SEND FAILED! ======");
+                println!("====== RESET LINK FOR {}: {} ======", email_trimmed, reset_link);
+            }
+        }
+    } else {
+        println!("====== SMTP NOT CONFIGURRED IN .env ======");
+        println!("====== RESET LINK FOR {}: {} ======", email_trimmed, reset_link);
+    }
+
+    Ok("Instruksi reset password telah dikirim. Periksa email Anda (atau server console untuk testing).".to_string())
+}
+
+#[server(ResetPasswordServer)]
+pub async fn reset_password_server(token: String, new_password_plain: String) -> Result<String, ServerFnError> {
+    let pool = super::db::get_pool();
+
+    if new_password_plain.len() < 6 {
+        return Err(ServerFnError::new("Password baru minimal harus berukuran 6 karakter."));
+    }
+
+    // 1. Check if token is valid and not expired
+    let row = sqlx::query("SELECT email FROM password_resets WHERE token = $1 AND expires_at > NOW()")
+        .bind(&token)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal memvalidasi token: {}", e)))?;
+
+    let record = match row {
+        Some(r) => r,
+        None => return Err(ServerFnError::new("Token reset tidak valid atau sudah kedaluwarsa.")),
+    };
+
+    let email: String = record.get("email");
+
+    // 2. Hash new password
+    let hashed_password = match bcrypt::hash(&new_password_plain, bcrypt::DEFAULT_COST) {
+        Ok(h) => h,
+        Err(_) => return Err(ServerFnError::new("Gagal memproses keamanan password.")),
+    };
+
+    // 3. Update user password
+    sqlx::query("UPDATE users SET password_hash = $1 WHERE email = $2")
+        .bind(hashed_password)
+        .bind(&email)
+        .execute(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal memperbarui password user: {}", e)))?;
+
+    // 4. Delete token to prevent reuse
+    let _ = sqlx::query("DELETE FROM password_resets WHERE email = $1")
+        .bind(&email)
+        .execute(pool)
+        .await;
+
+    Ok("Password Anda berhasil direset! Silakan login dengan password baru Anda.".to_string())
 }

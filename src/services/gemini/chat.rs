@@ -85,27 +85,7 @@ async fn generate_ai_opening_message(
         "generationConfig": { "temperature": 0.8, "maxOutputTokens": 1024 }
     });
 
-    let response = client_http
-        .post(&url)
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Gagal generate opening AI: {e}")))?;
-
-    let status = response.status();
-    let json_response: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Format JSON opening salah: {e}")))?;
-
-    if !status.is_success() {
-        let error_msg = json_response
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Gemini API mengembalikan status gagal");
-        return Err(ServerFnError::new(format!("Gemini opening error ({}): {}", status, error_msg)));
-    }
+    let json_response = super::gemini_post_with_retry(&client_http, &url, &payload, 3).await?;
 
     extract_gemini_text(&json_response)
         .ok_or_else(|| ServerFnError::new("AI opening kosong. Coba lagi."))
@@ -323,27 +303,7 @@ pub async fn send_chat_message_server(
         "generationConfig": { "temperature": 0.7, "maxOutputTokens": 1024 }
     });
 
-    let response = client_http
-        .post(&url)
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Gagal menghubungi Gemini API: {e}")))?;
-
-    let status = response.status();
-    let json_response: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Format JSON salah: {e}")))?;
-
-    if !status.is_success() {
-        let error_msg = json_response
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Gemini API mengembalikan status gagal");
-        return Err(ServerFnError::new(format!("Gemini API error ({}): {}", status, error_msg)));
-    }
+    let json_response = super::gemini_post_with_retry(&client_http, &url, &payload, 3).await?;
 
     let ai_text = extract_gemini_text(&json_response)
         .ok_or_else(|| ServerFnError::new("AI mengembalikan respons kosong."))?;

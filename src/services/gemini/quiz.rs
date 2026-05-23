@@ -264,6 +264,7 @@ fn quality_score(issues: &[String]) -> i32 {
     (100 - penalty).max(0)
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn request_quiz_from_gemini(
     client: &reqwest::Client,
     url: &str,
@@ -301,27 +302,7 @@ async fn request_quiz_from_gemini(
         }
     });
 
-    let response = client
-        .post(url)
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Gagal menghubungi jaringan Gemini API: {e}")))?;
-
-    let status = response.status();
-    let json_response: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Format JSON salah: {e}")))?;
-
-    if !status.is_success() {
-        let error_msg = json_response
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Gemini API mengembalikan status gagal");
-        return Err(ServerFnError::new(format!("Gemini API error ({}): {}", status, error_msg)));
-    }
+    let json_response = super::gemini_post_with_retry(client, url, &payload, 3).await?;
 
     let text_content = json_response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
@@ -480,6 +461,7 @@ async fn build_weakness_context(_email: &str, _language: &str, _weakness_topic: 
     String::new()
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn generate_quiz_with_retries(
     client: &reqwest::Client,
     url: &str,

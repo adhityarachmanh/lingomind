@@ -43,10 +43,42 @@ fn format_date_id(date: &str) -> String {
     format!("{day} {month_name} {year}")
 }
 
+fn change_language(
+    new_lang: String,
+    mut selected_language: Signal<String>,
+    user_opt: Option<UserProfile>,
+    mut session_state: Signal<(Option<UserProfile>, bool)>,
+) {
+    let selected = new_lang.trim().to_string();
+    if selected.is_empty() {
+        return;
+    }
+    if !LANGUAGE_COURSES.iter().any(|course| course.id == selected) {
+        return;
+    }
+
+    selected_language.set(selected.clone());
+    if let Some(mut profile) = user_opt {
+        profile.preferred_language = selected.clone();
+        session_state.set((Some(profile.clone()), true));
+
+        let email = profile.email.clone();
+        spawn(async move {
+            if let Ok(updated_profile) = update_preferred_language_server(email, selected).await {
+                session_state.set((Some(updated_profile), true));
+            }
+        });
+    }
+}
+
 #[component]
 pub fn Dashboard() -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let mut selected_language = use_context::<Signal<String>>();
+    let mut is_modal_open = use_signal(|| false);
+    let mut search_query = use_signal(String::new);
+    let mut active_tab = use_signal(|| "All".to_string());
+
     let (user_opt, is_session_ready) = session_state();
 
     if !is_session_ready {
@@ -56,31 +88,7 @@ pub fn Dashboard() -> Element {
         return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex justify-center items-center p-8", div { class: "bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-sm", p { class: "text-slate-600 mb-5 font-medium", "Silakan login terlebih dahulu." } Link { to: Route::Login {}, class: "inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors shadow-sm", "Kembali ke Login" } } } };
     }
 
-    let user_for_language_change = user_opt.clone();
-    let user = user_opt.unwrap();
-    let mut handle_language_change = move |new_lang: String| {
-        let selected = new_lang.trim().to_string();
-        if selected.is_empty() {
-            return;
-        }
-        if !LANGUAGE_COURSES.iter().any(|course| course.id == selected) {
-            return;
-        }
-
-        selected_language.set(selected.clone());
-        if let Some(mut profile) = user_for_language_change.clone() {
-            profile.preferred_language = selected.clone();
-            session_state.set((Some(profile.clone()), true));
-
-            let email = profile.email.clone();
-            let mut session_state_after_save = session_state;
-            spawn(async move {
-                if let Ok(updated_profile) = update_preferred_language_server(email, selected).await {
-                    session_state_after_save.set((Some(updated_profile), true));
-                }
-            });
-        }
-    };
+    let user = user_opt.clone().unwrap();
 
     let selected = selected_language();
     let course = LANGUAGE_COURSES
@@ -171,13 +179,11 @@ pub fn Dashboard() -> Element {
                                 p { class: "text-sm text-slate-600 font-medium", "{course.native_name} - Level {lang_level}" }
                             }
                         }
-                        select {
-                            class: "px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer",
-                            value: "{selected_language()}",
-                            onchange: move |e| handle_language_change(e.value()),
-                            for c in LANGUAGE_COURSES {
-                                option { value: "{c.id}", "{c.flag} {c.id}" }
-                            }
+                        button {
+                            class: "flex items-center gap-2.5 px-4.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 font-bold hover:bg-slate-100 hover:border-slate-300 transition-all focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer shadow-sm",
+                            onclick: move |_| is_modal_open.set(true),
+                            span { "Ubah Bahasa" }
+                            span { class: "text-[10px] text-slate-500", "▼" }
                         }
                     }
                     div { class: "grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6",
@@ -265,6 +271,136 @@ pub fn Dashboard() -> Element {
                     Link { to: Route::WeaknessAnalytics {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-fuchsia-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-fuchsia-500 text-lg group-hover:text-fuchsia-600 transition-colors", "Weakness Analytics" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Lihat tren kelemahan detail." } }
                     Link { to: Route::FlashcardReview {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-rose-500 text-lg group-hover:text-rose-600 transition-colors", "Flashcard Review" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Review {due_count} kartu jatuh tempo." } }
                     Link { to: Route::Leaderboard {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-yellow-400 hover:shadow-md transition-all group sm:col-span-2 lg:col-span-3", h3 { class: "font-bold text-yellow-500 text-lg group-hover:text-yellow-600 transition-colors", "🏆 Leaderboard" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Lihat peringkat poin semua pengguna." } }
+                }
+            }
+            if is_modal_open() {
+                div {
+                    class: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm transition-all duration-300",
+                    onclick: move |_| {
+                        is_modal_open.set(false);
+                        search_query.set(String::new());
+                    },
+                    div {
+                        class: "bg-white w-full max-w-lg rounded-3xl overflow-hidden shadow-2xl flex flex-col max-h-[80vh] border border-slate-100 transition-all transform scale-100",
+                        onclick: move |e| e.stop_propagation(),
+                        
+                        // Header
+                        div {
+                            class: "p-6 pb-4 border-b border-slate-100 flex items-center justify-between",
+                            div {
+                                h3 { class: "text-lg font-extrabold text-slate-900", "Pilih Bahasa Belajar" }
+                                p { class: "text-xs text-slate-500 font-semibold mt-0.5", "Pilih bahasa target untuk materi dan kuis Anda" }
+                            }
+                            button {
+                                class: "w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-500 font-bold transition-colors cursor-pointer",
+                                onclick: move |_| {
+                                    is_modal_open.set(false);
+                                    search_query.set(String::new());
+                                },
+                                "✕"
+                            }
+                        }
+
+                        // Search & Filters
+                        div {
+                            class: "p-6 py-4 bg-slate-50/50 border-b border-slate-100 space-y-3.5",
+                            div {
+                                class: "relative flex items-center",
+                                span {
+                                    class: "absolute left-4 text-slate-400 text-sm pointer-events-none",
+                                    "🔍"
+                                }
+                                input {
+                                    class: "w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 bg-white text-sm text-slate-800 placeholder-slate-400 font-semibold focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all",
+                                    placeholder: "Cari nama bahasa...",
+                                    value: "{search_query()}",
+                                    oninput: move |e| search_query.set(e.value()),
+                                    autofocus: true,
+                                }
+                            }
+                            
+                            // Category tabs
+                            div {
+                                class: "flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none",
+                                for cat in &["All", "Eropa", "Asia", "Amerika", "Timur Tengah"] {
+                                    button {
+                                        class: if active_tab() == *cat {
+                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500 text-white shadow-sm transition-all cursor-pointer"
+                                        } else {
+                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-all cursor-pointer"
+                                        },
+                                        onclick: move |_| active_tab.set(cat.to_string()),
+                                        "{cat}"
+                                    }
+                                }
+                            }
+                        }
+
+                        // Scrollable grid
+                        div {
+                            class: "flex-1 overflow-y-auto p-6 space-y-4 min-h-[250px]",
+                            {
+                                let q = search_query().to_lowercase();
+                                let filtered = LANGUAGE_COURSES.iter().filter(|c| {
+                                    let matches_search = c.id.to_lowercase().contains(&q) || c.native_name.to_lowercase().contains(&q) || c.name.to_lowercase().contains(&q);
+                                    let matches_cat = active_tab() == "All" || c.category == active_tab();
+                                    matches_search && matches_cat
+                                }).collect::<Vec<_>>();
+
+                                if filtered.is_empty() {
+                                    rsx! {
+                                        div {
+                                            class: "flex flex-col items-center justify-center py-12 text-center text-slate-400 space-y-2",
+                                            span { class: "text-3xl", "🗺️" }
+                                            p { class: "text-sm font-bold", "Bahasa tidak ditemukan" }
+                                            p { class: "text-xs opacity-75 max-w-[200px]", "Coba kata kunci lain atau pilih kategori berbeda." }
+                                        }
+                                    }
+                                } else {
+                                    rsx! {
+                                        div {
+                                            class: "grid grid-cols-1 sm:grid-cols-2 gap-3",
+                                            {
+                                                filtered.into_iter().map(|c| {
+                                                    let is_active = c.id == selected_language();
+                                                    let c_id = c.id;
+                                                    let user_opt = user_opt.clone();
+                                                    rsx! {
+                                                        div {
+                                                            key: "{c.id}",
+                                                            class: if is_active {
+                                                                "flex items-center gap-3.5 p-3.5 rounded-2xl border-2 border-teal-500 bg-teal-50/40 text-teal-900 cursor-pointer shadow-sm transition-all"
+                                                            } else {
+                                                                "flex items-center gap-3.5 p-3.5 rounded-2xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition-all"
+                                                            },
+                                                            onclick: move |_| {
+                                                                change_language(
+                                                                    c_id.to_string(),
+                                                                    selected_language,
+                                                                    user_opt.clone(),
+                                                                    session_state,
+                                                                );
+                                                                is_modal_open.set(false);
+                                                                search_query.set(String::new());
+                                                            },
+                                                            div { class: "w-11 h-11 bg-slate-100 rounded-full flex items-center justify-center text-2xl shadow-sm", "{c.flag}" }
+                                                            div {
+                                                                p { class: "text-sm font-bold text-slate-800", "{c.id}" }
+                                                                p { class: "text-xs text-slate-500 font-semibold", "{c.native_name} • {c.category}" }
+                                                            }
+                                                            if is_active {
+                                                                span { class: "ml-auto text-teal-500 font-bold", "✓" }
+                                                            }
+                                                        }
+                                                    }
+                                                })
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

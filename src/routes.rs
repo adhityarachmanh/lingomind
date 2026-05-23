@@ -12,6 +12,8 @@ use crate::views::weakness_practice::WeaknessPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
 use crate::views::roadmap::Roadmap;
 use crate::views::leaderboard::Leaderboard;
+use crate::views::forgot_password::ForgotPassword;
+use crate::views::reset_password::ResetPassword;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -21,6 +23,10 @@ pub enum Route {
     Login {},
     #[route("/register")]
     Register {},
+    #[route("/forgot-password")]
+    ForgotPassword {},
+    #[route("/reset-password?:token")]
+    ResetPassword { token: String },
     #[route("/dashboard")]
     Dashboard {},
     #[route("/roadmap")]

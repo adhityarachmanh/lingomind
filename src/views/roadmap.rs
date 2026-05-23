@@ -248,6 +248,19 @@ pub fn Roadmap() -> Element {
                                 }
                             }
 
+                             button {
+                                class: "w-full p-4 rounded-2xl border border-slate-200 hover:border-teal-400 bg-white hover:bg-teal-50 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
+                                onclick: {
+                                    let t = topic.clone();
+                                    move |_| { navigator.push(Route::ChatRoleplay { goal: t.clone() }); }
+                                },
+                                div { class: "text-2xl", "💬" }
+                                div { class: "text-left",
+                                    h4 { class: "font-bold text-slate-800 group-hover:text-teal-800", "Chat Percakapan" }
+                                    p { class: "text-xs text-slate-500 font-medium", "Simulasi chat interaktif berbasis teks dengan AI" }
+                                }
+                            }
+
                             button {
                                 class: "w-full p-4 rounded-2xl border border-slate-200 hover:border-teal-400 bg-white hover:bg-teal-50 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {

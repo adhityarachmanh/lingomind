@@ -2,6 +2,7 @@
 use dioxus::prelude::*;
 use crate::models::lesson::LessonContainer;
 
+#[cfg(not(target_arch = "wasm32"))]
 async fn request_lesson_from_gemini(
     client: &reqwest::Client,
     url: &str,
@@ -39,27 +40,7 @@ async fn request_lesson_from_gemini(
         }
     });
 
-    let response = client
-        .post(url)
-        .json(&payload)
-        .send()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Gagal menghubungi jaringan Gemini API: {e}")))?;
-
-    let status = response.status();
-    let json_response: serde_json::Value = response
-        .json()
-        .await
-        .map_err(|e| ServerFnError::new(format!("Format JSON salah: {e}")))?;
-
-    if !status.is_success() {
-        let error_msg = json_response
-            .get("error")
-            .and_then(|e| e.get("message"))
-            .and_then(|m| m.as_str())
-            .unwrap_or("Gemini API mengembalikan status gagal");
-        return Err(ServerFnError::new(format!("Gemini API error ({}): {}", status, error_msg)));
-    }
+    let json_response = super::gemini_post_with_retry(client, url, &payload, 3).await?;
 
     let text_content = json_response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
@@ -79,6 +60,7 @@ async fn request_lesson_from_gemini(
         .map_err(|e| ServerFnError::new(format!("Gagal parsing respons lesson: {e}")))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 fn is_rich_lesson(lesson: &LessonContainer) -> bool {
     let content_len = lesson.content.trim().chars().count();
     let vocab_len = lesson.vocabulary.len();

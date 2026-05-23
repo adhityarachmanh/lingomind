@@ -48,3 +48,60 @@ pub use tts::generate_tts_audio_server;
 pub use tts::resolve_tts_lang_code;
 pub use tts::sanitize_tts_text;
 pub use tts::split_tts_segments;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub async fn gemini_post_with_retry(
+    client: &reqwest::Client,
+    url: &str,
+    payload: &serde_json::Value,
+    max_retries: u32,
+) -> Result<serde_json::Value, dioxus::prelude::ServerFnError> {
+    use std::time::Duration;
+    use tokio::time::sleep;
+
+    let mut attempt = 0;
+    loop {
+        attempt += 1;
+        let response = client.post(url).json(payload).send().await;
+
+        match response {
+            Ok(resp) => {
+                let status = resp.status();
+                if status.is_success() {
+                    let json_resp: serde_json::Value = resp
+                        .json()
+                        .await
+                        .map_err(|e| dioxus::prelude::ServerFnError::new(format!("Format JSON salah: {e}")))?;
+                    return Ok(json_resp);
+                } else if status.is_server_error() || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                    if attempt >= max_retries {
+                        return Err(dioxus::prelude::ServerFnError::new(format!(
+                            "Server AI sedang sibuk (Error {}). Silakan coba lagi beberapa saat lagi.",
+                            status
+                        )));
+                    }
+                    let delay = Duration::from_millis(500 * (1 << (attempt - 1))); // Exponential backoff: 500ms, 1s, 2s...
+                    sleep(delay).await;
+                } else {
+                    let json_response: serde_json::Value = resp.json().await.unwrap_or_default();
+                    let error_msg = json_response
+                        .get("error")
+                        .and_then(|e| e.get("message"))
+                        .and_then(|m| m.as_str())
+                        .unwrap_or("Gemini API mengembalikan status gagal");
+                    return Err(dioxus::prelude::ServerFnError::new(format!("Gemini API error ({}): {}", status, error_msg)));
+                }
+            }
+            Err(e) => {
+                if attempt >= max_retries {
+                    return Err(dioxus::prelude::ServerFnError::new(format!(
+                        "Gagal menghubungi server AI setelah {} percobaan. Periksa koneksi internet Anda.",
+                        max_retries
+                    )));
+                }
+                let delay = Duration::from_millis(500 * (1 << (attempt - 1)));
+                sleep(delay).await;
+            }
+        }
+    }
+}

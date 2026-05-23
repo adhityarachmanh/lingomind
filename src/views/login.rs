@@ -57,6 +57,11 @@ pub fn Login() -> Element {
         div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center p-6 font-sans",
             div { class: "bg-white p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 text-center",
                 
+                img {
+                    src: asset!("/assets/logo.png"),
+                    alt: "LingoMind Logo",
+                    class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100",
+                }
                 h2 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Welcome Back" }
                 p { class: "text-slate-500 text-sm mb-6 font-medium", "Learn English & German powered by Gemini AI" }
                 
@@ -81,7 +86,14 @@ pub fn Login() -> Element {
 
                 // Input Password
                 div { class: "mb-6 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Password" }
+                    div { class: "flex justify-between items-center mb-2",
+                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider", "Password" }
+                        Link {
+                            to: Route::ForgotPassword {},
+                            class: "text-[11px] font-bold text-teal-600 hover:underline",
+                            "Lupa Password?"
+                        }
+                    }
                     div { class: "relative flex items-center",
                         input {
                             r#type: if show_password() { "text" } else { "password" },

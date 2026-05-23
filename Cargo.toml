@@ -26,6 +26,8 @@ dotenvy = "0.15" # Untuk membaca file .env di server
 sqlx = { version = "0.8", features = ["postgres", "runtime-tokio-native-tls", "macros"] } # Database Neon Postgres
 tokio = { version = "1", features = ["full"] } # Menggunakan "1" agar otomatis menarik versi 1.x terbaru
 bcrypt = "0.15"
+lettre = { version = "0.11", features = ["tokio1", "tokio1-native-tls"] }
+uuid = { version = "1.0", features = ["v4"] }
 
 [features]
 default = ["web"]

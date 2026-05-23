@@ -76,6 +76,11 @@ pub fn Register() -> Element {
         div { class: "min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-center items-center p-6",
             div { class: "bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center",
                 
+                img {
+                    src: asset!("/assets/logo.png"),
+                    alt: "LingoMind Logo",
+                    class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100",
+                }
                 h2 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Join LingoMind" }
                 p { class: "text-slate-500 font-medium text-sm mb-6", "Create an account to track your study scores" }
                 

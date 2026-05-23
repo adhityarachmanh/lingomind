@@ -361,6 +361,15 @@ fn voice_from_lang(lang_code: &str) -> &'static str {
         l if l.starts_with("es") => "es-ES-ElviraNeural",
         l if l.starts_with("it") => "it-IT-ElsaNeural",
         l if l.starts_with("pt-BR") => "pt-BR-FranciscaNeural",
+        l if l.starts_with("ru") => "ru-RU-SvetlanaNeural",
+        l if l.starts_with("nl") => "nl-NL-ColetteNeural",
+        l if l.starts_with("vi") => "vi-VN-HoaiMyNeural",
+        l if l.starts_with("th") => "th-TH-AcharaNeural",
+        l if l.starts_with("sv") => "sv-SE-SofieNeural",
+        l if l.starts_with("pl") => "pl-PL-ZofiaNeural",
+        l if l.starts_with("da") => "da-DK-ChristelNeural",
+        l if l.starts_with("fi") => "fi-FI-SelmaNeural",
+        l if l.starts_with("nb") || l.starts_with("no") => "nb-NO-PernilleNeural",
         _ => "en-US-AriaNeural",
     }
 }
