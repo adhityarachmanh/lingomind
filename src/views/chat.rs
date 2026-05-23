@@ -35,14 +35,14 @@ pub fn ChatRoleplay(goal: String) -> Element {
     let mut is_loading = use_signal(|| false);
     let mut error_msg = use_signal(|| None::<String>);
     let mut custom_setting_input = use_signal(String::new);
-    let mut custom_settings = use_signal(Vec::<String>::new);
+    let custom_settings = use_signal(Vec::<String>::new);
 
     let user_for_setup = email.clone();
     let lang_for_setup = language.clone();
     let lvl_for_setup = active_level.clone();
     let goal_for_setup = goal.clone();
 
-    let mut handle_select_setting = move |setting: String| {
+    let handle_select_setting = move |setting: String| {
         let user = user_for_setup.clone();
         let lang = lang_for_setup.clone();
         let lvl = lvl_for_setup.clone();

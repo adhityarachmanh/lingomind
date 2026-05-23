@@ -14,6 +14,7 @@ use crate::views::roadmap::Roadmap;
 use crate::views::leaderboard::Leaderboard;
 use crate::views::forgot_password::ForgotPassword;
 use crate::views::reset_password::ResetPassword;
+use crate::views::guide::Guide;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -57,6 +58,8 @@ pub enum Route {
     WeaknessAnalytics {},
     #[route("/leaderboard")]
     Leaderboard {},
+    #[route("/guide")]
+    Guide {},
 }
 
 #[component]

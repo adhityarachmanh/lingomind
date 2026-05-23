@@ -73,8 +73,8 @@ fn change_language(
 
 #[component]
 pub fn Dashboard() -> Element {
-    let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
-    let mut selected_language = use_context::<Signal<String>>();
+    let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let selected_language = use_context::<Signal<String>>();
     let mut is_modal_open = use_signal(|| false);
     let mut search_query = use_signal(String::new);
     let mut active_tab = use_signal(|| "All".to_string());
@@ -98,7 +98,7 @@ pub fn Dashboard() -> Element {
 
     let lang_level = user.current_level.get(course.id).cloned().unwrap_or_else(|| "A1".to_string());
     let email = user.email.clone();
-    let mut selected_lang_for_resources = selected_language;
+    let selected_lang_for_resources = selected_language;
 
     let due_resource = use_resource(move || {
         let u = email.clone();
@@ -108,7 +108,7 @@ pub fn Dashboard() -> Element {
     let due_count = due_resource.value()().and_then(|r| r.ok()).unwrap_or(0);
 
     let email2 = user.email.clone();
-    let mut selected_lang_for_weak = selected_language;
+    let selected_lang_for_weak = selected_language;
     let weak_resource = use_resource(move || {
         let u = email2.clone();
         let l = selected_lang_for_weak();
@@ -118,7 +118,7 @@ pub fn Dashboard() -> Element {
     let weak_text = if weaknesses.is_empty() { "belum ada".to_string() } else { weaknesses.iter().map(|w| w.topic.clone()).collect::<Vec<_>>().join(", ") };
 
     let email3 = user.email.clone();
-    let mut selected_lang_for_mission = selected_language;
+    let selected_lang_for_mission = selected_language;
     let mission_resource = use_resource(move || {
         let u = email3.clone();
         let l = selected_lang_for_mission();
@@ -127,7 +127,7 @@ pub fn Dashboard() -> Element {
     let mission = mission_resource.value()().and_then(|r| r.ok());
 
     let email4 = user.email.clone();
-    let mut selected_lang_for_trend = selected_language;
+    let selected_lang_for_trend = selected_language;
     let trend_resource = use_resource(move || {
         let u = email4.clone();
         let l = selected_lang_for_trend();
@@ -142,7 +142,7 @@ pub fn Dashboard() -> Element {
     };
 
     let email5 = user.email.clone();
-    let mut selected_lang_for_skill = selected_language;
+    let selected_lang_for_skill = selected_language;
     let skill_progress_resource = use_resource(move || {
         let u = email5.clone();
         let l = selected_lang_for_skill();
@@ -321,13 +321,13 @@ pub fn Dashboard() -> Element {
                             
                             // Category tabs
                             div {
-                                class: "flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none",
+                                class: "flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full",
                                 for cat in &["All", "Eropa", "Asia", "Amerika", "Timur Tengah"] {
                                     button {
                                         class: if active_tab() == *cat {
-                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500 text-white shadow-sm transition-all cursor-pointer"
+                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500 text-white shadow-sm transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
                                         } else {
-                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-all cursor-pointer"
+                                            "px-3.5 py-1.5 rounded-full text-xs font-bold bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:text-slate-800 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
                                         },
                                         onclick: move |_| active_tab.set(cat.to_string()),
                                         "{cat}"

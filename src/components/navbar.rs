@@ -18,6 +18,7 @@ pub fn Navbar() -> Element {
     let is_roadmap = matches!(current_route, Route::Roadmap {});
     let is_leaderboard = matches!(current_route, Route::Leaderboard {});
     let is_analytics = matches!(current_route, Route::WeaknessAnalytics {});
+    let is_guide = matches!(current_route, Route::Guide {});
 
     let tab_class = |active: bool| -> &'static str {
         if active {
@@ -62,6 +63,11 @@ pub fn Navbar() -> Element {
                                 to: Route::WeaknessAnalytics {}, 
                                 class: format_args!("text-sm font-bold transition-colors {}", if is_analytics { "text-teal-600" } else { "text-slate-600 hover:text-teal-600" }),
                                 "Analisis" 
+                            }
+                            Link { 
+                                to: Route::Guide {}, 
+                                class: format_args!("text-sm font-bold transition-colors {}", if is_guide { "text-teal-600" } else { "text-slate-600 hover:text-teal-600" }),
+                                "Panduan" 
                             }
                             div { class: "px-3 py-1.5 rounded-xl border border-amber-200 bg-amber-50 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1", 
                                 span { "🔥" }
@@ -118,6 +124,12 @@ pub fn Navbar() -> Element {
                     class: tab_class(is_analytics),
                     span { class: "text-xl", "📊" }
                     span { "Analisis" }
+                }
+                Link {
+                    to: Route::Guide {},
+                    class: tab_class(is_guide),
+                    span { class: "text-xl", "📖" }
+                    span { "Panduan" }
                 }
                 button {
                     class: "flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-600 transition-all py-1.5 rounded-2xl flex-1 text-xs font-semibold cursor-pointer",

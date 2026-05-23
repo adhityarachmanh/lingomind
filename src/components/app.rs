@@ -6,7 +6,9 @@ use crate::routes::Route;
 
 const FAVICON: Asset = asset!("/assets/logo.png");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
+#[allow(dead_code)]
 const LOCAL_STORAGE_KEY: &str = "lingomind_user_session";
+#[allow(dead_code)]
 const LEGACY_LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
 
 fn canonical_language_id(input: &str) -> String {
@@ -20,6 +22,7 @@ fn canonical_language_id(input: &str) -> String {
 
 #[component]
 pub fn App() -> Element {
+    #[allow(unused_mut)]
     let mut session_state = use_context_provider(|| {
         let initial_user: Option<UserProfile> = None;
         Signal::new((initial_user, false))

@@ -1,4 +1,5 @@
 // src/services/gemini/lesson.rs
+#![allow(dead_code)]
 use dioxus::prelude::*;
 use crate::models::lesson::LessonContainer;
 
@@ -68,7 +69,7 @@ fn is_rich_lesson(lesson: &LessonContainer) -> bool {
     content_len >= 700 && vocab_len >= 6 && examples_len >= 6
 }
 
-#[server(GenerateLesson)]
+#[server]
 pub async fn generate_lesson_server(language: String, level: String, goal: String, part: i32) -> Result<LessonContainer, ServerFnError> {
     use reqwest::Client;
 

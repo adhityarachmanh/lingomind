@@ -247,7 +247,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
         .unwrap_or_else(|| "A1".to_string());
 
     let email = user.email.clone();
-    let mut selected_lang_for_weakness = selected_language;
+    let selected_lang_for_weakness = selected_language;
     let weakness_res = use_resource(move || {
         let u = email.clone();
         let l = selected_lang_for_weakness();
@@ -259,7 +259,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
     };
     let weakness_topic = weakness_data.ok().flatten().unwrap_or(goal);
 
-    let mut selected_lang_for_quiz = selected_language;
+    let selected_lang_for_quiz = selected_language;
     let session_for_level = session_state;
     let topic2 = weakness_topic.clone();
     let email_for_quiz = user.email.clone();

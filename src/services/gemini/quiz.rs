@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use dioxus::prelude::*;
 use crate::models::quiz::QuizContainer;
 use std::collections::{HashMap, HashSet};
@@ -547,7 +548,7 @@ async fn generate_quiz_with_retries(
     )))
 }
 
-#[server(GenerateQuiz)]
+#[server]
 pub async fn generate_quiz_server(email: String, language: String, level: String, goal: String) -> Result<QuizContainer, ServerFnError> {
     use reqwest::Client;
 
@@ -574,7 +575,7 @@ pub async fn generate_quiz_server(email: String, language: String, level: String
     generate_quiz_with_retries(&client, &url, prompt, 5, "kuis", None).await
 }
 
-#[server(GenerateWeaknessPracticeQuiz)]
+#[server]
 pub async fn generate_weakness_practice_quiz_server(
     email: String,
     language: String,

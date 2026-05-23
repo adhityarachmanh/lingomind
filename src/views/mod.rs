@@ -18,3 +18,4 @@ pub mod roadmap;
 pub mod leaderboard;
 pub mod forgot_password;
 pub mod reset_password;
+pub mod guide;

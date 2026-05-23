@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::goal::UserLanguageGoal;
 
-#[server(SetLanguageGoal)]
+#[server]
 pub async fn set_language_goal_server(email: String, language: String, goal: String) -> Result<(), ServerFnError> {
     let pool = super::db::get_pool();
     sqlx::query("INSERT INTO user_language_goals (email, language, goal, updated_at) VALUES ($1, $2, $3, NOW()) ON CONFLICT (email, language) DO UPDATE SET goal = EXCLUDED.goal, updated_at = NOW()")
@@ -14,7 +14,7 @@ pub async fn set_language_goal_server(email: String, language: String, goal: Str
     Ok(())
 }
 
-#[server(GetLanguageGoals)]
+#[server]
 pub async fn get_language_goals_server(email: String) -> Result<Vec<UserLanguageGoal>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -29,7 +29,7 @@ pub async fn get_language_goals_server(email: String) -> Result<Vec<UserLanguage
     Ok(rows.into_iter().map(|r| UserLanguageGoal { language: r.get("language"), goal: r.get("goal") }).collect())
 }
 
-#[server(GetLanguageGoal)]
+#[server]
 pub async fn get_language_goal_server(email: String, language: String) -> Result<Option<String>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;

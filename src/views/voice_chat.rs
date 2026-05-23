@@ -3,11 +3,11 @@ use dioxus::prelude::*;
 use crate::models::chat::ChatMessage;
 use crate::models::user::UserProfile;
 use crate::models::constants::LANGUAGE_COURSES;
-use crate::routes::Route;
-use crate::services::gemini::{
-    get_or_create_session_server, send_chat_message_server,
-    generate_tts_audio_server, split_tts_segments, resolve_tts_lang_code, sanitize_tts_text
-};
+use crate::services::gemini::{get_or_create_session_server, sanitize_tts_text};
+
+#[cfg(target_arch = "wasm32")]
+use crate::services::gemini::{generate_tts_audio_server, send_chat_message_server, split_tts_segments};
+
 
 #[cfg(target_arch = "wasm32")]
 use std::cell::RefCell;
@@ -172,7 +172,7 @@ pub fn VoiceChat(goal: String) -> Element {
         }
     };
 
-    let mut start_voice_session = move |setting: String| {
+    let start_voice_session = move |setting: String| {
         let user = user_for_setup.clone();
         let lang = lang_for_setup.clone();
         let lvl = lvl_for_setup.clone();
@@ -185,6 +185,7 @@ pub fn VoiceChat(goal: String) -> Element {
         is_loading.set(true);
         voice_status.set("menghubungkan".to_string());
 
+        #[allow(unused_mut)]
         let mut speak_callback = speak_response.clone();
 
         spawn(async move {
@@ -227,11 +228,12 @@ pub fn VoiceChat(goal: String) -> Element {
     };
 
     // Loop Speech Recognition menggunakan eval
+    #[cfg(target_arch = "wasm32")]
     let language_rec = language.clone();
+    #[cfg(target_arch = "wasm32")]
     let active_level_rec = active_level.clone();
+    #[cfg(target_arch = "wasm32")]
     let goal_rec = goal.clone();
-    let _ = &language_rec;
-    let _ = &active_level_rec;
     let _recognition_loop = use_resource(move || {
         #[cfg(target_arch = "wasm32")]
         {
@@ -387,7 +389,7 @@ pub fn VoiceChat(goal: String) -> Element {
     };
 
     let goal_for_hangup = goal.clone();
-    let mut handle_hang_up = move |_| {
+    let handle_hang_up = move |_| {
         stop_audio_playback();
         #[cfg(target_arch = "wasm32")]
         {
@@ -539,14 +541,7 @@ pub fn VoiceChat(goal: String) -> Element {
         _ => "Menunggu..."
     };
 
-    let circle_color_class = match current_status.as_str() {
-        "menghubungkan" => "border-indigo-500 shadow-indigo-500/20 bg-indigo-950/20",
-        "mendengarkan" => "border-emerald-500 shadow-emerald-500/30 animate-pulse bg-emerald-950/30",
-        "berpikir" => "border-amber-500 shadow-amber-500/20 bg-amber-950/20",
-        "berbicara" => "border-teal-500 shadow-teal-500/40 bg-teal-950/30",
-        "muted" => "border-rose-500 shadow-rose-500/15 bg-rose-950/20",
-        _ => "border-slate-800"
-    };
+
 
     rsx! {
         div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between pt-20 pb-8 px-4 md:px-8 font-sans",

@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::weakness::{WeaknessItem, WeaknessAnalyticsItem, SkillProgressPoint};
 
-#[server(LogWeakness)]
+#[server]
 pub async fn log_weakness_server(email: String, language: String, topic: String, note: String) -> Result<(), ServerFnError> {
     if email.trim().is_empty() || language.trim().is_empty() || topic.trim().is_empty() {
         return Err(ServerFnError::new("Data weakness tidak valid."));
@@ -20,7 +20,7 @@ pub async fn log_weakness_server(email: String, language: String, topic: String,
     Ok(())
 }
 
-#[server(GetTopWeaknesses)]
+#[server]
 pub async fn get_top_weaknesses_server(email: String, language: String, limit: i64) -> Result<Vec<WeaknessItem>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -41,7 +41,7 @@ pub async fn get_top_weaknesses_server(email: String, language: String, limit: i
     Ok(rows.into_iter().map(|row| WeaknessItem { topic: row.get("topic"), count: row.get("cnt") }).collect())
 }
 
-#[server(GetWeaknessAnalytics)]
+#[server]
 pub async fn get_weakness_analytics_server(email: String, language: String, limit: i64) -> Result<Vec<WeaknessAnalyticsItem>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -73,7 +73,7 @@ pub async fn get_weakness_analytics_server(email: String, language: String, limi
     }).collect())
 }
 
-#[server(GetPriorityWeakness)]
+#[server]
 pub async fn get_priority_weakness_server(email: String, language: String) -> Result<Option<String>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -100,7 +100,7 @@ pub async fn get_priority_weakness_server(email: String, language: String) -> Re
     Ok(row.map(|r| r.get::<String, _>("topic")))
 }
 
-#[server(LogSkillProgress)]
+#[server]
 pub async fn log_skill_progress_server(email: String, language: String, skill: String, is_correct: bool) -> Result<(), ServerFnError> {
     if email.trim().is_empty() || language.trim().is_empty() || skill.trim().is_empty() {
         return Err(ServerFnError::new("Data progress skill tidak valid."));
@@ -121,7 +121,7 @@ pub async fn log_skill_progress_server(email: String, language: String, skill: S
     Ok(())
 }
 
-#[server(GetSkillProgress7d)]
+#[server]
 pub async fn get_skill_progress_7d_server(email: String, language: String) -> Result<Vec<SkillProgressPoint>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;

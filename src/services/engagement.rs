@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::engagement::UserEngagementStats;
 
-#[server(UpdateEngagementAfterQuiz)]
+#[server]
 pub async fn update_engagement_after_quiz_server(email: String, points_earned: i32) -> Result<(), ServerFnError> {
     let pool = super::db::get_pool();
     sqlx::query(
@@ -33,7 +33,7 @@ pub async fn update_engagement_after_quiz_server(email: String, points_earned: i
     Ok(())
 }
 
-#[server(GetEngagementStats)]
+#[server]
 pub async fn get_engagement_stats_server(email: String) -> Result<UserEngagementStats, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;

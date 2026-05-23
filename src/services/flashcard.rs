@@ -1,6 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::flashcard::{Flashcard, NewFlashcard};
 
+#[cfg(feature = "server")]
 fn sm2_next(ease_factor: f64, interval_days: i32, repetition: i32, quality: i32) -> (f64, i32, i32) {
     let mut ef = ease_factor + (0.1 - (5 - quality) as f64 * (0.08 + (5 - quality) as f64 * 0.02));
     if ef < 1.3 {
@@ -23,10 +24,8 @@ fn sm2_next(ease_factor: f64, interval_days: i32, repetition: i32, quality: i32)
     (ef, new_interval.max(1), new_repetition)
 }
 
-#[server(AddFlashcards)]
+#[server]
 pub async fn add_flashcards_server(email: String, cards: Vec<NewFlashcard>) -> Result<(), ServerFnError> {
-    #[cfg(not(target_arch = "wasm32"))]
-    use sqlx::Row;
 
     if email.trim().is_empty() {
         return Err(ServerFnError::new("User tidak valid."));
@@ -54,7 +53,7 @@ pub async fn add_flashcards_server(email: String, cards: Vec<NewFlashcard>) -> R
     Ok(())
 }
 
-#[server(GetDueFlashcards)]
+#[server]
 pub async fn get_due_flashcards_server(email: String, language: String, limit: i64) -> Result<Vec<Flashcard>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -89,7 +88,7 @@ pub async fn get_due_flashcards_server(email: String, language: String, limit: i
     Ok(cards)
 }
 
-#[server(GetDueFlashcardCount)]
+#[server]
 pub async fn get_due_flashcard_count_server(email: String, language: String) -> Result<i64, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -107,7 +106,7 @@ pub async fn get_due_flashcard_count_server(email: String, language: String) -> 
     Ok(row.get("cnt"))
 }
 
-#[server(ReviewFlashcard)]
+#[server]
 pub async fn review_flashcard_server(card_id: i32, quality: i32) -> Result<(), ServerFnError> {
     if !(0..=5).contains(&quality) {
         return Err(ServerFnError::new("Quality review harus 0..5."));

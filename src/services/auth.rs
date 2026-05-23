@@ -1,17 +1,20 @@
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
+
+#[cfg(feature = "server")]
 use crate::models::constants::LANGUAGE_COURSES;
+#[cfg(feature = "server")]
 use std::collections::HashMap;
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "server")]
 use sqlx::Row;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "server")]
 use lettre::{
     transport::smtp::authentication::Credentials,
     Message, SmtpTransport, Transport,
 };
 
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "server")]
 fn generate_default_levels() -> HashMap<String, String> {
     let mut default_map = HashMap::new();
     for course in LANGUAGE_COURSES {
@@ -20,6 +23,7 @@ fn generate_default_levels() -> HashMap<String, String> {
     default_map
 }
 
+#[cfg(feature = "server")]
 fn is_valid_email(email: &str) -> bool {
     let trimmed = email.trim();
     let mut parts = trimmed.split('@');
@@ -29,7 +33,7 @@ fn is_valid_email(email: &str) -> bool {
 }
 
 /// Fungsi Server untuk Mendaftarkan Pengguna Baru
-#[server(RegisterUser)]
+#[server]
 pub async fn register_user(full_name: String, email: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
@@ -82,7 +86,7 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
 }
 
 /// Fungsi Server untuk Masuk Log (Login) Kontrol Password
-#[server(LoginUser)]
+#[server]
 pub async fn login_user(email: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
     if !is_valid_email(&email) {
@@ -125,7 +129,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
 }
 
 /// Fungsi Server untuk Memperbarui Skor & Evaluasi Naik Level Spesifik per Bahasa setelah Kuis Selesai
-#[server(UpdateUserScore)]
+#[server]
 pub async fn update_user_score(email: String, language: String, score_delta: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
@@ -141,16 +145,20 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     let mut level_map: HashMap<String, String> = serde_json::from_value(raw_level)
         .unwrap_or_else(|_| generate_default_levels());
 
-    // 2. Evaluasi level baru HANYA untuk kunci bahasa yang sedang dikerjakan kuisnya
-    let current_lang_level = level_map.get(&language).cloned().unwrap_or_else(|| "A1".to_string());
-    let mut calculated_level = current_lang_level;
+    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1".to_string());
 
-    if final_score >= 300 {
-        calculated_level = "B1".to_string();
-    } else if final_score >= 100 {
-        calculated_level = "A2".to_string();
-    } else {
-        calculated_level = "A1".to_string();
+    // Mastery Flow: Level naik jika user mendapat nilai sempurna di kuis saat ini (5/5 benar = 100 poin).
+    // Ini memisahkan XP global dengan proficiency bahasa, mencegah bug lintas bahasa.
+    let mut calculated_level = current_user_level_for_lang.clone();
+    if score_delta >= 100 {
+        calculated_level = match current_user_level_for_lang.as_str() {
+            "A1" => "A2".to_string(),
+            "A2" => "B1".to_string(),
+            "B1" => "B2".to_string(),
+            "B2" => "C1".to_string(),
+            "C1" => "C2".to_string(),
+            _ => current_user_level_for_lang,
+        };
     }
 
     // Perbarui entri map bahasa spesifik tersebut
@@ -177,7 +185,7 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     })
 }
 
-#[server(UpdatePreferredLanguage)]
+#[server]
 pub async fn update_preferred_language_server(email: String, preferred_language: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
     let canonical_lang = LANGUAGE_COURSES
@@ -210,7 +218,7 @@ pub async fn update_preferred_language_server(email: String, preferred_language:
     })
 }
 
-#[server(SendResetPasswordEmail)]
+#[server]
 pub async fn send_reset_password_email(email: String) -> Result<String, ServerFnError> {
     let pool = super::db::get_pool();
     let email_trimmed = email.trim().to_string();
@@ -302,7 +310,7 @@ pub async fn send_reset_password_email(email: String) -> Result<String, ServerFn
     Ok("Instruksi reset password telah dikirim. Periksa email Anda (atau server console untuk testing).".to_string())
 }
 
-#[server(ResetPasswordServer)]
+#[server]
 pub async fn reset_password_server(token: String, new_password_plain: String) -> Result<String, ServerFnError> {
     let pool = super::db::get_pool();
 

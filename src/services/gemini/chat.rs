@@ -1,4 +1,5 @@
 // src/services/gemini/chat.rs
+#![allow(dead_code)]
 use dioxus::prelude::*;
 use crate::models::chat::{ChatMessage, ChatSessionBootstrap};
 
@@ -199,7 +200,7 @@ async fn refresh_legacy_opening_if_needed(
     Ok(())
 }
 
-#[server(SendChatMessage)]
+#[server]
 pub async fn send_chat_message_server(
     email: String,
     session_id: i32,
@@ -319,7 +320,7 @@ pub async fn send_chat_message_server(
     fetch_session_history(pool, session_id, 120).await
 }
 
-#[server(GetOrCreateSession)]
+#[server]
 pub async fn get_or_create_session_server(
     email: String,
     language: String,

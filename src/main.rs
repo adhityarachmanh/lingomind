@@ -1,6 +1,3 @@
-// src/main.rs
-use dioxus::prelude::*;
-
 // Deklarasikan semua modul/file terpisah agar dikenali oleh compiler Rust
 pub mod models;
 pub mod services;

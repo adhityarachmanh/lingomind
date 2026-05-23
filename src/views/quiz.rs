@@ -73,24 +73,6 @@ fn play_sfx(src: Asset) {
 }
 
 #[cfg(target_arch = "wasm32")]
-fn speak_text(tts_lang_code: &str, text: &str) {
-    if let Some(window) = web_sys::window() {
-        if let Ok(synth) = window.speech_synthesis() {
-            synth.cancel();
-            if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(text) {
-                utterance.set_lang(tts_lang_code);
-                utterance.set_rate(0.95);
-                utterance.set_pitch(1.0);
-                synth.speak(&utterance);
-            }
-        }
-    }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn speak_text(_tts_lang_code: &str, _text: &str) {}
-
-#[cfg(target_arch = "wasm32")]
 async fn play_edge_audio_segments(
     segments: Vec<(String, String)>,
     speed: f32,
@@ -141,7 +123,7 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
         return;
     }
     #[cfg(not(target_arch = "wasm32"))]
-    let _ = speed;
+    let _ = (tts_lang_code, speed);
 
     #[cfg(target_arch = "wasm32")]
     let segments = split_tts_segments(&tts_lang_code, &normalized_text)
@@ -181,9 +163,6 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
                 }
             }
         }
-
-        #[cfg(not(target_arch = "wasm32"))]
-        speak_text(&tts_lang_code, &normalized_text);
     });
 }
 
@@ -282,7 +261,7 @@ fn format_question_for_display(question: &str) -> Vec<String> {
 
 #[component]
 pub fn Quiz(goal: String) -> Element {
-    let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
     let language = selected_language();
@@ -294,11 +273,11 @@ pub fn Quiz(goal: String) -> Element {
     let mut current_question_idx = use_signal(|| 0);
     let mut selected_option = use_signal(|| None::<String>);
     let mut score_gained = use_signal(|| 0);
-    let mut quiz_finished = use_signal(|| false);
+    let quiz_finished = use_signal(|| false);
     let mut show_explanation = use_signal(|| false);
     let mut listen_speed = use_signal(|| 0.95_f32);
 
-    let mut selected_lang_for_resource = selected_language;
+    let selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
 
     let quiz_resource = use_resource(move || {

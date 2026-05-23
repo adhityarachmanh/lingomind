@@ -92,7 +92,7 @@ pub async fn gemini_post_with_retry(
                     return Err(dioxus::prelude::ServerFnError::new(format!("Gemini API error ({}): {}", status, error_msg)));
                 }
             }
-            Err(e) => {
+            Err(_e) => {
                 if attempt >= max_retries {
                     return Err(dioxus::prelude::ServerFnError::new(format!(
                         "Gagal menghubungi server AI setelah {} percobaan. Periksa koneksi internet Anda.",

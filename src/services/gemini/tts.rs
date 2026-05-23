@@ -1,5 +1,6 @@
+#![allow(dead_code)]
 use dioxus::prelude::*;
-#[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "server")]
 use base64::Engine;
 
 pub fn sanitize_tts_text(text: &str) -> String {
@@ -370,11 +371,18 @@ fn voice_from_lang(lang_code: &str) -> &'static str {
         l if l.starts_with("da") => "da-DK-ChristelNeural",
         l if l.starts_with("fi") => "fi-FI-SelmaNeural",
         l if l.starts_with("nb") || l.starts_with("no") => "nb-NO-PernilleNeural",
+        l if l.starts_with("el") => "el-GR-AthinaNeural",
+        l if l.starts_with("uk") => "uk-UA-PolinaNeural",
+        l if l.starts_with("cs") => "cs-CZ-VlastaNeural",
+        l if l.starts_with("ro") => "ro-RO-AlinaNeural",
+        l if l.starts_with("hu") => "hu-HU-NoemiNeural",
+        l if l.starts_with("fil") => "fil-PH-BlessicaNeural",
+        l if l.starts_with("ms") => "ms-MY-YasminNeural",
         _ => "en-US-AriaNeural",
     }
 }
 
-#[server(GenerateTtsAudio)]
+#[server]
 pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f32) -> Result<String, ServerFnError> {
     #[cfg(target_arch = "wasm32")]
     {

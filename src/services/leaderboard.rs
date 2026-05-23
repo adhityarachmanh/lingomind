@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use crate::models::leaderboard::LeaderboardEntry;
 
-#[server(GetLeaderboard)]
+#[server]
 pub async fn get_leaderboard_server(limit: i32) -> Result<Vec<LeaderboardEntry>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;

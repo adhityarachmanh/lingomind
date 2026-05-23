@@ -2,8 +2,10 @@ use dioxus::prelude::*;
 
 use crate::routes::Route;
 use crate::services::gemini::generate_lesson_server;
-use crate::services::gemini::{generate_tts_audio_server, split_tts_segments};
+#[cfg(target_arch = "wasm32")]
 use crate::models::constants::LANGUAGE_COURSES;
+#[cfg(target_arch = "wasm32")]
+use crate::services::gemini::generate_tts_audio_server;
 
 #[cfg(target_arch = "wasm32")]
 use std::cell::RefCell;
@@ -189,6 +191,7 @@ pub fn Lesson(goal: String) -> Element {
         .and_then(|u| u.current_level.get(&language).cloned())
         .unwrap_or_else(|| "A1".to_string());
 
+    #[cfg(target_arch = "wasm32")]
     let tts_lang_code = LANGUAGE_COURSES
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
@@ -334,7 +337,7 @@ pub fn Lesson(goal: String) -> Element {
                                                     class: "absolute top-4 right-4 text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors p-2 rounded-full",
                                                     title: "Dengarkan",
                                                     onclick: {
-                                                        let mut play_audio = play_text_audio.clone();
+                                                        let play_audio = play_text_audio.clone();
                                                         let text_to_play = target.clone();
                                                         move |_| play_audio(text_to_play.clone())
                                                     },
@@ -360,7 +363,7 @@ pub fn Lesson(goal: String) -> Element {
                                             class: "absolute top-4 right-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors p-2 rounded-full",
                                             title: "Dengarkan",
                                             onclick: {
-                                                let mut play_audio = play_text_audio.clone();
+                                                let play_audio = play_text_audio.clone();
                                                 let text_to_play = vocab.word.clone();
                                                 move |_| play_audio(text_to_play.clone())
                                             },

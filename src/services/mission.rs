@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::mission::DailyMission;
 
-#[server(GetDailyMission)]
+#[server]
 pub async fn get_daily_mission_server(email: String, language: String) -> Result<DailyMission, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
