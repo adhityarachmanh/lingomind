@@ -11,3 +11,4 @@ pub mod goal;
 
 pub mod mission;
 pub mod engagement;
+pub mod leaderboard;

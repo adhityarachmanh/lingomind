@@ -104,8 +104,22 @@ pub fn App() -> Element {
     });
 
     rsx! {
+        document::Meta { name: "theme-color", content: "#14b8a6" }
+        document::Meta { name: "apple-mobile-web-app-capable", content: "yes" }
+        document::Meta { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" }
+        document::Link { rel: "manifest", href: "/assets/manifest.json" }
+        document::Link { rel: "apple-touch-icon", href: "/assets/icon.svg" }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+        document::Script {
+            "if ('serviceWorker' in navigator) {{
+                window.addEventListener('load', () => {{
+                    navigator.serviceWorker.register('/assets/sw.js')
+                        .then(registration => {{ console.log('SW registered with scope:', registration.scope); }})
+                        .catch(error => {{ console.log('SW registration failed:', error); }});
+                }});
+            }}"
+        }
         Router::<Route> {}
     }
 }

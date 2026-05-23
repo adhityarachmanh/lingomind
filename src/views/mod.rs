@@ -14,3 +14,5 @@ pub mod weakness_practice;
 pub mod weakness_analytics;
 
 pub mod roadmap;
+
+pub mod leaderboard;

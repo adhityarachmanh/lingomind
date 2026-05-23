@@ -11,6 +11,7 @@ use crate::views::flashcard_review::FlashcardReview;
 use crate::views::weakness_practice::WeaknessPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
 use crate::views::roadmap::Roadmap;
+use crate::views::leaderboard::Leaderboard;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -48,6 +49,8 @@ pub enum Route {
     WeaknessPractice { goal: String },
     #[route("/analytics")]
     WeaknessAnalytics {},
+    #[route("/leaderboard")]
+    Leaderboard {},
 }
 
 #[component]
