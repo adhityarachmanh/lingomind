@@ -154,6 +154,16 @@ pub fn ChatRoleplay(goal: String) -> Element {
         }
     };
 
+    let mut auto_start_fn = handle_select_setting.clone();
+    let auto_goal = goal.clone();
+    let current_setting = selected_setting;
+    let is_loading_val = is_loading;
+    use_effect(move || {
+        if auto_goal != "Bebas" && current_setting().is_none() && !is_loading_val() {
+            auto_start_fn(auto_goal.clone());
+        }
+    });
+
     if selected_setting().is_none() {
         let preset_scenarios = [
             ("Cafe", "Kasir Kedai Kopi", "Latihan memesan minuman dan membayar."),
@@ -168,39 +178,39 @@ pub fn ChatRoleplay(goal: String) -> Element {
         let custom_scenarios = custom_settings();
 
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white p-4 md:p-6 flex flex-col justify-center items-center",
-                div { class: "max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-2xl p-5 md:p-6 shadow-2xl text-center",
-                    span { class: "text-xs font-extrabold bg-teal-500/10 text-teal-400 px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block", "Mode Roleplay - {language}" }
-                    p { class: "text-[11px] text-slate-400 mb-2", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
-                    h2 { class: "text-2xl font-black text-slate-100 mb-2", "Pilih Skenario Obrolan" }
-                    p { class: "text-slate-400 text-sm mb-5 leading-relaxed", "Pilih skenario siap pakai atau tambah skenario custom. Partner AI menyesuaikan tingkat {active_level}." }
+            div { class: "min-h-screen bg-slate-50 text-slate-900 p-4 md:p-8 flex flex-col justify-center items-center font-sans",
+                div { class: "max-w-4xl w-full bg-white border border-slate-200 rounded-3xl p-6 md:p-10 shadow-xl text-center",
+                    span { class: "text-xs font-bold bg-teal-50 text-teal-600 border border-teal-100 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm", "Mode Roleplay - {language}" }
+                    p { class: "text-xs text-slate-500 mb-3 font-medium", "Global language: ", span { class: "text-teal-600 font-bold", "{selected_language}" } }
+                    h2 { class: "text-3xl font-extrabold text-slate-800 mb-3", "Pilih Skenario Obrolan" }
+                    p { class: "text-slate-600 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto", "Pilih skenario siap pakai atau tambah skenario custom. Partner AI menyesuaikan tingkat {active_level}." }
 
-                    div { class: "grid grid-cols-1 sm:grid-cols-2 gap-3",
+                    div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
                         for (setting_key, title, desc) in preset_scenarios {
                             button {
                                 key: "{setting_key}",
-                                class: "w-full bg-slate-950 border border-slate-800 hover:border-teal-500/40 p-4 rounded-xl text-left font-bold text-sm transition-all flex justify-between items-start gap-3 group",
+                                class: "w-full bg-white border-2 border-slate-100 hover:border-teal-400 hover:bg-teal-50/50 p-5 rounded-2xl text-left font-bold text-sm transition-all flex justify-between items-start gap-4 group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let mut click_setting = handle_select_setting.clone();
                                     let scenario_name = setting_key.to_string();
                                     move |_| click_setting(scenario_name.clone())
                                 },
                                 div {
-                                    p { class: "text-slate-200 group-hover:text-teal-300 transition-colors", "{title}" }
-                                    p { class: "text-xs text-slate-500 font-normal mt-1 leading-relaxed", "{desc}" }
+                                    p { class: "text-slate-800 group-hover:text-teal-700 transition-colors text-base", "{title}" }
+                                    p { class: "text-xs text-slate-500 font-medium mt-1.5 leading-relaxed", "{desc}" }
                                 }
-                                span { class: "text-slate-600 group-hover:text-teal-300 transition-colors mt-0.5", "->" }
+                                span { class: "text-slate-400 group-hover:text-teal-500 transition-colors mt-0.5", "->" }
                             }
                         }
                     }
 
-                    div { class: "mt-5 p-4 rounded-xl border border-slate-800 bg-slate-950/40 text-left",
-                        p { class: "text-xs font-extrabold text-teal-300 uppercase tracking-wider mb-2", "Tambah Skenario Sendiri" }
-                        p { class: "text-xs text-slate-500 mb-3", "Contoh: Interview Kerja, Imigrasi, Dokter Gigi, Presentasi Kampus" }
-                        div { class: "flex flex-col sm:flex-row gap-2",
+                    div { class: "mt-8 p-6 rounded-2xl border-2 border-slate-100 bg-slate-50 text-left shadow-inner",
+                        p { class: "text-sm font-extrabold text-teal-700 uppercase tracking-wider mb-2", "Tambah Skenario Sendiri" }
+                        p { class: "text-xs text-slate-500 mb-4 font-medium", "Contoh: Interview Kerja, Imigrasi, Dokter Gigi, Presentasi Kampus" }
+                        div { class: "flex flex-col sm:flex-row gap-3",
                             input {
                                 r#type: "text",
-                                class: "flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 focus:border-teal-500/50 rounded-lg px-3 py-2 text-sm text-white focus:outline-none transition-all placeholder-slate-600",
+                                class: "flex-1 bg-white border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-4 py-3 text-sm text-slate-800 focus:outline-none transition-all placeholder-slate-400 shadow-sm",
                                 placeholder: "Tulis nama skenario custom...",
                                 value: "{custom_setting_input}",
                                 maxlength: 50,
@@ -208,13 +218,13 @@ pub fn ChatRoleplay(goal: String) -> Element {
                             }
                             button {
                                 r#type: "button",
-                                class: "bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold px-4 py-2 rounded-lg text-sm transition-colors",
+                                class: "bg-slate-800 hover:bg-slate-900 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors shadow-sm hover:shadow-md",
                                 onclick: handle_add_custom_setting,
                                 "Tambah"
                             }
                             button {
                                 r#type: "button",
-                                class: "bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold px-4 py-2 rounded-lg text-sm transition-colors",
+                                class: "bg-teal-500 hover:bg-teal-600 text-white font-bold px-6 py-3 rounded-xl text-sm transition-colors shadow-sm hover:shadow-md",
                                 onclick: handle_start_custom_setting,
                                 "Mulai"
                             }
@@ -222,14 +232,14 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     }
 
                     if !custom_scenarios.is_empty() {
-                        div { class: "mt-4 text-left",
-                            p { class: "text-xs text-slate-400 mb-2", "Skenario custom Anda:" }
-                            div { class: "flex flex-wrap gap-2",
+                        div { class: "mt-6 text-left p-6 bg-white border border-slate-200 rounded-2xl shadow-sm",
+                            p { class: "text-sm font-bold text-slate-700 mb-3", "Skenario custom Anda:" }
+                            div { class: "flex flex-wrap gap-2.5",
                                 for scenario in custom_scenarios {
                                     button {
                                         key: "{scenario}",
                                         r#type: "button",
-                                        class: "bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-teal-500/50 text-slate-200 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+                                        class: "bg-white hover:bg-teal-50 border border-slate-300 hover:border-teal-400 text-slate-700 hover:text-teal-700 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm",
                                         onclick: {
                                             let mut click_custom_setting = handle_select_setting.clone();
                                             let scenario_for_click = scenario.clone();
@@ -243,11 +253,11 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     }
 
                     if is_loading() {
-                        div { class: "mt-4 text-xs text-slate-500 animate-pulse", "Menyiapkan sesi roleplay..." }
+                        div { class: "mt-6 text-sm font-bold text-teal-600 animate-pulse", "Menyiapkan sesi roleplay..." }
                     }
 
                     if let Some(err) = error_msg() {
-                        p { class: "text-xs text-rose-400 font-semibold mt-4 bg-rose-500/10 p-2 rounded border border-rose-500/20", "{err}" }
+                        p { class: "text-xs text-rose-600 font-bold mt-6 bg-rose-50 p-3 rounded-xl border border-rose-200 shadow-sm", "{err}" }
                     }
                 }
             }
@@ -257,62 +267,95 @@ pub fn ChatRoleplay(goal: String) -> Element {
     let setting_title = selected_setting().unwrap_or_default();
     let messages_list = chat_messages.cloned();
 
+    let mapped_messages = messages_list.iter().map(|msg| {
+        let content_str = msg.content.clone();
+        let (main_text, feedback_text) = if msg.sender == "ai" && content_str.contains("Koreksi:") {
+            let mut parts = content_str.splitn(2, "Koreksi:");
+            let main = parts.next().unwrap_or("").trim().to_string();
+            let feedback = parts.next().unwrap_or("").trim().to_string();
+            (main, Some(feedback))
+        } else {
+            (content_str, None)
+        };
+        (msg.clone(), main_text, feedback_text)
+    }).collect::<Vec<_>>();
+
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-between pt-16 pb-6 px-4 md:px-6",
-            div { class: "max-w-3xl w-full mx-auto flex-1 flex flex-col justify-between bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl overflow-hidden min-h-[500px]",
-                div { class: "bg-slate-950/60 p-4 border-b border-slate-800 flex justify-between items-center backdrop-blur-sm",
-                    div { class: "flex items-center gap-3",
-                        div { class: "h-3 w-3 rounded-full bg-emerald-400 animate-pulse" }
+        div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-between pt-20 pb-8 px-4 md:px-8 font-sans",
+            div { class: "max-w-4xl w-full mx-auto flex-1 flex flex-col justify-between bg-white border border-slate-200 rounded-3xl shadow-xl overflow-hidden min-h-[600px]",
+                div { class: "bg-slate-50 p-5 border-b border-slate-200 flex justify-between items-center",
+                    div { class: "flex items-center gap-4",
+                        div { class: "h-3.5 w-3.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" }
                         div {
-                            h3 { class: "text-sm font-bold text-slate-100", "Simulasi Peran: {setting_title}" }
-                            p { class: "text-xs text-slate-500 uppercase font-mono tracking-wider", "{language} - {active_level}" }
-                            p { class: "text-[10px] text-teal-300 font-semibold", "Global language: {selected_language}" }
+                            h3 { class: "text-base font-extrabold text-slate-800", "Simulasi Peran: {setting_title}" }
+                            p { class: "text-xs text-slate-500 font-bold tracking-wide mt-0.5", "{language} - {active_level}" }
+                            p { class: "text-[10px] text-teal-600 font-bold mt-0.5", "Global language: {selected_language}" }
                         }
                     }
-                    Link { to: Route::Dashboard {}, class: "text-xs font-semibold text-slate-400 hover:text-white bg-slate-800 px-3 py-1.5 rounded transition-colors", "Keluar Sesi" }
+                    Link { to: Route::Dashboard {}, class: "text-xs font-bold text-slate-600 hover:text-white hover:bg-slate-800 bg-white border border-slate-300 px-4 py-2 rounded-xl transition-all shadow-sm", "Keluar Sesi" }
                 }
 
-                div { class: "flex-1 p-4 overflow-y-auto space-y-4 bg-slate-900/40",
+                div { class: "flex-1 p-6 overflow-y-auto space-y-6 bg-slate-50/50",
                     if messages_list.is_empty() && is_loading() {
                         div { class: "flex justify-center items-center h-full mt-20",
-                            div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-400" }
+                            div { class: "animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-teal-500" }
                         }
                     }
 
-                    for msg in messages_list {
+                    for (msg, main_text, feedback_text) in mapped_messages {
                         div {
                             key: "{msg.id}",
                             class: format!("flex w-full {}", if msg.sender == "user" { "justify-end" } else { "justify-start" }),
                             div {
                                 class: format!(
-                                    "max-w-[85%] rounded-2xl p-4 text-sm leading-relaxed whitespace-pre-wrap {}",
-                                    if msg.sender == "user" {
-                                        "bg-teal-500 text-slate-950 font-medium rounded-tr-none shadow-md shadow-teal-500/5"
-                                    } else {
-                                        "bg-slate-950 text-slate-200 border border-slate-800/80 rounded-tl-none"
-                                    }
+                                    "max-w-[85%] sm:max-w-[80%] flex flex-col gap-2 {}",
+                                    if msg.sender == "user" { "items-end" } else { "items-start" }
                                 ),
-                                "{msg.content}"
+                                div {
+                                    class: format!(
+                                        "rounded-2xl p-5 text-sm sm:text-base leading-relaxed whitespace-pre-wrap shadow-sm {}",
+                                        if msg.sender == "user" {
+                                            "bg-teal-500 text-white font-medium rounded-tr-none"
+                                        } else {
+                                            "bg-white text-slate-800 border border-slate-200 font-medium rounded-tl-none shadow-md"
+                                        }
+                                    ),
+                                    "{main_text}"
+                                }
+
+                                if let Some(feedback) = feedback_text {
+                                    if !feedback.is_empty() {
+                                        div { class: "mt-1 p-4 bg-amber-50 border border-amber-200 rounded-xl rounded-tl-none shadow-sm text-sm text-amber-900",
+                                            div { class: "flex items-center gap-2 mb-2 font-bold text-amber-700",
+                                                span { class: "text-lg", "💡" }
+                                                span { "Koreksi AI" }
+                                            }
+                                            div { class: "whitespace-pre-wrap font-medium",
+                                                "{feedback}"
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
 
                     if is_loading() {
-                        div { class: "flex justify-start items-center gap-2 text-slate-500 text-xs italic bg-slate-950/40 px-3 py-2 rounded-xl border border-slate-800/40 w-fit animate-pulse",
-                            div { class: "h-1.5 w-1.5 bg-slate-500 rounded-full animate-bounce" }
+                        div { class: "flex justify-start items-center gap-3 text-slate-500 text-sm font-medium bg-white px-5 py-3 rounded-2xl border border-slate-200 w-fit animate-pulse shadow-sm",
+                            div { class: "h-2 w-2 bg-teal-500 rounded-full animate-bounce shadow-sm" }
                             "Partner AI sedang mengetik..."
                         }
                     }
                 }
 
-                div { class: "p-4 bg-slate-950/80 border-t border-slate-800 backdrop-blur-sm",
+                div { class: "p-5 bg-white border-t border-slate-200",
                     form {
-                        class: "flex gap-2 items-center",
+                        class: "flex gap-3 items-center",
                         onsubmit: handle_send_message,
 
                         input {
                             r#type: "text",
-                            class: "flex-1 bg-slate-900 border border-slate-800 hover:border-slate-700 focus:border-teal-500/50 rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-all placeholder-slate-600 disabled:opacity-50",
+                            class: "flex-1 bg-slate-50 border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-5 py-4 text-base text-slate-800 focus:outline-none transition-all placeholder-slate-400 disabled:opacity-50 shadow-inner",
                             placeholder: "Ketik balasan dalam bahasa {language}...",
                             value: "{input_text}",
                             disabled: is_loading(),
@@ -320,13 +363,13 @@ pub fn ChatRoleplay(goal: String) -> Element {
                         }
                         button {
                             r#type: "submit",
-                            class: "bg-teal-500 hover:bg-teal-600 disabled:bg-slate-800 text-slate-950 disabled:text-slate-600 font-bold px-5 py-3 rounded-xl text-sm transition-all shadow-md cursor-pointer",
+                            class: "bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 text-white disabled:text-slate-500 font-bold px-8 py-4 rounded-xl text-base transition-all shadow-md hover:shadow-lg cursor-pointer",
                             disabled: input_text().trim().is_empty() || is_loading(),
                             "Kirim"
                         }
                     }
                     if let Some(err) = error_msg() {
-                        p { class: "text-[11px] text-rose-400 mt-2 text-center font-medium", "{err}" }
+                        p { class: "text-xs text-rose-600 mt-3 text-center font-bold bg-rose-50 p-2 rounded-lg border border-rose-100", "{err}" }
                     }
                 }
             }

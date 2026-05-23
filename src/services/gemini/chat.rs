@@ -45,22 +45,44 @@ async fn generate_ai_opening_message(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
         gemini_model, gemini_api_key
     );
-    let system_instruction = format!(
-        "Anda adalah partner roleplay native untuk bahasa {}. Tugas Anda hanya membuat SATU kalimat pembuka obrolan yang natural untuk skenario {}. \
-Bahasa keluaran WAJIB bahasa {}. CEFR user: {}. Goal belajar: {}. \
-Jangan pakai label, jangan pakai tanda kutip, jangan pakai terjemahan.",
-        language, setting, language, level, goal
-    );
-    let user_prompt = format!(
-        "Berikan satu kalimat pembuka sebagai lawan bicara di skenario {} dalam bahasa {}.",
-        setting, language
-    );
+    let is_topic_based = setting == goal && goal != "Bebas";
+    let system_instruction = if is_topic_based {
+        format!(
+            "Anda adalah seorang tutor/partner percakapan yang ahli dan ramah. \
+            Bahasa target: {0}. Level CEFR user: {2}. Topik yang sedang dilatih: '{1}'. \
+            Tugas Anda adalah memulai obrolan atau simulasi percakapan untuk melatih pemahaman user mengenai topik '{1}'. \
+            Sapa user dengan antusias, lalu ajukan sebuah pertanyaan atau berikan pernyataan yang memancing user untuk mempraktikkan topik tersebut secara langsung. Berikan setidaknya 3 kalimat lengkap agar percakapan terasa hidup. \
+            Bahasa keluaran WAJIB bahasa {0} sepenuhnya. Jangan gunakan bahasa lain atau terjemahan.",
+            language, setting, level
+        )
+    } else {
+        format!(
+            "Anda sedang memainkan peran secara penuh dan mendalam sebagai karakter di skenario '{1}'. Anda adalah seorang penutur asli bahasa {0}. \
+            Tugas Anda adalah memberikan sapaan pembuka yang sangat natural, hidup, dan benar-benar menjiwai peran Anda di lingkungan '{1}' secara nyata. \
+            Sapa user dengan ramah dan tanyakan sesuatu yang relevan dengan peran Anda untuk memancing percakapan (berikan setidaknya 3 kalimat lengkap agar terasa imersif). \
+            Jangan pernah keluar dari karakter Anda (contoh: jika Anda kasir, jadilah kasir sungguhan yang menyapa dan menawarkan sesuatu). Bahasa keluaran WAJIB bahasa {0} sepenuhnya. Sesuaikan kompleksitas bahasa dengan level CEFR user: {2}. Goal belajar: {3}. \
+            Jangan menggunakan label nama peran, jangan pakai tanda kutip, dan jangan sertakan terjemahan. \
+            Hasilkan teks yang sempurna dan pastikan kalimat selesai tanpa terpotong.",
+            language, setting, level, goal
+        )
+    };
+    let user_prompt = if is_topic_based {
+        format!(
+            "Mulai percakapan! Buat sapaan pembuka dalam bahasa {} yang langsung mengajak saya mempraktikkan topik '{}'. Pastikan Anda bertindak sebagai partner latihan yang suportif (berikan setidaknya 3 kalimat). Pastikan kalimatnya lengkap, tidak terpotong, natural, dan diakhiri dengan pertanyaan yang mengundang respons.",
+            language, setting
+        )
+    } else {
+        format!(
+            "Mulai percakapan! Buat kalimat pembuka roleplay yang sangat menjiwai karakter Anda di skenario '{}' dalam bahasa {}. Pastikan Anda benar-benar bertingkah seperti peran tersebut di dunia nyata (berikan setidaknya 3 kalimat). Pastikan kalimatnya lengkap, tidak terpotong, natural, dan diakhiri dengan pertanyaan yang mengundang respons.",
+            setting, language
+        )
+    };
     let payload = json!({
         "contents": [
             { "role": "user", "parts": [{ "text": user_prompt }] }
         ],
         "systemInstruction": { "parts": [{ "text": system_instruction }] },
-        "generationConfig": { "temperature": 0.75, "maxOutputTokens": 90 }
+        "generationConfig": { "temperature": 0.8, "maxOutputTokens": 1024 }
     });
 
     let response = client_http
@@ -170,7 +192,8 @@ async fn refresh_legacy_opening_if_needed(
     let looks_legacy_opening = sender == "ai"
         && (content.contains("Mulai simulasi dalam Bahasa")
             || content.contains("(AI Peran")
-            || looks_old_template);
+            || looks_old_template
+            || content.trim().len() < 45);
 
     if !looks_legacy_opening {
         return Ok(());
@@ -270,12 +293,24 @@ pub async fn send_chat_message_server(
         contents_payload.push(json!({ "role": role, "parts": [{ "text": msg.content }] }));
     }
 
-    let system_instruction = format!(
-        "Anda adalah partner roleplay penutur asli bahasa {0} di lingkungan '{1}'. User belajar level CEFR {2} dengan goal {3}. \
-Balas utama dalam bahasa {0}, natural, dan sesuai konteks skenario.\n\
-Setelah balasan utama, tambahkan bagian 'Koreksi:' dalam Bahasa Indonesia (maksimal 2 poin ringkas) untuk memperbaiki pesan user terakhir.",
-        language, normalized_setting, level, goal
-    );
+    let is_topic_based = normalized_setting == goal && goal != "Bebas";
+    let system_instruction = if is_topic_based {
+        format!(
+            "Anda adalah tutor/partner percakapan untuk user yang belajar bahasa {0} di level {2}. Topik saat ini: '{1}'. \
+            Berikan respons yang suportif, natural, dan terus kembangkan obrolan untuk menguji atau memandu user menggunakan tata bahasa/kosakata terkait '{1}'. \
+            Balasan utama WAJIB dalam bahasa {0} sepenuhnya. Berikan respons lengkap (sekitar 3 kalimat) agar percakapan terus berjalan. Pastikan kalimat tidak terpotong.\n\
+            Setelah balasan utama, tambahkan bagian 'Koreksi:' di baris baru dalam Bahasa Indonesia (maksimal 2 poin ringkas) HANYA untuk memperbaiki tata bahasa atau kosakata dari pesan user terakhir jika ada yang salah (jika pesannya sudah benar dan bisa dipahami, jangan berikan koreksi).",
+            language, normalized_setting, level
+        )
+    } else {
+        format!(
+            "Anda adalah karakter yang sedang berada di lingkungan '{1}' dan sedang berbicara dengan user. Anda adalah penutur asli bahasa {0}. User belajar level CEFR {2} dengan goal {3}. \
+            Anda HARUS sepenuhnya menjiwai peran Anda dalam skenario ini secara sangat mendalam dan realistis. Berikan respons yang sangat natural, hidup, imersif, dan sesuai dengan kepribadian peran Anda seolah-olah interaksi ini benar-benar terjadi di dunia nyata. Jangan pernah keluar dari karakter. \
+            Balasan utama WAJIB dalam bahasa {0} sepenuhnya. Berikan respons lengkap dan wajar seperti manusia berbicara (sekitar 3 kalimat) agar percakapan terus berjalan. Pastikan kalimat tidak terpotong.\n\
+            Setelah balasan utama, tambahkan bagian 'Koreksi:' di baris baru dalam Bahasa Indonesia (maksimal 2 poin ringkas) HANYA untuk memperbaiki tata bahasa atau kosakata dari pesan user terakhir jika ada yang salah (jika pesannya sudah benar dan bisa dipahami, jangan berikan koreksi).",
+            language, normalized_setting, level, goal
+        )
+    };
 
     let url = format!(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
@@ -285,7 +320,7 @@ Setelah balasan utama, tambahkan bagian 'Koreksi:' dalam Bahasa Indonesia (maksi
     let payload = json!({
         "contents": contents_payload,
         "systemInstruction": { "parts": [{ "text": system_instruction }] },
-        "generationConfig": { "temperature": 0.7, "maxOutputTokens": 300 }
+        "generationConfig": { "temperature": 0.7, "maxOutputTokens": 1024 }
     });
 
     let response = client_http

@@ -22,6 +22,14 @@ pub fn Register() -> Element {
     let mut user_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let navigator = use_navigator();
 
+    // Redirect ke dashboard jika sudah login
+    use_effect(move || {
+        let (user_opt, _) = user_state();
+        if user_opt.is_some() {
+            navigator.push(Route::Dashboard {});
+        }
+    });
+
     let handle_register = move |_| async move {
         if is_loading() { return; } 
 
@@ -65,34 +73,34 @@ pub fn Register() -> Element {
     };
 
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center p-6",
-            div { class: "bg-slate-900 p-8 rounded-xl shadow-xl max-w-md w-full border border-slate-800 text-center",
+        div { class: "min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-center items-center p-6",
+            div { class: "bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center",
                 
-                h2 { class: "text-3xl font-extrabold text-teal-400 mb-2", "Join LingoMind" }
-                p { class: "text-slate-400 text-sm mb-6", "Create an account to track your study scores" }
+                h2 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Join LingoMind" }
+                p { class: "text-slate-500 font-medium text-sm mb-6", "Create an account to track your study scores" }
                 
                 if let Some(msg) = error_message() {
-                    div { class: "mb-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded text-rose-400 text-xs text-left font-medium flex items-center gap-2",
+                    div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex items-center gap-2",
                         "⚠️ {msg}"
                     }
                 }
 
-                                div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Nama Lengkap" }
+                div { class: "mb-4 text-left",
+                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Nama Lengkap" }
                     input {
-                        class: "w-full bg-slate-950 border border-slate-800 rounded px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                        class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                         placeholder: "Masukkan nama lengkap...",
                         value: "{full_name_input}",
                         disabled: is_loading(),
                         oninput: move |e| full_name_input.set(e.value()),
                     }
                 }
-// Input Email
+
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Email" }
                     input {
                         r#type: "email",
-                        class: "w-full bg-slate-950 border border-slate-800 rounded px-4 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                        class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                         placeholder: "Masukkan email aktif Anda...",
                         value: "{email_input}",
                         disabled: is_loading(),
@@ -102,11 +110,11 @@ pub fn Register() -> Element {
 
                 // Input Password Utama
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Password" }
+                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Password" }
                     div { class: "relative flex items-center",
                         input {
                             r#type: if show_password() { "text" } else { "password" },
-                            class: "w-full bg-slate-950 border border-slate-800 rounded pl-4 pr-12 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                            class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                             placeholder: "Buat password aman...",
                             value: "{password_input}",
                             disabled: is_loading(),
@@ -114,22 +122,22 @@ pub fn Register() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "absolute right-3 text-slate-500 hover:text-teal-400 text-xs font-semibold select-none bg-transparent border-none cursor-pointer disabled:opacity-30",
+                            class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
                             disabled: is_loading(),
                             onclick: move |_| show_password.set(!show_password()),
                             if show_password() { "HIDE" } else { "SHOW" }
                         }
                     }
-                    span { class: "text-[10px] text-slate-500 mt-1 block", "Minimal panjang password adalah 6 karakter." }
+                    span { class: "text-[10px] text-slate-500 mt-1 block font-medium", "Minimal panjang password adalah 6 karakter." }
                 }
 
                 // Input Konfirmasi Password
                 div { class: "mb-6 text-left",
-                    label { class: "block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2", "Confirm Password" }
+                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Confirm Password" }
                     div { class: "relative flex items-center",
                         input {
                             r#type: if show_confirm_password() { "text" } else { "password" },
-                            class: "w-full bg-slate-950 border border-slate-800 rounded pl-4 pr-12 py-2.5 text-white focus:outline-none focus:border-teal-500 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed",
+                            class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                             placeholder: "Ulangi password...",
                             value: "{confirm_password_input}",
                             disabled: is_loading(),
@@ -137,7 +145,7 @@ pub fn Register() -> Element {
                         }
                         button {
                             r#type: "button",
-                            class: "absolute right-3 text-slate-500 hover:text-teal-400 text-xs font-semibold select-none bg-transparent border-none cursor-pointer disabled:opacity-30",
+                            class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
                             disabled: is_loading(),
                             onclick: move |_| show_confirm_password.set(!show_confirm_password()),
                             if show_confirm_password() { "HIDE" } else { "SHOW" }
@@ -148,18 +156,18 @@ pub fn Register() -> Element {
                 // Tombol Submit
                 button {
                     class: format!(
-                        "w-full font-bold py-3 px-4 rounded transition-all text-sm shadow-lg flex justify-center items-center gap-2 {}",
+                        "w-full font-bold py-3 px-4 rounded-xl transition-all text-sm shadow-md flex justify-center items-center gap-2 {}",
                         if is_loading() {
-                            "bg-teal-600 text-slate-950/70 cursor-not-allowed opacity-80"
+                            "bg-teal-100 text-teal-800 cursor-not-allowed opacity-80"
                         } else {
-                            "bg-teal-500 hover:bg-teal-600 text-slate-950 shadow-teal-500/20"
+                            "bg-teal-500 hover:bg-teal-600 text-white hover:shadow-lg hover:shadow-teal-500/30"
                         }
                     ),
                     disabled: is_loading(),
                     onclick: handle_register,
                     if is_loading() {
                         div { class: "flex items-center gap-2",
-                            div { class: "animate-spin rounded-full h-4 w-4 border-2 border-slate-950 border-t-transparent" }
+                            div { class: "animate-spin rounded-full h-4 w-4 border-2 border-teal-600 border-t-transparent" }
                             span { "Mendaftarkan Akun Baru..." }
                         }
                     } else {
@@ -167,11 +175,11 @@ pub fn Register() -> Element {
                     }
                 }
 
-                div { class: "text-xs text-slate-400 pt-4 border-t border-slate-800/60 mt-4",
+                div { class: "text-xs text-slate-500 pt-5 border-t border-slate-100 mt-6",
                     span { "Sudah punya akun? " }
                     Link { 
                         to: Route::Login {},
-                        class: "text-teal-400 font-semibold hover:underline",
+                        class: "text-teal-600 font-bold hover:underline",
                         "Login di sini"
                     }
                 }

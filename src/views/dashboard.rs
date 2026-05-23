@@ -50,10 +50,10 @@ pub fn Dashboard() -> Element {
     let (user_opt, is_session_ready) = session_state();
 
     if !is_session_ready {
-        return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex justify-center items-center", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-400" } } };
+        return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex justify-center items-center", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
     }
     if user_opt.is_none() {
-        return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex justify-center items-center p-8", div { class: "bg-slate-900 p-6 rounded-xl border border-slate-800 text-center max-w-sm", p { class: "text-slate-400 mb-4", "Silakan login terlebih dahulu." } Link { to: Route::Login {}, class: "inline-block bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold py-2 px-4 rounded text-sm", "Kembali ke Login" } } } };
+        return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex justify-center items-center p-8", div { class: "bg-white p-8 rounded-2xl border border-slate-200 shadow-sm text-center max-w-sm", p { class: "text-slate-600 mb-5 font-medium", "Silakan login terlebih dahulu." } Link { to: Route::Login {}, class: "inline-block bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 px-6 rounded-lg text-sm transition-colors shadow-sm", "Kembali ke Login" } } } };
     }
 
     let user_for_language_change = user_opt.clone();
@@ -150,22 +150,29 @@ pub fn Dashboard() -> Element {
     });
     let engagement = engagement_resource.value()().and_then(|r| r.ok());
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white p-4 sm:p-8",
-            div { class: "max-w-5xl mx-auto",
-                div { class: "mb-6 sm:mb-8",
-                    h1 { class: "text-3xl font-extrabold text-slate-100", "Halo, {user.full_name}!" }
-                    p { class: "text-slate-400 text-sm mt-1", "Bahasa aktif global dipakai untuk semua fitur di bawah." }
+        div { class: "min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans",
+            div { class: "max-w-5xl mx-auto space-y-6",
+                div { class: "relative overflow-hidden bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-6 sm:p-10 shadow-xl shadow-teal-500/20 text-white",
+                    div { class: "relative z-10",
+                        h1 { class: "text-3xl sm:text-4xl font-extrabold mb-2", "Halo, {user.full_name}!" }
+                        p { class: "text-teal-50 text-sm sm:text-base opacity-90 font-medium", "Siap untuk melanjutkan petualangan bahasamu hari ini?" }
+                    }
+                    div { class: "absolute -bottom-10 -right-10 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl pointer-events-none" }
+                    div { class: "absolute top-10 right-20 w-24 h-24 bg-teal-300 opacity-20 rounded-full blur-xl pointer-events-none" }
                 }
 
-                div { class: "bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 mb-6",
-                    div { class: "flex flex-col sm:flex-row sm:items-center justify-between gap-3",
-                        div {
-                            p { class: "text-xs uppercase tracking-wider text-slate-500", "Bahasa Aktif" }
-                            h2 { class: "text-xl font-bold text-white mt-1", "{course.flag} {course.id}" }
-                            p { class: "text-xs text-slate-500 mt-1", "{course.native_name} - Level {lang_level}" }
+                div { class: "bg-white border border-slate-200 rounded-2xl p-5 sm:p-6 shadow-sm",
+                    div { class: "flex flex-col sm:flex-row sm:items-center justify-between gap-4",
+                        div { class: "flex items-center gap-4",
+                            div { class: "w-12 h-12 bg-slate-100 rounded-full flex items-center justify-center text-2xl shadow-inner", "{course.flag}" }
+                            div {
+                                p { class: "text-xs font-bold uppercase tracking-wider text-slate-500", "Bahasa Aktif" }
+                                h2 { class: "text-xl font-bold text-slate-800", "{course.id}" }
+                                p { class: "text-sm text-slate-600 font-medium", "{course.native_name} - Level {lang_level}" }
+                            }
                         }
                         select {
-                            class: "px-3 py-2 rounded-lg border border-slate-700 bg-slate-950 text-sm text-slate-200",
+                            class: "px-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-teal-500/50 cursor-pointer",
                             value: "{selected_language()}",
                             onchange: move |e| handle_language_change(e.value()),
                             for c in LANGUAGE_COURSES {
@@ -173,72 +180,91 @@ pub fn Dashboard() -> Element {
                             }
                         }
                     }
-                    div { class: "grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 text-xs",
-                        div { class: "bg-slate-950 border border-slate-800 rounded p-2.5", "Due Flashcard: " span { class: "text-teal-400 font-bold", "{due_count}" } }
-                        div { class: "bg-slate-950 border border-slate-800 rounded p-2.5", "Trend Kelemahan: " span { class: "text-amber-300 font-bold", "{trend_label}" } }
-                        div { class: "bg-slate-950 border border-slate-800 rounded p-2.5", "Topik Lemah: " span { class: "text-slate-300 font-semibold", "{weak_text}" } }
+                    div { class: "grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6",
+                        div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3", 
+                            div { class: "w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 text-lg", "⏰" }
+                            div {
+                                p { class: "text-[10px] uppercase font-bold text-slate-500", "Due Flashcard" }
+                                p { class: "text-lg font-black text-slate-800", "{due_count}" }
+                            }
+                        }
+                        div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3", 
+                            div { class: "w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-lg", "📈" }
+                            div {
+                                p { class: "text-[10px] uppercase font-bold text-slate-500", "Trend Kelemahan" }
+                                p { class: "text-lg font-black text-slate-800 capitalize", "{trend_label}" }
+                            }
+                        }
+                        div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3 flex items-center gap-3", 
+                            div { class: "w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 text-lg", "🎯" }
+                            div {
+                                p { class: "text-[10px] uppercase font-bold text-slate-500", "Topik Lemah" }
+                                p { class: "text-sm font-black text-slate-800 capitalize line-clamp-1", "{weak_text}" }
+                            }
+                        }
                     }
                 }
+
                 if let Some(es) = engagement {
-                    div { class: "bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6",
-                        p { class: "text-sm font-bold text-slate-200 mb-2", "Streak & Achievement" }
-                        div { class: "grid grid-cols-2 md:grid-cols-4 gap-2 text-xs",
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Streak: {es.current_streak} hari" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Longest: {es.longest_streak} hari" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Quiz selesai: {es.total_quiz_completed}" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Poin dari quiz: {es.total_points_earned}" }
+                    div { class: "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm",
+                        p { class: "text-sm font-bold text-slate-800 mb-3 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Achievement" }
+                        div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Current Streak" } p { class: "text-base font-black text-slate-800", "{es.current_streak} hari" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Longest Streak" } p { class: "text-base font-black text-slate-800", "{es.longest_streak} hari" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Quiz Selesai" } p { class: "text-base font-black text-slate-800", "{es.total_quiz_completed}" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Poin" } p { class: "text-base font-black text-slate-800", "{es.total_points_earned}" } }
                         }
-                        p { class: "text-[11px] text-slate-400 mt-2", "Reminder: targetkan minimal 1 quiz per hari untuk menjaga streak." }
                     }
                 }
 
                 if let Some(m) = mission {
-                    div { class: "bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6",
-                        p { class: "text-sm font-bold text-slate-200 mb-2", "Daily Mission (10-15 menit)" }
-                        div { class: "grid grid-cols-2 md:grid-cols-4 gap-2 text-xs",
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Lesson {m.lesson_target}x" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Quiz {m.quiz_target}x" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Weakness {m.weakness_target}" }
-                            div { class: "bg-slate-950 border border-slate-800 rounded p-2", "Flashcard {m.flashcard_target}" }
+                    div { class: "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm",
+                        p { class: "text-sm font-bold text-slate-800 mb-3 flex items-center gap-2", span { class: "text-teal-500", "🏆" } "Daily Mission (10-15 menit)" }
+                        div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Lesson" } p { class: "text-base font-black text-slate-800", "{m.lesson_target}x" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Quiz" } p { class: "text-base font-black text-slate-800", "{m.quiz_target}x" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Weakness" } p { class: "text-base font-black text-slate-800", "{m.weakness_target}x" } }
+                            div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Flashcard" } p { class: "text-base font-black text-slate-800", "{m.flashcard_target}x" } }
                         }
                     }
                 }
 
-                div { class: "bg-slate-900 border border-slate-800 rounded-xl p-4 mb-6",
-                    p { class: "text-sm font-bold text-slate-200 mb-3", "Progress Skill 7 Hari (Jawaban Benar)" }
+                div { class: "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm",
+                    p { class: "text-sm font-bold text-slate-800 mb-4 flex items-center gap-2", span { class: "text-indigo-500", "📊" } "Progress Skill 7 Hari" }
                     if skill_points.is_empty() {
-                        p { class: "text-xs text-slate-500", "Belum ada data progress skill. Kerjakan quiz dulu." }
+                        div { class: "bg-slate-50 rounded-xl p-6 text-center border border-slate-100", p { class: "text-sm text-slate-500 font-medium", "Belum ada data progress skill. Kerjakan quiz dulu." } }
                     } else {
-                        div { class: "space-y-2",
+                        div { class: "space-y-3",
                             for point in skill_points {
-                                div { class: "bg-slate-950 border border-slate-800 rounded p-2.5",
-                                    div { class: "flex justify-between text-[11px] text-slate-400 mb-1",
-                                        span { "{format_date_id(&point.day)}" }
-                                        span { "G:{point.grammar} • V:{point.vocabulary} • L:{point.listening}" }
+                                div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3.5",
+                                    div { class: "flex justify-between items-center mb-2",
+                                        span { class: "text-xs font-bold text-slate-600", "{format_date_id(&point.day)}" }
+                                        span { class: "text-[10px] font-bold text-slate-400 bg-white px-2 py-1 rounded-md border border-slate-100", "G:{point.grammar} • V:{point.vocabulary} • L:{point.listening}" }
                                     }
-                                    div { class: "grid grid-cols-3 gap-2",
-                                        div { class: "h-2 bg-slate-800 rounded overflow-hidden", div { class: "h-2 bg-teal-400", width: "{(point.grammar * 18).min(100)}%" } }
-                                        div { class: "h-2 bg-slate-800 rounded overflow-hidden", div { class: "h-2 bg-amber-400", width: "{(point.vocabulary * 18).min(100)}%" } }
-                                        div { class: "h-2 bg-slate-800 rounded overflow-hidden", div { class: "h-2 bg-indigo-400", width: "{(point.listening * 18).min(100)}%" } }
+                                    div { class: "grid grid-cols-3 gap-3",
+                                        div { class: "h-2.5 bg-slate-200 rounded-full overflow-hidden", div { class: "h-2.5 bg-teal-400 rounded-full", width: "{(point.grammar * 18).min(100)}%" } }
+                                        div { class: "h-2.5 bg-slate-200 rounded-full overflow-hidden", div { class: "h-2.5 bg-amber-400 rounded-full", width: "{(point.vocabulary * 18).min(100)}%" } }
+                                        div { class: "h-2.5 bg-slate-200 rounded-full overflow-hidden", div { class: "h-2.5 bg-indigo-400 rounded-full", width: "{(point.listening * 18).min(100)}%" } }
                                     }
                                 }
                             }
                         }
-                        div { class: "flex gap-4 mt-3 text-[10px] text-slate-400",
-                            span { class: "inline-flex items-center gap-1", span { class: "w-2 h-2 rounded bg-teal-400" } "Grammar" }
-                            span { class: "inline-flex items-center gap-1", span { class: "w-2 h-2 rounded bg-amber-400" } "Vocabulary" }
-                            span { class: "inline-flex items-center gap-1", span { class: "w-2 h-2 rounded bg-indigo-400" } "Listening" }
+                        div { class: "flex gap-5 mt-4 text-[11px] font-bold text-slate-500 justify-center",
+                            span { class: "inline-flex items-center gap-1.5", span { class: "w-2.5 h-2.5 rounded-full bg-teal-400" } "Grammar" }
+                            span { class: "inline-flex items-center gap-1.5", span { class: "w-2.5 h-2.5 rounded-full bg-amber-400" } "Vocabulary" }
+                            span { class: "inline-flex items-center gap-1.5", span { class: "w-2.5 h-2.5 rounded-full bg-indigo-400" } "Listening" }
                         }
                     }
                 }
 
-                div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4",
-                    Link { to: Route::Lesson { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-orange-400/50 transition", h3 { class: "font-bold text-orange-300", "Lesson" } p { class: "text-xs text-slate-400 mt-1", "Belajar materi terstruktur." } }
-                    Link { to: Route::Quiz { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-teal-400/50 transition", h3 { class: "font-bold text-teal-300", "Quiz" } p { class: "text-xs text-slate-400 mt-1", "Latihan soal + evaluasi." } }
-                    Link { to: Route::ChatRoleplay { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-indigo-400/50 transition", h3 { class: "font-bold text-indigo-300", "Chat AI" } p { class: "text-xs text-slate-400 mt-1", "Simulasi percakapan." } }
-                    Link { to: Route::WeaknessPractice { goal: goal.clone() }, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-amber-400/50 transition", h3 { class: "font-bold text-amber-300", "Practice Weakness" } p { class: "text-xs text-slate-400 mt-1", "Fokus topik paling lemah." } }
-                    Link { to: Route::WeaknessAnalytics {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-fuchsia-400/50 transition", h3 { class: "font-bold text-fuchsia-300", "Weakness Analytics" } p { class: "text-xs text-slate-400 mt-1", "Lihat tren kelemahan." } }
-                    Link { to: Route::FlashcardReview {}, class: "bg-slate-900 border border-slate-800 rounded-xl p-4 hover:border-emerald-400/50 transition", h3 { class: "font-bold text-emerald-300", "Flashcard Review" } p { class: "text-xs text-slate-400 mt-1", "Review kartu jatuh tempo." } }
+                div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2",
+                    Link { to: Route::Lesson { goal: goal.clone() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-orange-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-orange-500 text-lg group-hover:text-orange-600 transition-colors", "Lesson" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Belajar materi terstruktur." } }
+                    Link { to: Route::Quiz { goal: goal.clone() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-teal-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-teal-500 text-lg group-hover:text-teal-600 transition-colors", "Quiz" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Latihan soal + evaluasi." } }
+                    Link { to: Route::ChatRoleplay { goal: "Bebas".to_string() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-indigo-500 text-lg group-hover:text-indigo-600 transition-colors", "Chat AI" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Simulasi percakapan teks." } }
+                    Link { to: Route::VoiceChat { goal: "Bebas".to_string() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-emerald-500 text-lg group-hover:text-emerald-600 transition-colors", "Live Voice AI" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Ngobrol langsung dengan suara." } }
+                    Link { to: Route::WeaknessPractice { goal: goal.clone() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-amber-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-amber-500 text-lg group-hover:text-amber-600 transition-colors", "Practice Weakness" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Fokus topik paling lemah." } }
+                    Link { to: Route::WeaknessAnalytics {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-fuchsia-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-fuchsia-500 text-lg group-hover:text-fuchsia-600 transition-colors", "Weakness Analytics" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Lihat tren kelemahan detail." } }
+                    Link { to: Route::FlashcardReview {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-400 hover:shadow-md transition-all group lg:col-span-3 sm:col-span-2", h3 { class: "font-bold text-rose-500 text-lg group-hover:text-rose-600 transition-colors", "Flashcard Review" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Review {due_count} kartu jatuh tempo hari ini." } }
                 }
             }
         }

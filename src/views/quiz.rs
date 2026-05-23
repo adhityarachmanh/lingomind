@@ -257,6 +257,12 @@ fn format_question_for_display(question: &str) -> Vec<String> {
     }
 
     formatted = formatted
+        .replace("sentence: ", "sentence:\n")
+        .replace("blank: ", "blank:\n")
+        .replace("word: ", "word:\n")
+        .replace("following: ", "following:\n")
+        .replace("question: ", "question:\n")
+        .replace("statement: ", "statement:\n")
         .replace(": '", ":\n'")
         .replace(": \"", ":\n\"");
 
@@ -312,35 +318,35 @@ pub fn Quiz(goal: String) -> Element {
 
     let Some(quiz_result) = quiz_resource.value()() else {
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center gap-4",
-                div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-400" }
-                p { class: "text-slate-400 animate-pulse text-sm", "Gemini AI sedang merancang kuis kustom untuk Anda..." }
+            div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center gap-4 font-sans",
+                div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
+                p { class: "text-slate-500 animate-pulse text-sm font-medium", "Gemini AI sedang merancang kuis kustom untuk Anda..." }
             }
         };
     };
 
     let quiz_container = match quiz_result {
         Ok(data) => data,
-        Err(_) => return rsx! { div { class: "p-8 text-red-400", "Gagal memuat kuis dari AI Studio. Cek koneksi/.env." } }
+        Err(_) => return rsx! { div { class: "p-8 text-rose-600 font-bold text-center", "Gagal memuat kuis dari AI Studio. Cek koneksi/.env." } }
     };
 
     if quiz_container.questions.is_empty() {
-        return rsx! { div { class: "p-8 text-amber-400", "AI mengembalikan kuis kosong. Coba muat ulang halaman." } };
+        return rsx! { div { class: "p-8 text-amber-600 font-bold text-center", "AI mengembalikan kuis kosong. Coba muat ulang halaman." } };
     }
 
     if quiz_finished() {
         play_sfx(SFX_WINNER);
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white flex flex-col justify-center items-center px-3 py-4 sm:p-6",
-                div { class: "bg-slate-900 p-5 sm:p-8 rounded-xl border border-slate-800 text-center max-w-md w-full shadow-2xl",
-                    h2 { class: "text-4xl mb-2", "🎉" }
-                    h3 { class: "text-2xl font-bold text-teal-400 mb-1", "Kuis Selesai!" }
-                    p { class: "text-slate-400 text-sm mb-6", "Skor Anda berhasil dikirim ke database Neon." }
-                    div { class: "bg-slate-950 p-4 rounded border border-slate-800 mb-6",
-                        p { class: "text-xs uppercase tracking-widest text-slate-500 font-semibold mb-1", "Tambahan Skor" }
-                        p { class: "text-3xl font-black text-white", "+{score_gained} Poin" }
+            div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center px-4 py-6 sm:p-8 font-sans",
+                div { class: "bg-white p-6 sm:p-10 rounded-3xl border border-slate-200 text-center max-w-md w-full shadow-xl",
+                    h2 { class: "text-5xl mb-4", "🎉" }
+                    h3 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Kuis Selesai!" }
+                    p { class: "text-slate-500 text-sm mb-8 font-medium", "Skor Anda berhasil dikirim ke database Neon." }
+                    div { class: "bg-teal-50 p-6 rounded-2xl border border-teal-100 mb-8",
+                        p { class: "text-xs uppercase tracking-widest text-teal-600 font-bold mb-2", "Tambahan Skor" }
+                        p { class: "text-4xl font-black text-teal-700", "+{score_gained} Poin" }
                     }
-                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-700 text-white py-3 rounded font-bold transition-colors text-sm", "Kembali ke Dashboard" }
+                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Dashboard" }
                 }
             }
         };
@@ -351,7 +357,6 @@ pub fn Quiz(goal: String) -> Element {
     let explanation_text = current_q.explanation.clone();
     let correct_ans_check = correct_ans.clone();
     
-    // PERBAIKAN LIFETIME: Alokasikan opsi ke dalam Vec mandiri agar umurnya panjang ('static) saat dikonsumsi event onclick
     let quiz_options = current_q.options.clone();
     let tts_question = question_audio_text(&current_q);
     let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
@@ -365,22 +370,21 @@ pub fn Quiz(goal: String) -> Element {
     let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
 
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
-            div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6 shadow-xl",
+        div { class: "min-h-screen bg-slate-50 text-slate-900 px-4 py-6 sm:p-8 flex items-start sm:items-center justify-center font-sans",
+            div { class: "max-w-3xl w-full bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-lg",
                 
-                div { class: "flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-3 sm:pb-4 mb-4 sm:mb-6",
-                    div { class: "flex flex-wrap items-center gap-2",
-                        span { class: "text-xs font-bold text-teal-400 uppercase tracking-wider", "Latihan {language} ({active_level})" }
+                div { class: "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-4 sm:pb-6 mb-6 sm:mb-8",
+                    div { class: "flex flex-wrap items-center gap-3",
+                        span { class: "text-xs font-bold text-teal-600 bg-teal-50 px-3 py-1 rounded-full uppercase tracking-wider border border-teal-100", "Latihan {language} ({active_level})" }
                         if is_listening_question {
-                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full", "Listening Test" }
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full", "Listening Test" }
                         }
                     }
-                    span { class: "text-xs text-slate-500 font-medium", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
+                    span { class: "text-sm text-slate-500 font-bold bg-slate-50 px-4 py-1.5 rounded-full", "Pertanyaan {current_question_idx() + 1} dari {quiz_container.questions.len()}" }
                 }
-                p { class: "text-[11px] text-slate-400 mb-4", "Global language: " span { class: "text-teal-300 font-semibold", "{selected_language}" } }
 
-                div { class: "flex flex-col gap-3 mb-5",
-                    h2 { class: "text-base sm:text-lg font-semibold text-slate-100 leading-relaxed space-y-1",
+                div { class: "flex flex-col gap-4 mb-8",
+                    h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 leading-relaxed space-y-2",
                         for line in question_lines {
                             p {
                                 class: if line.starts_with("A:")
@@ -389,19 +393,19 @@ pub fn Quiz(goal: String) -> Element {
                                     || line.starts_with("D:")
                                     || line.starts_with("E:")
                                 {
-                                    "text-slate-200 font-medium"
+                                    "text-slate-700 font-bold"
                                 } else if line.starts_with('\'') || line.starts_with('"') {
-                                    "text-amber-100/90 italic"
+                                    "text-amber-700 italic font-medium"
                                 } else {
-                                    "text-slate-100"
+                                    "text-slate-800"
                                 },
                                 "{line}"
                             }
                         }
                     }
-                    div { class: "flex flex-wrap items-center gap-2",
+                    div { class: "flex flex-wrap items-center gap-3",
                     select {
-                        class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-3 py-2 min-h-9",
+                        class: "bg-white border border-slate-300 text-slate-700 font-medium rounded-xl text-sm px-4 py-2 min-h-10 shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20",
                         value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
                         onchange: move |e| {
                             let v = e.value();
@@ -419,39 +423,38 @@ pub fn Quiz(goal: String) -> Element {
                     }
                     div { class: "flex flex-wrap gap-2",
                     button {
-                        class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold transition-colors",
+                        class: "bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 min-h-10 rounded-xl text-sm font-bold transition-colors shadow-sm",
                         onclick: move |_| speak_with_edge_or_fallback(question_tts_lang_code.clone(), tts_question.clone(), listen_speed()),
                         "Listen"
                     }
                     button {
-                        class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 min-h-9 rounded text-xs font-semibold transition-colors",
+                        class: "bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-2 min-h-10 rounded-xl text-sm font-bold transition-colors shadow-sm",
                         onclick: move |_| stop_speech(),
                         "Stop"
                     }
                     }
                     }
-                    p { class: "text-[11px] text-slate-500", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
+                    p { class: "text-xs text-slate-500 font-medium", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
                     if is_listening_question {
-                        p { class: "text-[11px] text-amber-300/90", "Mode listening aktif: dengarkan audio terlebih dahulu, lalu pilih jawaban yang paling tepat." }
+                        p { class: "text-xs text-amber-600 font-bold", "Mode listening aktif: dengarkan audio terlebih dahulu, lalu pilih jawaban yang paling tepat." }
                     }
                 }
 
-                div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5 sm:mb-6",
-                    // Lakukan perulangan langsung dari Vec mandiri hasil kloning di atas
+                div { class: "flex flex-col gap-3 sm:gap-4 mb-8",
                     for option in quiz_options {
                         {
                             let option_for_select = option.clone();
                             let option_for_listen = option.clone();
                             let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &option_for_listen);
                             rsx! {
-                                div { class: "flex items-stretch gap-2",
+                                div { class: "flex items-stretch gap-3",
                                     button {
                                         class: format!(
-                                            "flex-1 text-left px-4 py-3.5 rounded-lg border text-sm sm:text-[15px] leading-relaxed transition-all font-medium {}",
+                                            "flex-1 text-left px-5 py-4 rounded-xl border-2 text-base leading-relaxed transition-all font-bold {}",
                                             if selected_option() == Some(option_for_select.clone()) {
-                                                "bg-teal-500/10 border-teal-500 text-teal-400"
+                                                "bg-teal-50 border-teal-500 text-teal-800 shadow-sm"
                                             } else {
-                                                "bg-slate-950 border-slate-800 hover:border-slate-700 text-slate-300"
+                                                "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm"
                                             }
                                         ),
                                         disabled: show_explanation(),
@@ -459,7 +462,7 @@ pub fn Quiz(goal: String) -> Element {
                                         "{option}"
                                     }
                                     button {
-                                        class: "shrink-0 px-3 py-2 rounded-lg border border-slate-700 bg-slate-900 hover:border-slate-600 text-slate-300 text-xs font-semibold min-w-16",
+                                        class: "shrink-0 px-4 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-slate-600 text-sm font-bold min-w-20 transition-colors shadow-sm",
                                         disabled: show_explanation(),
                                         onclick: move |_| speak_with_edge_or_fallback(option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed()),
                                         "Listen"
@@ -471,21 +474,21 @@ pub fn Quiz(goal: String) -> Element {
                 }
 
                 if show_explanation() {
-                    div { class: "bg-slate-950 p-4 rounded-lg border border-slate-800 mb-5 sm:mb-6 text-sm",
+                    div { class: "bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-8 text-sm shadow-inner",
                         if selected_option() == Some(correct_ans.clone()) {
-                            p { class: "text-emerald-400 font-bold mb-1", "✓ Jawaban Benar!" }
+                            p { class: "text-emerald-600 font-extrabold mb-2 text-base", "✓ Jawaban Benar!" }
                         } else {
-                            p { class: "text-rose-400 font-bold mb-1", "✗ Jawaban Salah!" }
-                            p { class: "text-slate-400 text-xs mb-2", "Kunci Jawaban: ", span { class: "text-slate-200 font-semibold", "{correct_ans}" } }
+                            p { class: "text-rose-600 font-extrabold mb-2 text-base", "✗ Jawaban Salah!" }
+                            p { class: "text-slate-600 text-sm mb-3 font-medium", "Kunci Jawaban: ", span { class: "text-slate-900 font-bold bg-white px-2 py-1 rounded border border-slate-200", "{correct_ans}" } }
                         }
-                        p { class: "text-slate-400 text-xs leading-relaxed", "{explanation_text}" }
+                        p { class: "text-slate-700 text-sm leading-relaxed font-medium", "{explanation_text}" }
                     }
                 }
 
-                div { class: "border-t border-slate-800 pt-4",
+                div { class: "border-t border-slate-100 pt-6",
                     if !show_explanation() {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-teal-500 text-slate-950 font-bold px-6 py-3 rounded text-sm disabled:opacity-50 transition-colors",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-teal-500 hover:bg-teal-600 text-white font-bold px-8 py-3.5 rounded-xl text-base disabled:opacity-50 transition-colors shadow-md hover:shadow-lg",
                             disabled: selected_option().is_none(),
                             onclick: move |_| {
                                 stop_speech();
@@ -535,7 +538,7 @@ pub fn Quiz(goal: String) -> Element {
                         }
                     } else if current_question_idx() + 1 < quiz_container.questions.len() {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-slate-800 hover:bg-slate-700 text-white font-bold px-6 py-3 rounded text-sm transition-colors",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-slate-800 hover:bg-slate-900 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-colors shadow-md hover:shadow-lg",
                             onclick: move |_| {
                                 stop_speech();
                                 current_question_idx.set(current_question_idx() + 1);
@@ -546,7 +549,7 @@ pub fn Quiz(goal: String) -> Element {
                         }
                     } else {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-6 py-3 rounded text-sm transition-colors shadow-lg",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-colors shadow-lg hover:shadow-xl",
                             onclick: move |_| {
                                 stop_speech();
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();

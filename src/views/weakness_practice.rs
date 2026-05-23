@@ -1,4 +1,4 @@
-﻿use dioxus::prelude::*;
+use dioxus::prelude::*;
 use crate::models::constants::LANGUAGE_COURSES;
 use crate::models::quiz::QuizQuestion;
 use crate::models::user::UserProfile;
@@ -195,6 +195,12 @@ fn format_question_for_display(question: &str) -> Vec<String> {
     }
 
     formatted = formatted
+        .replace("sentence: ", "sentence:\n")
+        .replace("blank: ", "blank:\n")
+        .replace("word: ", "word:\n")
+        .replace("following: ", "following:\n")
+        .replace("question: ", "question:\n")
+        .replace("statement: ", "statement:\n")
         .replace(": '", ":\n'")
         .replace(": \"", ":\n\"");
 
@@ -227,10 +233,10 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let (user_opt, ready) = session_state();
 
     if !ready {
-        return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex items-center justify-center", "Loading..." } };
+        return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
     }
     let Some(user) = user_opt else {
-        return rsx! { div { class: "p-6 text-slate-300", "Silakan login dulu." } };
+        return rsx! { div { class: "p-6 text-slate-600 font-sans", "Silakan login dulu." } };
     };
 
     let language = selected_language();
@@ -249,7 +255,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
     });
 
     let Some(weakness_data) = weakness_res.value()() else {
-        return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex items-center justify-center", "Mengambil data kelemahan..." } };
+        return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
     };
     let weakness_topic = weakness_data.ok().flatten().unwrap_or(goal);
 
@@ -276,27 +282,27 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let mut finished = use_signal(|| false);
 
     let Some(quiz_data) = quiz_res.value()() else {
-        return rsx! { div { class: "min-h-screen bg-slate-950 text-white flex items-center justify-center", "Menyusun practice quiz..." } };
+        return rsx! { div { class: "min-h-screen bg-slate-50 text-slate-900 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
     };
     let quiz = match quiz_data {
         Ok(q) => q,
-        Err(e) => return rsx! { div { class: "p-6 text-rose-400", "Gagal generate practice quiz: {e}" } },
+        Err(e) => return rsx! { div { class: "p-6 text-rose-600 font-bold", "Gagal generate practice quiz: {e}" } },
     };
 
     if finished() {
         return rsx! {
-            div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-center justify-center",
-                div { class: "max-w-md w-full bg-slate-900 border border-slate-800 rounded-xl p-5 sm:p-6 text-center",
-                    h2 { class: "text-2xl font-bold text-emerald-300 mb-2", "Practice Selesai" }
-                    p { class: "text-sm text-slate-400 mb-5", "Kamu sudah menyelesaikan practice topik: {weakness_topic}" }
-                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-emerald-500 hover:bg-emerald-600 text-slate-950 px-5 py-3 rounded font-bold", "Kembali ke Dashboard" }
+            div { class: "min-h-screen bg-slate-50 text-slate-900 px-4 py-6 sm:p-8 flex items-center justify-center font-sans",
+                div { class: "max-w-md w-full bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 text-center shadow-xl",
+                    h2 { class: "text-3xl font-extrabold text-teal-600 mb-3", "Practice Selesai" }
+                    p { class: "text-slate-500 font-medium mb-8", "Kamu sudah menyelesaikan practice topik: ", span { class: "text-slate-800 font-bold", "{weakness_topic}" } }
+                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-teal-500 hover:bg-teal-600 text-white px-6 py-3.5 rounded-xl font-bold shadow-md transition-colors", "Kembali ke Dashboard" }
                 }
             }
         };
     }
 
     if quiz.questions.is_empty() {
-        return rsx! { div { class: "p-6 text-amber-400", "Practice quiz kosong. Coba refresh halaman." } };
+        return rsx! { div { class: "p-8 text-amber-600 font-bold text-center", "Practice quiz kosong. Coba refresh halaman." } };
     }
 
     let current = quiz.questions[idx()].clone();
@@ -312,19 +318,19 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
 
     rsx! {
-        div { class: "min-h-screen bg-slate-950 text-white px-3 py-4 sm:p-6 flex items-start sm:items-center justify-center",
-            div { class: "max-w-2xl w-full bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-6",
-                div { class: "flex flex-wrap items-center gap-2 mb-1",
-                    p { class: "text-xs text-amber-300", "Weakness focus: {weakness_topic}" }
+        div { class: "min-h-screen bg-slate-50 text-slate-900 px-4 py-6 sm:p-8 flex items-start sm:items-center justify-center font-sans",
+            div { class: "max-w-3xl w-full bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-lg",
+                div { class: "flex flex-wrap items-center gap-3 mb-2",
+                    p { class: "text-xs font-bold bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full uppercase tracking-wider", "Weakness focus: {weakness_topic}" }
                     if is_listening_question {
-                        span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full", "Listening Test" }
+                        span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full", "Listening Test" }
                     }
                 }
-                p { class: "text-[11px] text-slate-400 mb-3", "Global language: {language} - Level {active_level}" }
-                p { class: "text-xs text-slate-500 mb-4", "Soal {idx() + 1}/{quiz.questions.len()}" }
+                p { class: "text-xs text-slate-500 font-medium mb-4", "Global language: ", span { class: "font-bold text-teal-600", "{language}" }, " - Level {active_level}" }
+                p { class: "text-sm text-slate-500 font-bold bg-slate-50 px-4 py-1.5 rounded-full inline-block mb-6", "Soal {idx() + 1}/{quiz.questions.len()}" }
 
-                div { class: "flex flex-col gap-3 mb-5",
-                    h2 { class: "text-base sm:text-lg font-semibold leading-relaxed space-y-1",
+                div { class: "flex flex-col gap-4 mb-8",
+                    h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 leading-relaxed space-y-2",
                         for line in question_lines {
                             p {
                                 class: if line.starts_with("A:")
@@ -333,19 +339,19 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                     || line.starts_with("D:")
                                     || line.starts_with("E:")
                                 {
-                                    "text-slate-200 font-medium"
+                                    "text-slate-700 font-bold"
                                 } else if line.starts_with('\'') || line.starts_with('"') {
-                                    "text-amber-100/90 italic"
+                                    "text-amber-700 italic font-medium"
                                 } else {
-                                    "text-slate-100"
+                                    "text-slate-800"
                                 },
                                 "{line}"
                             }
                         }
                     }
-                    div { class: "flex flex-wrap items-center gap-2",
+                    div { class: "flex flex-wrap items-center gap-3",
                         select {
-                            class: "bg-slate-900 border border-slate-700 text-slate-300 rounded text-xs px-3 py-2 min-h-9",
+                            class: "bg-white border border-slate-300 text-slate-700 font-medium rounded-xl text-sm px-4 py-2 min-h-10 shadow-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20",
                             value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
                             onchange: move |e| {
                                 let v = e.value();
@@ -362,37 +368,37 @@ pub fn WeaknessPractice(goal: String) -> Element {
                             option { value: "fast", "Fast" }
                         }
                         button {
-                            class: "bg-slate-800 hover:bg-slate-700 text-white px-3 py-2 min-h-9 rounded text-xs font-semibold",
+                            class: "bg-teal-500 hover:bg-teal-600 text-white px-5 py-2 min-h-10 rounded-xl text-sm font-bold transition-colors shadow-sm",
                             onclick: move |_| speak_with_edge_or_fallback(question_tts_lang_code.clone(), tts_question.clone(), listen_speed()),
                             "Listen"
                         }
                         button {
-                            class: "bg-slate-900 border border-slate-700 hover:border-slate-600 text-slate-300 px-3 py-2 min-h-9 rounded text-xs font-semibold",
+                            class: "bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-5 py-2 min-h-10 rounded-xl text-sm font-bold transition-colors shadow-sm",
                             onclick: move |_| stop_speech(),
                             "Stop"
                         }
                     }
-                    p { class: "text-[11px] text-slate-500", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
+                    p { class: "text-xs text-slate-500 font-medium", "Tip: klik opsi untuk memilih jawaban, klik tombol Listen pada opsi untuk mendengarkan." }
                     if is_listening_question {
-                        p { class: "text-[11px] text-amber-300/90", "Mode listening aktif: dengarkan audio dulu, kemudian pilih jawaban yang paling sesuai." }
+                        p { class: "text-xs text-amber-600 font-bold", "Mode listening aktif: dengarkan audio dulu, kemudian pilih jawaban yang paling sesuai." }
                     }
                 }
 
-                div { class: "flex flex-col gap-2.5 sm:gap-3 mb-5",
+                div { class: "flex flex-col gap-3 sm:gap-4 mb-8",
                     for opt in current.options.clone() {
                         {
                             let opt_for_select = opt.clone();
                             let opt_for_listen = opt.clone();
                             let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &opt_for_listen);
                             rsx! {
-                                div { class: "flex items-stretch gap-2",
+                                div { class: "flex items-stretch gap-3",
                                     button {
                                         class: format!(
-                                            "flex-1 text-left px-4 py-3.5 rounded border text-sm sm:text-[15px] leading-relaxed {}",
+                                            "flex-1 text-left px-5 py-4 rounded-xl border-2 text-base leading-relaxed transition-all font-bold {}",
                                             if selected() == Some(opt_for_select.clone()) {
-                                                "bg-teal-500/10 border-teal-500"
+                                                "bg-teal-50 border-teal-500 text-teal-800 shadow-sm"
                                             } else {
-                                                "bg-slate-950 border-slate-800"
+                                                "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-700 shadow-sm"
                                             }
                                         ),
                                         disabled: show_expl(),
@@ -400,7 +406,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                         "{opt}"
                                     }
                                     button {
-                                        class: "shrink-0 px-3 py-2 rounded border border-slate-700 bg-slate-900 hover:border-slate-600 text-slate-300 text-xs font-semibold min-w-16",
+                                        class: "shrink-0 px-4 py-2 rounded-xl border-2 border-slate-200 bg-slate-50 hover:bg-slate-100 hover:border-slate-300 text-slate-600 text-sm font-bold min-w-20 transition-colors shadow-sm",
                                         disabled: show_expl(),
                                         onclick: move |_| speak_with_edge_or_fallback(option_tts_lang_code.clone(), opt_for_listen.clone(), listen_speed()),
                                         "Listen"
@@ -412,16 +418,21 @@ pub fn WeaknessPractice(goal: String) -> Element {
                 }
 
                 if show_expl() {
-                    div { class: "bg-slate-950 border border-slate-800 rounded p-3.5 text-sm mb-5",
-                        p { class: "text-slate-300", "Kunci: {current.correct_answer}" }
-                        p { class: "text-slate-400 mt-1", "{current.explanation}" }
+                    div { class: "bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-8 text-sm shadow-inner",
+                        if selected() == Some(current.correct_answer.clone()) {
+                            p { class: "text-emerald-600 font-extrabold mb-2 text-base", "✓ Jawaban Benar!" }
+                        } else {
+                            p { class: "text-rose-600 font-extrabold mb-2 text-base", "✗ Jawaban Salah!" }
+                            p { class: "text-slate-600 text-sm mb-3 font-medium", "Kunci Jawaban: ", span { class: "text-slate-900 font-bold bg-white px-2 py-1 rounded border border-slate-200", "{current.correct_answer}" } }
+                        }
+                        p { class: "text-slate-700 text-sm leading-relaxed font-medium", "{current.explanation}" }
                     }
                 }
 
-                div { class: "border-t border-slate-800 pt-4",
+                div { class: "border-t border-slate-100 pt-6",
                     if !show_expl() {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-teal-500 text-slate-950 px-5 py-3 rounded font-bold disabled:opacity-40",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-teal-500 hover:bg-teal-600 text-white font-bold px-8 py-3.5 rounded-xl text-base disabled:opacity-50 transition-colors shadow-md hover:shadow-lg",
                             disabled: selected().is_none(),
                             onclick: move |_| {
                                 stop_speech();
@@ -444,22 +455,22 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                 }
                                 show_expl.set(true);
                             },
-                            "Cek"
+                            "Cek Jawaban"
                         }
                     } else if idx() + 1 < quiz.questions.len() {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-slate-800 hover:bg-slate-700 px-5 py-3 rounded font-bold",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-slate-800 hover:bg-slate-900 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-colors shadow-md hover:shadow-lg",
                             onclick: move |_| {
                                 stop_speech();
                                 idx.set(idx() + 1);
                                 selected.set(None);
                                 show_expl.set(false);
                             },
-                            "Next"
+                            "Pertanyaan Berikutnya"
                         }
                     } else {
                         button {
-                            class: "w-full sm:w-auto sm:ml-auto bg-emerald-500 text-slate-950 px-5 py-3 rounded font-bold",
+                            class: "w-full sm:w-auto sm:ml-auto block bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-xl text-base transition-colors shadow-lg hover:shadow-xl",
                             onclick: move |_| {
                                 stop_speech();
                                 play_sfx(SFX_WINNER);

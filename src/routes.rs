@@ -6,9 +6,11 @@ use crate::views::dashboard::Dashboard;
 use crate::views::quiz::Quiz;
 use crate::views::lesson::Lesson;
 use crate::views::chat::ChatRoleplay;
+use crate::views::voice_chat::VoiceChat;
 use crate::views::flashcard_review::FlashcardReview;
 use crate::views::weakness_practice::WeaknessPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
+use crate::views::roadmap::Roadmap;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -20,6 +22,8 @@ pub enum Route {
     Register {},
     #[route("/dashboard")]
     Dashboard {},
+    #[route("/roadmap")]
+    Roadmap {},
     #[route("/lesson/:level/:goal")]
     LessonLegacy { level: String, goal: String },
     #[route("/lesson/:goal")]
@@ -32,6 +36,10 @@ pub enum Route {
     ChatRoleplayLegacy { level: String, goal: String },
     #[route("/chat/:goal")]
     ChatRoleplay { goal: String },
+    #[route("/voice-chat/:level/:goal")]
+    VoiceChatLegacy { level: String, goal: String },
+    #[route("/voice-chat/:goal")]
+    VoiceChat { goal: String },
     #[route("/review")]
     FlashcardReview {},
     #[route("/practice/:level/:goal")]
@@ -73,6 +81,17 @@ fn ChatRoleplayLegacy(level: String, goal: String) -> Element {
     });
 
     rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route chat terbaru..." } }
+}
+
+#[component]
+fn VoiceChatLegacy(level: String, goal: String) -> Element {
+    let _ = level;
+    let navigator = use_navigator();
+    use_effect(move || {
+        navigator.replace(Route::VoiceChat { goal: goal.clone() });
+    });
+
+    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke rute voice chat terbaru..." } }
 }
 
 #[component]
