@@ -4,7 +4,7 @@ use crate::models::user::UserProfile;
 use crate::models::constants::LANGUAGE_COURSES;
 use crate::routes::Route;
 
-const FAVICON: Asset = asset!("/assets/favicon.ico");
+const FAVICON: Asset = asset!("/assets/logo.png");
 const TAILWIND_CSS: Asset = asset!("/assets/tailwind.css");
 const LOCAL_STORAGE_KEY: &str = "lingomind_user_session";
 const LEGACY_LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
@@ -114,9 +114,18 @@ pub fn App() -> Element {
         document::Script {
             "if ('serviceWorker' in navigator) {{
                 window.addEventListener('load', () => {{
-                    navigator.serviceWorker.register('/assets/sw.js')
-                        .then(registration => {{ console.log('SW registered with scope:', registration.scope); }})
-                        .catch(error => {{ console.log('SW registration failed:', error); }});
+                    // Coba daftarkan dari root (produksi) agar memiliki scope penuh /
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(registration => {{
+                            console.log('SW registered with root scope:', registration.scope);
+                        }})
+                        .catch(error => {{
+                            console.log('Root SW failed, falling back to assets SW:', error);
+                            // Fallback untuk local dev jika /sw.js tidak dimap
+                            navigator.serviceWorker.register('/assets/sw.js')
+                                .then(reg => {{ console.log('SW registered with assets scope:', reg.scope); }})
+                                .catch(err => {{ console.log('Assets SW failed:', err); }});
+                        }});
                 }});
             }}"
         }

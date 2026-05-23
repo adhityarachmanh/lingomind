@@ -47,7 +47,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response = client.post(&url).json(&payload).send().await?;
     let json_resp: serde_json::Value = response.json().await?;
     
-    println!("{:#?}", json_resp);
+    if let Some(candidates) = json_resp.get("candidates") {
+        if let Some(text) = candidates.get(0).and_then(|c| c.get("content")).and_then(|c| c.get("parts")).and_then(|p| p.get(0)).and_then(|p| p.get("text")) {
+            println!("====== HASIL RESPONS GEMINI-3.5-FLASH ======");
+            println!("{}", text.as_str().unwrap_or(""));
+        } else {
+            println!("Format response salah: {:#?}", json_resp);
+        }
+    } else {
+        println!("Error dari API Gemini: {:#?}", json_resp);
+    }
 
     Ok(())
 }
