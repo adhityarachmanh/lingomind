@@ -297,41 +297,50 @@ pub fn VoiceChat(goal: String) -> Element {
                                     user_caption.set(text.clone());
                                     voice_status.set("berpikir".to_string());
                                     
-                                    // Kirim pesan ke server
-                                    match send_chat_message_server(
-                                        user_email,
-                                        id,
-                                        lang,
-                                        lvl,
-                                        goal_val,
-                                        setting_val,
-                                        text
-                                    ).await {
-                                        Ok(updated_history) => {
-                                            messages.set(updated_history.clone());
-                                            if let Some(last_msg) = updated_history.last() {
-                                                if last_msg.sender == "ai" {
-                                                    let content_str = last_msg.content.clone();
-                                                    let (main_text, feedback_text) = if content_str.contains("Koreksi:") {
-                                                        let mut parts = content_str.splitn(2, "Koreksi:");
-                                                        let main = parts.next().unwrap_or("").trim().to_string();
-                                                        let feedback = parts.next().unwrap_or("").trim().to_string();
-                                                        (main, feedback)
-                                                    } else {
-                                                        (content_str.clone(), "".to_string())
-                                                    };
-                                                    
-                                                    ai_caption.set(main_text.clone());
-                                                    ai_feedback.set(feedback_text);
-                                                    speak_callback(main_text);
+                                    // Kirim pesan ke server di background agar tidak ter-cancel oleh re-run use_resource
+                                    let email_clone = user_email.clone();
+                                    let lang_clone = lang.clone();
+                                    let lvl_clone = lvl.clone();
+                                    let goal_clone = goal_val.clone();
+                                    let setting_clone = setting_val.clone();
+                                    let text_clone = text.clone();
+                                    
+                                    spawn(async move {
+                                        match send_chat_message_server(
+                                            email_clone,
+                                            id,
+                                            lang_clone,
+                                            lvl_clone,
+                                            goal_clone,
+                                            setting_clone,
+                                            text_clone
+                                        ).await {
+                                            Ok(updated_history) => {
+                                                messages.set(updated_history.clone());
+                                                if let Some(last_msg) = updated_history.last() {
+                                                    if last_msg.sender == "ai" {
+                                                        let content_str = last_msg.content.clone();
+                                                        let (main_text, feedback_text) = if content_str.contains("Koreksi:") {
+                                                            let mut parts = content_str.splitn(2, "Koreksi:");
+                                                            let main = parts.next().unwrap_or("").trim().to_string();
+                                                            let feedback = parts.next().unwrap_or("").trim().to_string();
+                                                            (main, feedback)
+                                                        } else {
+                                                            (content_str.clone(), "".to_string())
+                                                        };
+                                                        
+                                                        ai_caption.set(main_text.clone());
+                                                        ai_feedback.set(feedback_text);
+                                                        speak_callback(main_text);
+                                                    }
                                                 }
                                             }
+                                            Err(e) => {
+                                                error_msg.set(Some(format!("Gagal mengirim pesan suara: {}", e)));
+                                                voice_status.set("mendengarkan".to_string());
+                                            }
                                         }
-                                        Err(e) => {
-                                            error_msg.set(Some(format!("Gagal mengirim pesan suara: {}", e)));
-                                            voice_status.set("mendengarkan".to_string());
-                                        }
-                                    }
+                                    });
                                 }
                             } else if msg_type == "timeout" || msg_type == "end" {
                                 // Jika timeout karena tidak ada suara, coba restart mic otomatis setelah 1 detik
