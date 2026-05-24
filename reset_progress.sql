@@ -4,19 +4,20 @@
 BEGIN;
 
 -- 1. Mengosongkan semua tabel data aktivitas/progress yang berelasi dengan pengguna
-TRUNCATE TABLE chat_messages CASCADE;
-TRUNCATE TABLE chat_sessions CASCADE;
-TRUNCATE TABLE flashcards CASCADE;
-TRUNCATE TABLE weakness_logs CASCADE;
-TRUNCATE TABLE user_language_goals CASCADE;
-TRUNCATE TABLE skill_progress_logs CASCADE;
-TRUNCATE TABLE user_engagement_stats CASCADE;
-TRUNCATE TABLE password_resets CASCADE;
-TRUNCATE TABLE user_badges CASCADE;
-TRUNCATE TABLE followers CASCADE;
-TRUNCATE TABLE quiz_battles CASCADE;
-TRUNCATE TABLE cached_lessons CASCADE;
-TRUNCATE TABLE cached_flashcard_generations CASCADE;
+-- Menggunakan IF EXISTS agar script tidak gagal jika tabel belum dibuat
+TRUNCATE TABLE IF EXISTS chat_sessions CASCADE;
+TRUNCATE TABLE IF EXISTS flashcards CASCADE;
+TRUNCATE TABLE IF EXISTS weakness_logs CASCADE;
+TRUNCATE TABLE IF EXISTS user_language_goals CASCADE;
+TRUNCATE TABLE IF EXISTS skill_progress_logs CASCADE;
+TRUNCATE TABLE IF EXISTS user_engagement_stats CASCADE;
+TRUNCATE TABLE IF EXISTS password_resets CASCADE;
+TRUNCATE TABLE IF EXISTS user_badges CASCADE;
+TRUNCATE TABLE IF EXISTS followers CASCADE;
+TRUNCATE TABLE IF EXISTS quiz_battles CASCADE;
+TRUNCATE TABLE IF EXISTS cached_lessons CASCADE;
+TRUNCATE TABLE IF EXISTS cached_quizzes CASCADE;
+TRUNCATE TABLE IF EXISTS email_verification_tokens CASCADE;
 
 -- 2. Mereset kolom progress dan level pada tabel users ke nilai awal default (28 bahasa)
 UPDATE users 
