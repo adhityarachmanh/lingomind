@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::{LANGUAGE_COURSES, get_points_for_level};
 use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_exam_server;
 use crate::services::gemini::resolve_tts_lang_code;
@@ -336,6 +336,8 @@ pub fn Exam(level: String) -> Element {
         let correct = correct_answers_count();
         let passing_score = (total as f32 * 0.75).ceil() as usize; // 75% to pass
         let passed = correct >= passing_score;
+        let pts_per_correct = get_points_for_level(&level);
+        let score_gained = (correct as i32) * pts_per_correct;
 
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center px-4 py-6 font-sans",
@@ -376,9 +378,10 @@ pub fn Exam(level: String) -> Element {
                             let email_val = user.email.clone();
                             let lang_val = language.clone();
                             let passed_val = passed;
+                            let score_val = score_gained;
                             let nav = navigator.clone();
                             spawn(async move {
-                                if let Ok(updated_profile) = submit_exam_result(email_val, lang_val, passed_val).await {
+                                if let Ok(updated_profile) = submit_exam_result(email_val, lang_val, passed_val, score_val).await {
                                     session_state.set((Some(updated_profile), true));
                                 }
                                 // Navigate anyway

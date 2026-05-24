@@ -6,6 +6,7 @@ use crate::models::flashcard::NewFlashcard;
 use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::resolve_tts_lang_code;
+use crate::models::constants::get_points_for_level;
 use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::update_user_score;
 use crate::services::engagement::update_engagement_after_quiz_server;
@@ -569,7 +570,8 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
                                     play_sfx(SFX_CORRECT);
-                                    score_gained.set(score_gained() + 20);
+                                    let pts = get_points_for_level(&active_level);
+                                    score_gained.set(score_gained() + pts);
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();
                                         let skill = classify_skill(&current_q.question, &explanation_text, &question_type_for_skill);

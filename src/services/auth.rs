@@ -503,7 +503,7 @@ pub async fn resend_verification_email_server(email: String) -> Result<String, S
 
 /// Fungsi Server untuk memverifikasi dan mencatat kelulusan Exam
 #[server]
-pub async fn submit_exam_result(email: String, language: String, passed: bool) -> Result<UserProfile, ServerFnError> {
+pub async fn submit_exam_result(email: String, language: String, passed: bool, score_gained: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
     let row = sqlx::query("SELECT score, current_level FROM users WHERE email = $1")
@@ -512,7 +512,8 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool) -
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
 
-    let final_score = row.get::<Option<i32>, _>("score").unwrap_or(0);
+    let mut final_score = row.get::<Option<i32>, _>("score").unwrap_or(0);
+    final_score += score_gained;
     let raw_level: serde_json::Value = row.get("current_level");
     let mut level_map: std::collections::HashMap<String, String> = serde_json::from_value(raw_level)
         .unwrap_or_else(|_| generate_default_levels());
@@ -545,9 +546,10 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool) -
     let updated_levels_json = serde_json::to_value(&level_map).unwrap_or_default();
 
     let update_row = sqlx::query(
-        "UPDATE users SET current_level = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET current_level = $1, score = $2 WHERE email = $3 RETURNING full_name, email, preferred_language, score"
     )
     .bind(updated_levels_json)
+    .bind(final_score)
     .bind(email)
     .fetch_one(pool)
     .await

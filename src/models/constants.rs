@@ -45,3 +45,95 @@ pub const LANGUAGE_COURSES: &[LanguageCourse] = &[
 ];
 
 pub const COURSE_CATEGORIES: &[&str] = &["All", "Eropa", "Amerika", "Asia", "Timur Tengah"];
+
+#[derive(Clone, PartialEq, Debug)]
+pub struct CurriculumLevel {
+    pub level: &'static str,
+    pub title: &'static str,
+    pub description: &'static str,
+    pub topics: Vec<&'static str>,
+}
+
+pub fn get_curriculum() -> Vec<CurriculumLevel> {
+    vec![
+        CurriculumLevel {
+            level: "A1",
+            title: "Beginner",
+            description: "Memahami dan menggunakan ekspresi sehari-hari yang sangat dasar.",
+            topics: vec![
+                "Greetings & Introductions",
+                "Basic Numbers & Time",
+                "Everyday Vocabulary",
+                "Simple Sentences",
+            ],
+        },
+        CurriculumLevel {
+            level: "A2",
+            title: "Elementary",
+            description: "Dapat berkomunikasi dalam tugas-tugas sederhana dan rutin.",
+            topics: vec![
+                "Daily Routines",
+                "Past Experiences",
+                "Making Plans",
+                "Giving Directions",
+            ],
+        },
+        CurriculumLevel {
+            level: "B1",
+            title: "Intermediate",
+            description: "Dapat memahami poin utama dari input standar yang jelas.",
+            topics: vec![
+                "Travel & Hobbies",
+                "Expressing Opinions",
+                "Modals & Conditionals",
+                "Understanding Short Texts",
+            ],
+        },
+        CurriculumLevel {
+            level: "B2",
+            title: "Upper Intermediate",
+            description: "Dapat memahami gagasan utama dari teks kompleks.",
+            topics: vec![
+                "Complex Conversations",
+                "Advanced Grammar",
+                "Expressing Emotions",
+                "Debating & Persuasion",
+            ],
+        },
+        CurriculumLevel {
+            level: "C1",
+            title: "Advanced",
+            description: "Dapat mengekspresikan ide dengan lancar dan spontan.",
+            topics: vec![
+                "Nuances of Meaning",
+                "Idiomatic Expressions",
+                "Professional Discussions",
+                "Cultural Contexts",
+            ],
+        },
+        CurriculumLevel {
+            level: "C2",
+            title: "Mastery",
+            description: "Dapat memahami hampir semua hal yang didengar atau dibaca dengan mudah.",
+            topics: vec![
+                "Abstract Concepts",
+                "Literature & Media",
+                "Complex Debates",
+                "Subtle Implication",
+            ],
+        },
+    ]
+}
+
+pub fn get_points_for_level(level: &str) -> i32 {
+    let base = if level.len() >= 2 { &level[0..2] } else { "A1" };
+    match base {
+        "A1" => 10,
+        "A2" => 20,
+        "B1" => 30,
+        "B2" => 40,
+        "C1" => 50,
+        "C2" => 60,
+        _ => 10,
+    }
+}
