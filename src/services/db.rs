@@ -12,7 +12,10 @@ mod server_db {
         let database_url = std::env::var("DATABASE_URL")
             .map_err(|_| "DATABASE_URL tidak ditemukan di .env")?;
 
-        let pool = PgPool::connect(&database_url).await?;
+        let pool = sqlx::postgres::PgPoolOptions::new()
+            .max_connections(20)
+            .acquire_timeout(std::time::Duration::from_secs(60))
+            .connect(&database_url).await?;
 
         sqlx::migrate!("./migrations")
             .run(&pool)
