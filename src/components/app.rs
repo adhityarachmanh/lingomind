@@ -28,6 +28,43 @@ pub fn App() -> Element {
         Signal::new((initial_user, false))
     });
     let mut selected_language = use_context_provider(|| Signal::new("English".to_string()));
+    let mut theme_state = use_context_provider(|| Signal::new("light".to_string()));
+
+    use_effect(move || {
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(window) = web_sys::window() {
+                if let Ok(Some(local_storage)) = window.local_storage() {
+                    if let Ok(Some(stored_theme)) = local_storage.get_item("lingomind_theme") {
+                        if stored_theme == "dark" || stored_theme == "light" {
+                            theme_state.set(stored_theme);
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    use_effect(move || {
+        let current_theme = theme_state();
+        #[cfg(target_arch = "wasm32")]
+        {
+            if let Some(window) = web_sys::window() {
+                if let Some(document) = window.document() {
+                    if let Some(doc_element) = document.document_element() {
+                        if current_theme == "dark" {
+                            let _ = doc_element.class_list().add_1("dark");
+                        } else {
+                            let _ = doc_element.class_list().remove_1("dark");
+                        }
+                    }
+                }
+                if let Ok(Some(local_storage)) = window.local_storage() {
+                    let _ = local_storage.set_item("lingomind_theme", &current_theme);
+                }
+            }
+        }
+    });
 
     use_effect(move || {
         #[cfg(target_arch = "wasm32")]
@@ -114,6 +151,14 @@ pub fn App() -> Element {
         document::Link { rel: "apple-touch-icon", href: "/assets/icon.svg" }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
+        document::Script {
+            "if (localStorage.getItem('lingomind_theme') === 'dark' || (!('lingomind_theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {{
+                document.documentElement.classList.add('dark');
+            }} else {{
+                document.documentElement.classList.remove('dark');
+            }}"
+        }
+        document::Script { src: "https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js" }
         document::Script {
             "if ('serviceWorker' in navigator) {{
                 window.addEventListener('load', () => {{

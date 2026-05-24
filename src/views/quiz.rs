@@ -297,32 +297,39 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
 
     let Some(quiz_result) = quiz_resource.value()() else {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center gap-4 font-sans",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
-                p { class: "text-slate-500 animate-pulse text-sm font-medium", "Gemini AI sedang merancang kuis kustom untuk Anda..." }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Gemini AI sedang merancang kuis kustom untuk Anda..." }
             }
         };
     };
 
     let quiz_container = match quiz_result {
         Ok(data) => data,
-        Err(_) => return rsx! { div { class: "p-8 text-rose-600 font-bold text-center", "Gagal memuat kuis dari AI Studio. Cek koneksi/.env." } }
+        Err(_) => return rsx! { div { class: "p-8 text-rose-600 dark:text-rose-400 font-bold text-center", "Gagal memuat kuis dari AI Studio. Cek koneksi/.env." } }
     };
 
     if quiz_container.questions.is_empty() {
-        return rsx! { div { class: "p-8 text-amber-600 font-bold text-center", "AI mengembalikan kuis kosong. Coba muat ulang halaman." } };
+        return rsx! { div { class: "p-8 text-amber-600 dark:text-amber-400 font-bold text-center", "AI mengembalikan kuis kosong. Coba muat ulang halaman." } };
     }
 
     if quiz_finished() {
         play_sfx(SFX_WINNER);
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center px-4 py-6 sm:p-8 font-sans",
-                div { class: "bg-white p-6 sm:p-10 rounded-3xl border border-slate-200 text-center max-w-md w-full shadow-xl",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex flex-col justify-center items-center px-4 py-6 sm:p-8 font-sans",
+                div { class: "bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-3xl border border-slate-200/30 dark:border-slate-700 text-center max-w-md w-full shadow-xl",
                     h2 { class: "text-5xl mb-4", "🎉" }
-                    h3 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Kuis Selesai!" }
-                    p { class: "text-slate-500 text-sm mb-8 font-medium", "Skor Anda berhasil dikirim ke database Neon." }
-                    div { class: "bg-teal-50 p-6 rounded-2xl border border-teal-100 mb-8",
-                        p { class: "text-xs uppercase tracking-widest text-teal-600 font-bold mb-2", "Tambahan Skor" }
+                    h3 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Kuis Selesai!" }
+                    p { class: "text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium", "Skor Anda berhasil dikirim ke database Neon." }
+                    if score_gained() > 0 {
+                        document::Script {
+                            "if (typeof confetti === 'function') {{
+                                confetti({{ particleCount: 150, spread: 70, origin: {{ y: 0.6 }} }});
+                            }}"
+                        }
+                    }
+                    div { class: "bg-teal-50/30 dark:bg-teal-900/30 p-6 rounded-2xl border border-teal-100/50 dark:border-teal-900/50 mb-8",
+                        p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2", "Tambahan Skor" }
                         p { class: "text-4xl font-black text-teal-700", "+{score_gained} Poin" }
                     }
                     Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Dashboard" }
@@ -349,37 +356,37 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
 
     rsx! {
-        div { class: "min-h-screen bg-white sm:bg-slate-50 text-slate-900 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
-            div { class: "max-w-3xl w-full bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col justify-between min-h-screen sm:min-h-0",
+        div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
+            div { class: "max-w-3xl w-full bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col justify-between min-h-screen sm:min-h-0",
                 
                 div {
                     // Header progress bar timeline (Duolingo style)
-                    div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4",
+                    div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100/50 dark:border-slate-800 pb-4",
                         Link {
                             to: Route::Dashboard {},
-                            class: "text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors cursor-pointer p-1",
+                            class: "text-slate-400 hover:text-slate-600/50 dark:text-slate-400 text-xl font-bold transition-colors cursor-pointer p-1",
                             "✕"
                         }
-                        div { class: "flex-1 h-3.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/50 p-[2px]",
+                        div { class: "flex-1 h-3.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50 p-[2px]",
                             div {
                                 class: "h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full transition-all duration-300 shadow-sm",
                                 width: "{((current_question_idx() + 1) * 100 / quiz_container.questions.len()).min(100)}%"
                             }
                         }
-                        span { class: "text-xs font-bold text-slate-500 font-mono shrink-0", "{current_question_idx() + 1}/{quiz_container.questions.len()}" }
+                        span { class: "text-xs font-bold text-slate-500 dark:text-slate-400 font-mono shrink-0", "{current_question_idx() + 1}/{quiz_container.questions.len()}" }
                     }
 
                     // Level and status badges
                     div { class: "flex flex-wrap items-center gap-2 mb-4",
-                        span { class: "text-[10px] font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100", "Latihan {language} ({active_level})" }
+                        span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50", "Latihan {language} ({active_level})" }
                         if is_listening_question {
-                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-200 px-2.5 py-1 rounded-full", "Listening Test" }
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-2.5 py-1 rounded-full", "Listening Test" }
                         }
                     }
 
                     // Question lines
                     div { class: "flex flex-col gap-4 mb-6",
-                        h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 leading-relaxed space-y-2",
+                        h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed space-y-2",
                             for line in question_lines {
                                 p {
                                     class: if line.starts_with("A:")
@@ -388,11 +395,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                         || line.starts_with("D:")
                                         || line.starts_with("E:")
                                     {
-                                        "text-slate-700 font-bold"
+                                        "text-slate-700 dark:text-slate-300 font-bold"
                                     } else if line.starts_with('\'') || line.starts_with('"') {
                                         "text-amber-700 italic font-medium"
                                     } else {
-                                        "text-slate-800"
+                                        "text-slate-800 dark:text-slate-200"
                                     },
                                     "{line}"
                                 }
@@ -401,7 +408,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                     }
 
                     // Listen control card
-                    div { class: "flex items-center justify-between bg-slate-50 border border-slate-100 rounded-2xl p-3 sm:p-4 mb-6 gap-3 shadow-sm",
+                    div { class: "flex items-center justify-between bg-slate-50 dark:bg-slate-950 border border-slate-100/20 dark:border-slate-800 rounded-2xl p-3 sm:p-4 mb-6 gap-3 shadow-sm",
                         div { class: "flex items-center gap-2",
                             button {
                                 class: "w-9 h-9 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center text-sm font-bold transition-all shadow-md shadow-teal-500/20 active:scale-95 cursor-pointer",
@@ -409,14 +416,14 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 "🔊"
                             }
                             button {
-                                class: "w-9 h-9 rounded-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-500 flex items-center justify-center text-xs font-bold transition-all active:scale-95 cursor-pointer",
+                                class: "w-9 h-9 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 flex items-center justify-center text-xs font-bold transition-all active:scale-95 cursor-pointer",
                                 onclick: move |_| stop_speech(),
                                 "⏹"
                             }
-                            span { class: "text-xs font-bold text-slate-500", if is_listening_question { "Dengarkan Soal" } else { "Pengucapan" } }
+                            span { class: "text-xs font-bold text-slate-500 dark:text-slate-400", if is_listening_question { "Dengarkan Soal" } else { "Pengucapan" } }
                         }
                         select {
-                            class: "bg-white border border-slate-200 text-slate-700 font-bold rounded-xl text-xs px-2 py-1.5 focus:outline-none focus:border-teal-500 cursor-pointer shadow-sm",
+                            class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs px-2 py-1.5 focus:outline-none focus:border-teal-500 cursor-pointer shadow-sm",
                             value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
 							onchange: move |e| {
 								let v = e.value();
@@ -456,9 +463,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                         class: format!(
                                             "flex items-center justify-between p-4 rounded-2xl border-2 text-sm sm:text-base leading-relaxed transition-all font-bold active:scale-[0.99] cursor-pointer shadow-sm {}",
                                             if selected_option() == Some(option_for_select.clone()) {
-                                                "bg-teal-50/70 border-teal-500 text-teal-900 shadow-md ring-1 ring-teal-500/20"
+                                                "bg-teal-50/30 dark:bg-teal-900/30/70 border-teal-500 text-teal-900 shadow-md ring-1 ring-teal-500/20"
                                             } else {
-                                                "bg-white border-slate-100 hover:border-slate-300 hover:bg-slate-50 text-slate-700"
+                                                "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300"
                                             }
                                         ),
                                         onclick: move |_| {
@@ -473,7 +480,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                                     if selected_option() == Some(option_for_select.clone()) {
                                                         "bg-teal-500 text-white"
                                                     } else {
-                                                        "bg-slate-100 text-slate-500"
+                                                        "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
                                                     }
                                                 ),
                                                 "{prefix}"
@@ -481,7 +488,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                             span { class: "font-semibold text-left", "{option}" }
                                         }
                                         button {
-                                            class: "w-9 h-9 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:text-teal-600 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
+                                            class: "w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:text-teal-600 dark:text-teal-400 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
                                             disabled: show_explanation(),
                                             onclick: move |e| {
                                                 e.stop_propagation();
@@ -497,20 +504,20 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
 
                     // Explanation Box
                     if show_explanation() {
-                        div { class: "bg-slate-50 p-5 rounded-2xl border border-slate-200 mb-6 text-sm shadow-inner",
+                        div { class: "bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 mb-6 text-sm shadow-inner",
                             if selected_option() == Some(correct_ans.clone()) {
                                 p { class: "text-emerald-600 font-extrabold mb-2 text-base", "✓ Jawaban Benar!" }
                             } else {
-                                p { class: "text-rose-600 font-extrabold mb-2 text-base", "✗ Jawaban Salah!" }
-                                p { class: "text-slate-600 text-sm mb-3 font-medium", "Kunci Jawaban: ", span { class: "text-slate-900 font-bold bg-white px-2 py-1 rounded border border-slate-200", "{correct_ans}" } }
+                                p { class: "text-rose-600 dark:text-rose-400 font-extrabold mb-2 text-base", "✗ Jawaban Salah!" }
+                                p { class: "text-slate-600 dark:text-slate-400 text-sm mb-3 font-medium", "Kunci Jawaban: ", span { class: "text-slate-900 dark:text-slate-50 font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700", "{correct_ans}" } }
                             }
-                            p { class: "text-slate-700 text-sm leading-relaxed font-medium", "{explanation_text}" }
+                            p { class: "text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium", "{explanation_text}" }
                         }
                     }
                 }
 
                 // Sticky Bottom Action Container for Mobile / Relative for Desktop
-                div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-slate-200 sm:relative sm:border-0 sm:p-0 sm:bg-transparent sm:pt-6 z-40 safe-bottom flex justify-end",
+                div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 sm:relative sm:border-0 sm:p-0 sm:bg-transparent sm:pt-6 z-40 safe-bottom flex justify-end",
                     if !show_explanation() {
                         button {
                             class: "w-full sm:w-auto bg-teal-500 hover:bg-teal-600 text-white font-bold px-8 py-3.5 rounded-2xl text-base disabled:opacity-50 transition-colors shadow-md hover:shadow-lg cursor-pointer",

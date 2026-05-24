@@ -72,22 +72,22 @@ pub fn Register() -> Element {
     };
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 text-slate-800 flex flex-col justify-center items-center p-6",
-            div { class: "bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 text-center",
+        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 flex flex-col justify-center items-center p-6",
+            div { class: "bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 dark:border-slate-700 text-center",
                 
                 img {
                     src: asset!("/assets/logo.png"),
                     alt: "LingoMind Logo",
-                    class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100",
+                    class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800",
                 }
-                h2 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Join LingoMind" }
-                p { class: "text-slate-500 font-medium text-sm mb-6", "Create an account to track your study scores" }
+                h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Join LingoMind" }
+                p { class: "text-slate-500/30 dark:text-slate-400 font-medium text-sm mb-6", "Create an account to track your study scores" }
                 
                 if let Some(msg) = is_success_msg() {
                     div { class: "py-6",
-                        div { class: "w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl", "📩" }
-                        h3 { class: "text-xl font-bold text-slate-800 mb-2", "Cek Email Anda" }
-                        p { class: "text-sm text-slate-600 leading-relaxed mb-6", "{msg}" }
+                        div { class: "w-16 h-16 bg-teal-100 text-teal-600 dark:text-teal-400 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl", "📩" }
+                        h3 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-2", "Cek Email Anda" }
+                        p { class: "text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-6", "{msg}" }
                         Link {
                             to: Route::Login {},
                             class: "block w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg",
@@ -96,15 +96,15 @@ pub fn Register() -> Element {
                     }
                 } else {
                     if let Some(msg) = error_message() {
-                        div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex items-center gap-2",
+                        div { class: "mb-4 p-3 bg-rose-50/30 dark:bg-rose-900/30 border border-rose-200 rounded-lg text-rose-600 dark:text-rose-400 text-xs text-left font-semibold flex items-center gap-2",
                             "⚠️ {msg}"
                         }
                     }
 
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Nama Lengkap" }
+                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Nama Lengkap" }
                         input {
-                            class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                            class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                             placeholder: "Masukkan nama lengkap...",
                             value: "{full_name_input}",
                             disabled: is_loading(),
@@ -113,10 +113,10 @@ pub fn Register() -> Element {
                     }
 
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Email" }
+                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
                         input {
                             r#type: "email",
-                            class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                            class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                             placeholder: "Masukkan email aktif Anda...",
                             value: "{email_input}",
                             disabled: is_loading(),
@@ -126,11 +126,11 @@ pub fn Register() -> Element {
 
                     // Input Password Utama
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Password" }
+                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Password" }
                         div { class: "relative flex items-center",
                             input {
                                 r#type: if show_password() { "text" } else { "password" },
-                                class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                                class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                                 placeholder: "Buat password aman...",
                                 value: "{password_input}",
                                 disabled: is_loading(),
@@ -138,22 +138,22 @@ pub fn Register() -> Element {
                             }
                             button {
                                 r#type: "button",
-                                class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
+                                class: "absolute right-4 text-slate-400 hover:text-teal-600 dark:text-teal-400 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
                                 disabled: is_loading(),
                                 onclick: move |_| show_password.set(!show_password()),
                                 if show_password() { "HIDE" } else { "SHOW" }
                             }
                         }
-                        span { class: "text-[10px] text-slate-500 mt-1 block font-medium", "Minimal panjang password adalah 6 karakter." }
+                        span { class: "text-[10px] text-slate-500 dark:text-slate-400 mt-1 block font-medium", "Minimal panjang password adalah 6 karakter." }
                     }
 
                     // Input Konfirmasi Password
                     div { class: "mb-6 text-left",
-                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Confirm Password" }
+                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Confirm Password" }
                         div { class: "relative flex items-center",
                             input {
                                 r#type: if show_confirm_password() { "text" } else { "password" },
-                                class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                                class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                                 placeholder: "Ulangi password...",
                                 value: "{confirm_password_input}",
                                 disabled: is_loading(),
@@ -161,7 +161,7 @@ pub fn Register() -> Element {
                             }
                             button {
                                 r#type: "button",
-                                class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
+                                class: "absolute right-4 text-slate-400 hover:text-teal-600 dark:text-teal-400 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
                                 disabled: is_loading(),
                                 onclick: move |_| show_confirm_password.set(!show_confirm_password()),
                                 if show_confirm_password() { "HIDE" } else { "SHOW" }
@@ -192,11 +192,11 @@ pub fn Register() -> Element {
                     }
                 }
 
-                div { class: "text-xs text-slate-500 pt-5 border-t border-slate-100 mt-6",
+                div { class: "text-xs text-slate-500 dark:text-slate-400 pt-5 border-t border-slate-100 dark:border-slate-800 mt-6",
                     span { "Sudah punya akun? " }
                     Link { 
                         to: Route::Login {},
-                        class: "text-teal-600 font-bold hover:underline",
+                        class: "text-teal-600 dark:text-teal-400 font-bold hover:underline",
                         "Login di sini"
                     }
                 }

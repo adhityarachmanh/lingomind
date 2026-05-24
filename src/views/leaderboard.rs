@@ -21,7 +21,7 @@ pub fn Leaderboard() -> Element {
 
     if !is_ready {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 flex justify-center items-center",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex justify-center items-center",
                 div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" }
             }
         };
@@ -87,7 +87,7 @@ pub fn Leaderboard() -> Element {
     };
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans pb-20",
+        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 sm:p-8 font-sans pb-20",
             div { class: "max-w-3xl mx-auto space-y-6",
 
                 // Header
@@ -99,19 +99,19 @@ pub fn Leaderboard() -> Element {
                 }
 
                 // Tabs
-                div { class: "flex bg-white rounded-2xl shadow-sm border border-slate-200 p-1",
+                div { class: "flex bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-1",
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "global" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "global" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
                         onclick: move |_| active_tab.set("global".to_string()),
                         "🌍 Global"
                     }
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "teman" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "teman" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
                         onclick: move |_| active_tab.set("teman".to_string()),
                         "👥 Teman"
                     }
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "cari" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "cari" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
                         onclick: move |_| active_tab.set("cari".to_string()),
                         "🔍 Cari"
                     }
@@ -141,9 +141,9 @@ pub fn Leaderboard() -> Element {
                         Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
                         Some(Ok(entries)) => rsx! {
                             if entries.len() <= 1 {
-                                div { class: "text-center py-10 bg-white rounded-2xl shadow-sm border border-slate-200",
+                                div { class: "text-center py-10 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700",
                                     p { class: "text-4xl mb-4", "🕵️" }
-                                    p { class: "text-slate-500 font-medium", "Anda belum mengikuti siapa pun." }
+                                    p { class: "text-slate-500 dark:text-slate-400 font-medium", "Anda belum mengikuti siapa pun." }
                                     button {
                                         class: "mt-4 bg-teal-500 text-white font-bold py-2 px-6 rounded-xl",
                                         onclick: move |_| active_tab.set("cari".to_string()),
@@ -156,10 +156,10 @@ pub fn Leaderboard() -> Element {
                         }
                     }
                 } else if active_tab() == "cari" {
-                    div { class: "bg-white p-6 rounded-2xl shadow-sm border border-slate-200",
+                    div { class: "bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700",
                         input {
                             r#type: "text",
-                            class: "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500 transition-colors",
+                            class: "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500 transition-colors",
                             placeholder: "Cari nama atau email teman...",
                             value: "{search_query}",
                             oninput: move |e| search_query.set(e.value())
@@ -167,22 +167,22 @@ pub fn Leaderboard() -> Element {
 
                         div { class: "mt-6 space-y-3",
                             match search_resource.value()() {
-                                None => rsx! { div { class: "text-center text-sm text-slate-500", "Ketik minimal 3 huruf..." } },
+                                None => rsx! { div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Ketik minimal 3 huruf..." } },
                                 Some(Err(e)) => rsx! { div { class: "text-red-500", "{e}" } },
                                 Some(Ok(results)) => {
                                     if results.is_empty() && search_query().len() >= 3 {
-                                        rsx! { div { class: "text-center text-sm text-slate-500", "Tidak ditemukan." } }
+                                        rsx! { div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Tidak ditemukan." } }
                                     } else {
                                         rsx! {
                                             for user in results {
-                                                div { class: "flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-100",
+                                                div { class: "flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800",
                                                     div {
-                                                        p { class: "font-bold text-slate-800", "{user.full_name}" }
-                                                        p { class: "text-xs text-slate-500", "{user.score} pts" }
+                                                        p { class: "font-bold text-slate-800 dark:text-slate-200", "{user.full_name}" }
+                                                        p { class: "text-xs text-slate-500 dark:text-slate-400", "{user.score} pts" }
                                                     }
                                                     button {
                                                         class: format!("px-4 py-2 text-xs font-bold rounded-lg transition-colors {}", 
-                                                            if user.is_following { "bg-slate-200 text-slate-700 hover:bg-slate-300" } 
+                                                            if user.is_following { "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300" } 
                                                             else { "bg-teal-500 text-white hover:bg-teal-600" }),
                                                         onclick: {
                                                             let u_email = user.email.clone();
@@ -217,7 +217,7 @@ pub fn Leaderboard() -> Element {
                 div { class: "text-center pt-2",
                     Link {
                         to: Route::Dashboard {},
-                        class: "inline-block bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-6 py-3 rounded-xl transition-colors text-sm",
+                        class: "inline-block bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-6 py-3 rounded-xl transition-colors text-sm",
                         "← Kembali ke Dashboard"
                     }
                 }
@@ -225,25 +225,25 @@ pub fn Leaderboard() -> Element {
                 // Modal Tantangan
                 if challenge_modal_open() {
                     div { class: "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4",
-                        div { class: "bg-white rounded-3xl p-6 w-full max-w-sm shadow-xl",
-                            h3 { class: "text-lg font-black text-slate-800 mb-2 flex items-center gap-2", span { class: "text-xl", "⚔️" } "Tantang Teman" }
-                            p { class: "text-sm text-slate-500 mb-4", "Pilih topik kuis yang ingin Anda ujikan. Siapa yang paling tinggi skornya, dia yang dapat Koin!" }
+                        div { class: "bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-xl",
+                            h3 { class: "text-lg font-black text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2", span { class: "text-xl", "⚔️" } "Tantang Teman" }
+                            p { class: "text-sm text-slate-500 dark:text-slate-400 mb-4", "Pilih topik kuis yang ingin Anda ujikan. Siapa yang paling tinggi skornya, dia yang dapat Koin!" }
                             
                             input {
                                 r#type: "text",
-                                class: "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-indigo-500 transition-colors",
+                                class: "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-indigo-500 transition-colors",
                                 placeholder: "Contoh: Past Tense, Passive Voice...",
                                 value: "{challenge_goal}",
                                 oninput: move |e| challenge_goal.set(e.value())
                             }
                             
                             if !challenge_status().is_empty() {
-                                p { class: "text-xs font-bold text-indigo-600 mb-4 text-center", "{challenge_status}" }
+                                p { class: "text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-4 text-center", "{challenge_status}" }
                             }
                             
                             div { class: "flex gap-3",
                                 button {
-                                    class: "flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors cursor-pointer",
+                                    class: "flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-colors cursor-pointer",
                                     onclick: move |_| challenge_modal_open.set(false),
                                     "Tutup"
                                 }
@@ -271,7 +271,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
         div { class: "space-y-6",
             // Podium Top 3 (hanya tampilkan jika di tab Global, atau jika di tab teman dan jumlah > 0)
             if !top3.is_empty() {
-                div { class: "bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
+                div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
                     div { class: "flex items-end justify-center gap-3 sm:gap-5 pt-4 pb-2",
                         if top3.len() >= 2 {
                             {
@@ -280,8 +280,8 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center",
                                         div { class: format!("w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400" } else { "bg-gradient-to-br from-slate-100 to-slate-200" }), "🥈" }
-                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
-                                        p { class: "text-xs font-black text-amber-600", "{entry.score} pts" }
+                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-16 sm:w-20 h-16 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-2xl font-black text-slate-400", "2" } }
                                     }
                                 }
@@ -294,9 +294,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center -mt-4",
                                         div { class: format!("w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl {}", if is_me { "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400" } else { "bg-gradient-to-br from-amber-100 to-yellow-200" }), "🥇" }
-                                        p { class: "text-sm sm:text-base font-black text-slate-800 mt-2 text-center max-w-[100px] truncate", "{entry.full_name}" }
-                                        p { class: "text-sm font-black text-amber-600", "{entry.score} pts" }
-                                        div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-3xl font-black text-amber-600", "1" } }
+                                        p { class: "text-sm sm:text-base font-black text-slate-800 dark:text-slate-200 mt-2 text-center max-w-[100px] truncate", "{entry.full_name}" }
+                                        p { class: "text-sm font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
+                                        div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-3xl font-black text-amber-600 dark:text-amber-400", "1" } }
                                     }
                                 }
                             }
@@ -308,8 +308,8 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center",
                                         div { class: format!("w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400" } else { "bg-gradient-to-br from-orange-50 to-orange-100" }), "🥉" }
-                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
-                                        p { class: "text-xs font-black text-amber-600", "{entry.score} pts" }
+                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-14 sm:w-18 h-12 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-xl font-black text-orange-400", "3" } }
                                     }
                                 }
@@ -321,16 +321,16 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
 
             // List Lainnya
             if !rest.is_empty() {
-                div { class: "bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden",
+                div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden",
                     div { class: "divide-y divide-slate-100",
                         for entry in rest {
                             {
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
-                                    div { class: format!("flex items-center gap-4 px-6 py-3.5 transition-colors {}", if is_me { "bg-amber-50 border-l-4 border-amber-400" } else { "hover:bg-slate-50" }),
-                                        div { class: "w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-black text-slate-500 shrink-0", "{entry.rank}" }
+                                    div { class: format!("flex items-center gap-4 px-6 py-3.5 transition-colors {}", if is_me { "bg-amber-50/30 dark:bg-amber-900/30 border-l-4 border-amber-400" } else { "hover:bg-slate-50 dark:bg-slate-950" }),
+                                        div { class: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500 dark:text-slate-400 shrink-0", "{entry.rank}" }
                                         div { class: "flex-1 min-w-0",
-                                            p { class: format!("text-sm font-bold truncate {}", if is_me { "text-amber-700" } else { "text-slate-800" }),
+                                            p { class: format!("text-sm font-bold truncate {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }),
                                                 "{entry.full_name}"
                                                 if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
                                             }
@@ -348,9 +348,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                                     "⚔️ Tantang"
                                                 }
                                             }
-                                            div { class: "flex items-center gap-3 text-xs text-slate-500 font-semibold shrink-0",
+                                            div { class: "flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold shrink-0",
                                                 span { class: "hidden sm:inline", "🔥 {entry.current_streak}" }
-                                                span { class: "text-sm font-black text-amber-600 min-w-[50px] text-right", "{entry.score} pts" }
+                                                span { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right", "{entry.score} pts" }
                                             }
                                         }
                                     }

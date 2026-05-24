@@ -250,9 +250,9 @@ pub fn Lesson(goal: String) -> Element {
 
     let Some(lesson_result) = lesson_value else {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 text-slate-900 flex flex-col justify-center items-center gap-4 font-sans",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
-                p { class: "text-slate-500 animate-pulse text-sm font-medium", "Menyusun materi belajar khusus untuk Anda..." }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Menyusun materi belajar khusus untuk Anda..." }
             }
         };
     };
@@ -264,7 +264,7 @@ pub fn Lesson(goal: String) -> Element {
                 (cached, true)
             } else {
                 return rsx! {
-                    div { class: "p-8 text-rose-600 text-center mt-20 font-bold bg-rose-50 border border-rose-200 rounded-xl m-4", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
+                    div { class: "p-8 text-rose-600 dark:text-rose-400 text-center mt-20 font-bold bg-rose-50/30 dark:bg-rose-900/30 border border-rose-200 rounded-xl m-4", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
                 }
             }
         }
@@ -273,53 +273,53 @@ pub fn Lesson(goal: String) -> Element {
     let sections = parse_lesson_sections(&lesson_data.content);
 
     rsx! {
-        div { class: "min-h-screen bg-white sm:bg-slate-50 text-slate-900 px-0 sm:px-6 py-0 sm:py-8 font-sans pb-24 sm:pb-8",
-            div { class: "max-w-5xl w-full mx-auto bg-white border-0 sm:border border-slate-200 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col min-h-screen sm:min-h-0",
+        div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-6 py-0 sm:py-8 font-sans pb-24 sm:pb-8",
+            div { class: "max-w-5xl w-full mx-auto bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col min-h-screen sm:min-h-0",
                 
                 // Header (Duolingo style close button on mobile, clean details)
-                div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100 pb-4",
+                div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100 dark:border-slate-800 pb-4",
                     Link {
                         to: Route::Dashboard {},
-                        class: "text-slate-400 hover:text-slate-600 text-xl font-bold transition-colors cursor-pointer p-1",
+                        class: "text-slate-400 hover:text-slate-600 dark:text-slate-400 text-xl font-bold transition-colors cursor-pointer p-1",
                         "✕"
                     }
                     div { class: "flex-1",
-                        h1 { class: "text-lg sm:text-2xl font-black text-slate-800 leading-tight", "{lesson_data.title}" }
+                        h1 { class: "text-lg sm:text-2xl font-black text-slate-800 dark:text-slate-200 leading-tight", "{lesson_data.title}" }
                     }
                 }
 
                 // Badges
                 div { class: "flex flex-wrap items-center gap-2 mb-6",
-                    span { class: "text-[10px] font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100", "Materi {language} ({active_level})" }
-                    span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100", "Goal: {goal}" }
-                    span { class: "text-[10px] font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100", "Bagian {lesson_part}" }
+                    span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50", "Materi {language} ({active_level})" }
+                    span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100 dark:border-indigo-900/50", "Goal: {goal}" }
+                    span { class: "text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50/30 dark:bg-orange-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100 dark:border-orange-900/50", "Bagian {lesson_part}" }
                     if is_offline {
-                        span { class: "text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-rose-100", "📵 Offline Mode" }
+                        span { class: "text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-rose-100 dark:border-rose-900/50", "📵 Offline Mode" }
                     }
                     if is_loading_next_lesson {
-                        span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100", "Memuat..." }
+                        span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100 dark:border-indigo-900/50", "Memuat..." }
                     }
                 }
 
                 div { class: "grid grid-cols-1 lg:grid-cols-12 gap-6",
                     div { class: "lg:col-span-8 space-y-6",
                         if sections.is_empty() {
-                            div { class: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm",
-                                h2 { class: "text-xl font-bold text-teal-600 mb-4", "Penjelasan Materi" }
-                                p { class: "text-slate-600 leading-relaxed whitespace-pre-wrap", "{lesson_data.content}" }
+                            div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",
+                                h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4", "Penjelasan Materi" }
+                                p { class: "text-slate-600/30 dark:text-slate-400 leading-relaxed whitespace-pre-wrap", "{lesson_data.content}" }
                             }
                         } else {
                             for (section_title, section_lines) in sections {
-                                div { class: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow",
-                                    h2 { class: "text-xl font-bold text-teal-600 mb-4", "{section_title}" }
+                                div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow",
+                                    h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4", "{section_title}" }
                                     div { class: "space-y-3",
                                         for line in section_lines {
                                             if line.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) && line.contains('.') {
-                                                p { class: "text-sm font-bold text-slate-800 pt-2", "{line}" }
+                                                p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 pt-2", "{line}" }
                                             } else {
                                                 div { class: "flex items-start gap-3",
                                                     span { class: "mt-2 w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" }
-                                                    p { class: "text-sm text-slate-600 leading-relaxed font-medium", "{line}" }
+                                                    p { class: "text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium", "{line}" }
                                                 }
                                             }
                                         }
@@ -328,21 +328,21 @@ pub fn Lesson(goal: String) -> Element {
                             }
                         }
 
-                        div { class: "bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm",
-                            h2 { class: "text-xl font-bold text-amber-600 mb-4", "Contoh Penggunaan" }
+                        div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",
+                            h2 { class: "text-xl font-bold text-amber-600 dark:text-amber-400 mb-4", "Contoh Penggunaan" }
                             div { class: "space-y-4",
                                 for (idx, sentence) in lesson_data.example_sentences.iter().enumerate() {
                                     {
                                         let (target, meaning) = split_example(sentence);
                                         rsx! {
-                                            div { class: "bg-slate-50 border border-slate-200 rounded-xl p-4 relative hover:border-amber-300 transition-colors group",
+                                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-amber-300 transition-colors group",
                                                 p { class: "text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2", "Contoh {idx + 1}" }
-                                                p { class: "text-base font-bold text-slate-800 pr-10", "{target}" }
+                                                p { class: "text-base font-bold text-slate-800 dark:text-slate-200 pr-10", "{target}" }
                                                 if let Some(m) = meaning {
-                                                    p { class: "text-sm text-slate-500 mt-1.5 font-medium", "{m}" }
+                                                    p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-medium", "{m}" }
                                                 }
                                                 button {
-                                                    class: "absolute top-4 right-4 text-slate-400 hover:text-amber-500 hover:bg-amber-50 transition-colors p-2 rounded-full",
+                                                    class: "absolute top-4 right-4 text-slate-400 hover:text-amber-500 hover:bg-amber-50/30 dark:bg-amber-900/30 transition-colors p-2 rounded-full",
                                                     title: "Dengarkan",
                                                     onclick: {
                                                         let play_audio = play_text_audio.clone();
@@ -360,15 +360,15 @@ pub fn Lesson(goal: String) -> Element {
                     }
 
                     div { class: "lg:col-span-4 space-y-6",
-                        div { class: "bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
-                            h2 { class: "text-xl font-bold text-rose-600 mb-4", "Kosa Kata Inti" }
+                        div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
+                            h2 { class: "text-xl font-bold text-rose-600 dark:text-rose-400 mb-4", "Kosa Kata Inti" }
                             div { class: "space-y-3",
                                 for vocab in lesson_data.vocabulary.iter() {
-                                    div { class: "bg-slate-50 border border-slate-200 rounded-xl p-4 relative hover:border-rose-300 transition-colors group",
-                                        p { class: "text-base font-bold text-slate-800 pr-10", "{vocab.word}" }
-                                        p { class: "text-sm text-slate-500 mt-1 font-medium", "{vocab.meaning}" }
+                                    div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-rose-300 transition-colors group",
+                                        p { class: "text-base font-bold text-slate-800/30 dark:text-slate-200 pr-10", "{vocab.word}" }
+                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "{vocab.meaning}" }
                                         button {
-                                            class: "absolute top-4 right-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors p-2 rounded-full",
+                                            class: "absolute top-4 right-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50/30 dark:bg-rose-900/30 transition-colors p-2 rounded-full",
                                             title: "Dengarkan",
                                             onclick: {
                                                 let play_audio = play_text_audio.clone();
@@ -382,8 +382,8 @@ pub fn Lesson(goal: String) -> Element {
                             }
                         }
 
-                        div { class: "hidden sm:block bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
-                            p { class: "text-sm font-medium text-slate-600 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
+                        div { class: "hidden sm:block bg-white dark:bg-slate-900 border border-slate-200/20 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
+                            p { class: "text-sm font-medium text-slate-600/20 dark:text-slate-400 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
                             div { class: "space-y-3",
                                 button {
                                     class: if is_loading_next_lesson {
@@ -402,7 +402,7 @@ pub fn Lesson(goal: String) -> Element {
                                 }
                                 Link {
                                     to: Route::Dashboard {},
-                                    class: "block w-full text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl transition-colors",
+                                    class: "block w-full text-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold px-4 py-3 rounded-xl transition-colors",
                                     "Kembali ke Dashboard"
                                 }
                             }
@@ -411,7 +411,7 @@ pub fn Lesson(goal: String) -> Element {
                 }
 
                 // Sticky Bottom Action Container for Mobile
-                div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 backdrop-blur border-t border-slate-200 z-40 safe-bottom flex gap-3 sm:hidden",
+                div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 z-40 safe-bottom flex gap-3 sm:hidden",
                     button {
                         class: if is_loading_next_lesson {
                             "flex-1 bg-indigo-100 text-indigo-800 font-bold px-4 py-3.5 rounded-2xl text-sm cursor-not-allowed text-center shadow-sm"
