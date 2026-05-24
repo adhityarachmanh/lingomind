@@ -230,7 +230,7 @@ pub fn Roadmap() -> Element {
                                 if is_unlocked {
                                     div { class: "mt-4",
                                         Link {
-                                            to: Route::Exam { level: level_data.title.to_string() },
+                                            to: Route::Exam { level: level_data.level.to_string() },
                                             class: format!(
                                                 "block w-full text-center p-4 rounded-xl border-2 font-bold transition-all shadow-sm {}",
                                                 if is_exam_unlocked {
