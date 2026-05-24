@@ -321,21 +321,28 @@ pub async fn send_reset_password_email(email: String) -> Result<String, ServerFn
             .map_err(|e| ServerFnError::new(format!("Gagal menyusun email: {}", e)))?;
 
         let creds = Credentials::new(smtp_username.clone(), pwd);
+        use lettre::transport::smtp::client::{Tls, TlsParameters};
+        let tls_params = TlsParameters::builder("smtp.gmail.com".to_string()).build().unwrap();
+
         let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay("smtp.gmail.com")
             .unwrap()
             .credentials(creds)
+            .port(465)
+            .tls(Tls::Wrapper(tls_params))
             .build();
 
         use lettre::AsyncTransport;
-        match mailer.send(email_msg).await {
-            Ok(_) => {
-                println!("====== EMAIL RESET SENT TO {} (via SMTP) ======", email_trimmed);
+        tokio::spawn(async move {
+            match mailer.send(email_msg).await {
+                Ok(_) => {
+                    println!("====== EMAIL RESET SENT TO {} (via SMTP) ======", email_trimmed);
+                }
+                Err(e) => {
+                    println!("====== SMTP SEND FAILED! Error: {} ======", e);
+                    println!("====== RESET LINK FOR {}: {} ======", email_trimmed, reset_link);
+                }
             }
-            Err(e) => {
-                println!("====== SMTP SEND FAILED! Error: {} ======", e);
-                println!("====== RESET LINK FOR {}: {} ======", email_trimmed, reset_link);
-            }
-        }
+        });
     } else {
         println!("====== SMTP NOT CONFIGURRED IN .env ======");
         println!("====== RESET LINK FOR {}: {} ======", email_trimmed, reset_link);
