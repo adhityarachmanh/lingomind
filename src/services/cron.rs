@@ -67,14 +67,9 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let creds = Credentials::new(smtp_username.clone(), smtp_password.unwrap());
-    use lettre::transport::smtp::client::{Tls, TlsParameters};
-    let tls_params = TlsParameters::builder("smtp.gmail.com".to_string()).build().unwrap();
-
-    let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay("smtp.gmail.com")
+    let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::from_url("smtps://smtp.gmail.com")
         .unwrap()
         .credentials(creds)
-        .port(465)
-        .tls(Tls::Wrapper(tls_params))
         .build();
 
     let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());

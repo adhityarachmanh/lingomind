@@ -5,28 +5,22 @@ use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 async fn main() {
     let creds = Credentials::new("lingomindid@gmail.com".to_string(), "tnkheqhfpgjqcrgt".to_string());
     println!("Building mailer...");
-    let mailer = AsyncSmtpTransport::<Tokio1Executor>::relay("smtp.gmail.com")
+    let mailer = AsyncSmtpTransport::<Tokio1Executor>::from_url("smtps://smtp.gmail.com")
         .unwrap()
         .credentials(creds)
-        // .port(465)
-        // .tls(lettre::transport::smtp::client::Tls::Wrapper(
-        //     lettre::transport::smtp::client::TlsParameters::builder("smtp.gmail.com".to_string())
-        //         .build()
-        //         .unwrap(),
-        // ))
         .build();
     println!("Mailer built.");
 
     let email = Message::builder()
         .from("LingoMind <lingomindid@gmail.com>".parse().unwrap())
-        .to("test@example.com".parse().unwrap())
-        .subject("Test")
-        .body("Test".to_string())
+        .to("adhityarachmanh@gmail.com".parse().unwrap())
+        .subject("Test LingoMind SMTPS")
+        .body("Test SMTPS dari aplikasi Dioxus.".to_string())
         .unwrap();
 
     println!("Sending email...");
     match mailer.send(email).await {
-        Ok(_) => println!("Email sent!"),
+        Ok(_) => println!("Email sent successfully!"),
         Err(e) => println!("Error: {}", e),
     }
 }

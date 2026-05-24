@@ -36,3 +36,7 @@ web = ["dioxus/web"]
 desktop = ["dioxus/desktop"]
 mobile = ["dioxus/mobile"]
 server = ["dioxus/server"]
+
+[[bin]]
+name = "test_smtp"
+path = "test_smtp.rs"
