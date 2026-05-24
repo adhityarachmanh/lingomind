@@ -59,9 +59,15 @@ pub fn FlashcardReview() -> Element {
         };
     };
 
-    let cards = match cards_result {
-        Ok(v) => v,
-        Err(e) => return rsx! { div { class: "p-6 text-rose-600 font-sans", "Gagal memuat flashcard: {e}" } },
+    let (cards, is_offline): (Vec<crate::models::flashcard::Flashcard>, bool) = match cards_result {
+        Ok(v) => (v, false),
+        Err(e) => {
+            if let Some(cached) = crate::services::offline::get_offline_flashcards(&selected_language()) {
+                (cached, true)
+            } else {
+                return rsx! { div { class: "p-6 text-rose-600 font-sans", "Gagal memuat flashcard: {e} (Tidak ada cache offline)" } }
+            }
+        }
     };
 
     let language = selected_language();
@@ -147,8 +153,13 @@ pub fn FlashcardReview() -> Element {
                     h2 { class: "text-lg font-black text-slate-800 tracking-tight", 
                         "Ulasan Flashcard" 
                     }
-                    span { class: "text-xs font-black text-teal-600 bg-teal-50 border border-teal-100 px-3 py-1 rounded-full",
-                        "🇬🇧 {language}"
+                    span { class: "flex gap-2",
+                        span { class: "text-xs font-black text-teal-600 bg-teal-50 border border-teal-100 px-3 py-1 rounded-full",
+                            "🇬🇧 {language}"
+                        }
+                        if is_offline {
+                            span { class: "text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full border border-rose-100", "📵 Offline Mode" }
+                        }
                     }
                 }
 

@@ -3,6 +3,9 @@ pub mod db;
 pub mod auth;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod cron;
+pub mod social;
+pub mod battle;
+pub mod offline;
 pub mod gemini; // Compiler otomatis akan mencari ke folder gemini/mod.rs
 
 pub mod flashcard;
@@ -14,3 +17,5 @@ pub mod goal;
 pub mod mission;
 pub mod engagement;
 pub mod leaderboard;
+pub mod badge;
+pub mod shop;

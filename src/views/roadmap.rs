@@ -239,7 +239,7 @@ pub fn Roadmap() -> Element {
                                 class: "w-full p-4 rounded-2xl border border-slate-200 hover:border-teal-400 bg-white hover:bg-teal-50 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::Quiz { goal: t.clone() }); }
+                                    move |_| { navigator.push(Route::Quiz { goal: t.clone(), battle_id: None }); }
                                 },
                                 div { class: "text-2xl", "📝" }
                                 div { class: "text-left",

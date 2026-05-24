@@ -44,7 +44,8 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
     // Ambil semua pengguna yang sudah diverifikasi dan HANYA yang belum aktif hari ini
     // Atau yang last_active_date-nya NULL.
     let rows = sqlx::query(
-        "SELECT u.email, u.full_name, e.current_streak \
+        "SELECT u.email, u.full_name, e.current_streak, \
+         (SELECT COUNT(*)::int FROM flashcards f WHERE f.email = u.email AND f.due_at <= NOW()) as due_flashcards \
          FROM users u \
          JOIN user_engagement_stats e ON u.email = e.email \
          WHERE u.is_verified = true \
@@ -79,26 +80,23 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
         let email: String = row.get("email");
         let full_name: String = row.get("full_name");
         let current_streak: i32 = row.get("current_streak");
+        let due_flashcards: i32 = row.get("due_flashcards");
 
         let subject = "Saatnya Belajar Bahasa di LingoMind! 🚀";
         
-        let body = if current_streak > 0 {
-            format!(
-                "Hai {},\n\n\
-                Hebat! Pertahankan streak {} harimu! Mari luangkan waktu beberapa menit hari ini untuk belajar dan menjaga streak-mu agar tidak kembali ke nol.\n\n\
-                Klik di sini untuk mulai belajar: {}\n\n\
-                Salam hangat,\nLingoMind Team",
-                full_name, current_streak, app_url
-            )
+        let mut body = format!("Hai {},\n\n", full_name);
+        
+        if current_streak > 0 {
+            body.push_str(&format!("Hebat! Pertahankan streak {} harimu! Mari luangkan waktu beberapa menit hari ini untuk belajar dan menjaga streak-mu agar tidak kembali ke nol.\n\n", current_streak));
         } else {
-            format!(
-                "Hai {},\n\n\
-                Mari mulai belajar hari ini dan bangun streak-mu di LingoMind! Konsistensi adalah kunci dalam mempelajari bahasa baru.\n\n\
-                Klik di sini untuk mulai belajar: {}\n\n\
-                Salam hangat,\nLingoMind Team",
-                full_name, app_url
-            )
-        };
+            body.push_str("Mari mulai belajar hari ini dan bangun streak-mu di LingoMind! Konsistensi adalah kunci dalam mempelajari bahasa baru.\n\n");
+        }
+        
+        if due_flashcards > 0 {
+            body.push_str(&format!("🧠 Smart Reminder: Ada {} kosakata yang hampir terlupakan dan sudah waktunya untuk di-review hari ini!\n\n", due_flashcards));
+        }
+        
+        body.push_str(&format!("Klik di sini untuk mulai belajar: {}\n\nSalam hangat,\nLingoMind Team", app_url));
 
         let email_msg_res = Message::builder()
             .from(format!("LingoMind <{}>", smtp_username).parse()?)

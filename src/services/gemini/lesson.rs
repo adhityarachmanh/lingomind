@@ -70,7 +70,7 @@ fn is_rich_lesson(lesson: &LessonContainer) -> bool {
 }
 
 #[server]
-pub async fn generate_lesson_server(language: String, level: String, goal: String, part: i32) -> Result<LessonContainer, ServerFnError> {
+pub async fn generate_lesson_server(email: String, language: String, level: String, goal: String, part: i32) -> Result<LessonContainer, ServerFnError> {
     use reqwest::Client;
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
@@ -81,14 +81,44 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
     let part_value = part.max(1);
     let pool = super::super::db::get_pool();
 
+    // === ADAPTIVE LEARNING: Tentukan Modifier ===
+    let mut modifier = "normal".to_string();
+    let mut modifier_prompt = "";
+    
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        if !email.is_empty() {
+            let stats_opt = sqlx::query("SELECT current_streak, total_quiz_completed FROM user_engagement_stats WHERE email = $1 LIMIT 1")
+                .bind(&email)
+                .fetch_optional(pool)
+                .await
+                .ok()
+                .flatten();
+                
+            if let Some(stats) = stats_opt {
+                let streak: i32 = stats.get("current_streak");
+                let quizzes: i32 = stats.get("total_quiz_completed");
+                
+                if streak >= 3 && quizzes >= 5 {
+                    modifier = "hard".to_string();
+                    modifier_prompt = "\n\nInstruksi Adaptif: Pengguna memiliki performa yang sangat baik dan konsisten. Tingkatkan sedikit kerumitan tata bahasa dan gunakan kosakata yang lebih menantang (di ambang atas level ini).";
+                } else if quizzes > 0 && streak == 0 {
+                    modifier = "easy".to_string();
+                    modifier_prompt = "\n\nInstruksi Adaptif: Pengguna sedang kesulitan menjaga konsistensi. Sederhanakan bahasa, gunakan kalimat yang lebih pendek, dan fokus pada konsep dasar agar lebih mudah dipahami.";
+                }
+            }
+        }
+    }
+
     // === CACHE HIT: Cek apakah lesson sudah pernah di-generate sebelumnya ===
     let cached = sqlx::query(
-        "SELECT content_json FROM cached_lessons WHERE language = $1 AND level = $2 AND goal = $3 AND part = $4 LIMIT 1"
+        "SELECT content_json FROM cached_lessons WHERE language = $1 AND level = $2 AND goal = $3 AND part = $4 AND modifier = $5 LIMIT 1"
     )
     .bind(&language)
     .bind(&level)
     .bind(&goal)
     .bind(part_value)
+    .bind(&modifier)
     .fetch_optional(pool)
     .await
     .ok()
@@ -124,7 +154,7 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
 
     let prompt = format!(
         "Buat satu materi pelajaran KOMPREHENSIF untuk bahasa {} level CEFR {} dengan tujuan belajar: {}.\
-        \n\nSerial materi: Bagian ke-{}. {}\
+        \n\nSerial materi: Bagian ke-{}. {}{}\
         \n\nPedoman level:\
         \n- A1/A2: konkret, sederhana, fokus pola dasar.\
         \n- B1/B2: lebih variatif, kontras penggunaan, situasi nyata.\
@@ -144,7 +174,7 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
         \n- vocabulary minimal 8 item relevan topik.\
         \n- example_sentences minimal 8 kalimat; setiap item format: \"<kalimat target> || <arti Indonesia>\".\
         \n- hindari penjelasan terlalu umum.",
-        language, level, goal, part_value, part_note
+        language, level, goal, part_value, part_note, modifier_prompt
     );
 
     let mut lesson = request_lesson_from_gemini(&client, &url, prompt).await?;
@@ -167,12 +197,13 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
     // === SIMPAN KE CACHE untuk pengguna berikutnya (gratis!) ===
     if let Ok(json_str) = serde_json::to_string(&lesson) {
         let _ = sqlx::query(
-            "INSERT INTO cached_lessons (language, level, goal, part, content_json) VALUES ($1, $2, $3, $4, $5)"
+            "INSERT INTO cached_lessons (language, level, goal, part, modifier, content_json) VALUES ($1, $2, $3, $4, $5, $6)"
         )
         .bind(&language)
         .bind(&level)
         .bind(&goal)
         .bind(part_value)
+        .bind(&modifier)
         .bind(&json_str)
         .execute(pool)
         .await;

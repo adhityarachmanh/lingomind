@@ -239,9 +239,10 @@ pub fn Lesson(goal: String) -> Element {
             .as_ref()
             .and_then(|u| u.current_level.get(&lang).cloned())
             .unwrap_or_else(|| "A1".to_string());
+        let email = resource_user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
         let part_value = lesson_part_signal();
         let goal_value = goal_clone.clone();
-        async move { generate_lesson_server(lang, lvl, goal_value, part_value).await }
+        async move { generate_lesson_server(email, lang, lvl, goal_value, part_value).await }
     });
 
     let lesson_value = lesson_resource.value()();
@@ -256,11 +257,15 @@ pub fn Lesson(goal: String) -> Element {
         };
     };
 
-    let lesson_data = match lesson_result {
-        Ok(data) => data,
+    let (lesson_data, is_offline) = match lesson_result {
+        Ok(data) => (data, false),
         Err(e) => {
-            return rsx! {
-                div { class: "p-8 text-rose-600 text-center mt-20 font-bold bg-rose-50 border border-rose-200 rounded-xl m-4", "Gagal memuat materi: {e}" }
+            if let Some(cached) = crate::services::offline::get_offline_lesson(&selected_language(), &goal) {
+                (cached, true)
+            } else {
+                return rsx! {
+                    div { class: "p-8 text-rose-600 text-center mt-20 font-bold bg-rose-50 border border-rose-200 rounded-xl m-4", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
+                }
             }
         }
     };
@@ -288,6 +293,9 @@ pub fn Lesson(goal: String) -> Element {
                     span { class: "text-[10px] font-bold text-teal-600 bg-teal-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100", "Materi {language} ({active_level})" }
                     span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100", "Goal: {goal}" }
                     span { class: "text-[10px] font-bold text-orange-600 bg-orange-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100", "Bagian {lesson_part}" }
+                    if is_offline {
+                        span { class: "text-[10px] font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-full uppercase tracking-wider border border-rose-100", "📵 Offline Mode" }
+                    }
                     if is_loading_next_lesson {
                         span { class: "text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100", "Memuat..." }
                     }
@@ -388,7 +396,7 @@ pub fn Lesson(goal: String) -> Element {
                                     if is_loading_next_lesson { "Memuat..." } else { "Lesson Selanjutnya" }
                                 }
                                 Link {
-                                    to: Route::Quiz { goal: goal.clone() },
+                                    to: Route::Quiz { goal: goal.clone(), battle_id: None },
                                     class: "block w-full text-center bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-teal-500/20",
                                     "Mulai Quiz"
                                 }
@@ -415,7 +423,7 @@ pub fn Lesson(goal: String) -> Element {
                         if is_loading_next_lesson { "Memuat..." } else { "Lanjut Belajar" }
                     }
                     Link {
-                        to: Route::Quiz { goal: goal.clone() },
+                        to: Route::Quiz { goal: goal.clone(), battle_id: None },
                         class: "flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer",
                         "Mulai Quiz"
                     }

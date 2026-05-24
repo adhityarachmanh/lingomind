@@ -260,7 +260,7 @@ fn format_question_for_display(question: &str) -> Vec<String> {
 }
 
 #[component]
-pub fn Quiz(goal: String) -> Element {
+pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
@@ -580,12 +580,16 @@ pub fn Quiz(goal: String) -> Element {
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
                                 let language = language.clone();
                                 let score = score_gained();
+                                let battle = battle_id.clone();
                                 let mut session_state = session_state;
                                 let mut quiz_finished = quiz_finished;
                                 spawn(async move {
                                     if !email.is_empty() {
-                                        if let Ok(updated_profile) = update_user_score(email, language, score).await {
+                                        if let Ok(updated_profile) = update_user_score(email.clone(), language, score).await {
                                             let _ = update_engagement_after_quiz_server(updated_profile.email.clone(), score).await;
+                                            if let Some(bid) = battle {
+                                                let _ = crate::services::battle::submit_battle_score_server(bid, email.clone(), score).await;
+                                            }
                                             session_state.set((Some(updated_profile), true));
                                             quiz_finished.set(true);
                                         }

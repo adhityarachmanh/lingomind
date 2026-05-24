@@ -6,4 +6,6 @@ pub struct UserEngagementStats {
     pub longest_streak: i32,
     pub total_quiz_completed: i32,
     pub total_points_earned: i32,
+    pub coins: i32,
+    pub streak_freezes: i32,
 }

@@ -16,6 +16,7 @@ use crate::views::forgot_password::ForgotPassword;
 use crate::views::reset_password::ResetPassword;
 use crate::views::verify_email::VerifyEmail;
 use crate::views::guide::Guide;
+use crate::views::placement_test::PlacementTest;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -41,8 +42,8 @@ pub enum Route {
     Lesson { goal: String },
     #[route("/quiz/:level/:goal")]
     QuizLegacy { level: String, goal: String },
-    #[route("/quiz/:goal")]
-    Quiz { goal: String },
+    #[route("/quiz/:goal?:battle_id")]
+    Quiz { goal: String, battle_id: Option<i32> },
     #[route("/chat/:level/:goal")]
     ChatRoleplayLegacy { level: String, goal: String },
     #[route("/chat/:goal")]
@@ -63,6 +64,8 @@ pub enum Route {
     Leaderboard {},
     #[route("/guide")]
     Guide {},
+    #[route("/placement")]
+    PlacementTest {},
 }
 
 #[component]
@@ -81,7 +84,7 @@ fn QuizLegacy(level: String, goal: String) -> Element {
     let _ = level;
     let navigator = use_navigator();
     use_effect(move || {
-        navigator.replace(Route::Quiz { goal: goal.clone() });
+        navigator.replace(Route::Quiz { goal: goal.clone(), battle_id: None });
     });
 
     rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route quiz terbaru..." } }

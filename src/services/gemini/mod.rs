@@ -1,8 +1,9 @@
 // src/services/gemini/mod.rs
 pub mod quiz;
 pub mod lesson;
-pub mod chat; // <-- Tambahkan ini
+pub mod chat;
 pub mod tts;
+pub mod placement;
 
 const DEFAULT_LITE_MODEL: &str = "gemini-2.5-flash-lite";
 
@@ -43,7 +44,8 @@ pub fn model_for_lesson() -> String {
 pub use quiz::generate_quiz_server;
 pub use quiz::generate_weakness_practice_quiz_server;
 pub use lesson::generate_lesson_server;
-pub use chat::{send_chat_message_server, get_or_create_session_server}; // <-- Ekspor ini
+pub use chat::{send_chat_message_server, get_or_create_session_server};
+pub use placement::evaluate_placement_server;
 pub use tts::generate_tts_audio_server;
 pub use tts::resolve_tts_lang_code;
 pub use tts::sanitize_tts_text;

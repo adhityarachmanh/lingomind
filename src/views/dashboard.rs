@@ -7,6 +7,10 @@ use crate::services::mission::get_daily_mission_server;
 use crate::services::weakness::{get_top_weaknesses_server, get_weakness_analytics_server, get_skill_progress_7d_server};
 use crate::services::engagement::get_engagement_stats_server;
 use crate::services::auth::update_preferred_language_server;
+use crate::services::badge::get_user_badges_server;
+use crate::services::flashcard::get_due_flashcards_server;
+use crate::services::gemini::generate_lesson_server;
+use crate::services::offline::{save_offline_lesson, save_offline_flashcards};
 
 fn format_date_id(date: &str) -> String {
     let parts: Vec<&str> = date.split('-').collect();
@@ -78,6 +82,8 @@ pub fn Dashboard() -> Element {
     let mut is_modal_open = use_signal(|| false);
     let mut search_query = use_signal(String::new);
     let mut active_tab = use_signal(|| "All".to_string());
+    let mut buy_status = use_signal(String::new);
+    let mut offline_download_status = use_signal(String::new);
 
     let (user_opt, is_session_ready) = session_state();
 
@@ -152,11 +158,70 @@ pub fn Dashboard() -> Element {
 
     let goal = "General".to_string();
     let email6 = user.email.clone();
-    let engagement_resource = use_resource(move || {
+    let mut engagement_resource = use_resource(move || {
         let u = email6.clone();
         async move { get_engagement_stats_server(u).await }
     });
     let engagement = engagement_resource.value()().and_then(|r| r.ok());
+
+    let email7 = user.email.clone();
+    let badges_resource = use_resource(move || {
+        let u = email7.clone();
+        async move { get_user_badges_server(u).await }
+    });
+    let badges = badges_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
+
+    let email_for_battles = user.email.clone();
+    let battles_resource = use_resource(move || {
+        let e = email_for_battles.clone();
+        async move { crate::services::battle::get_active_battles_server(e).await }
+    });
+    let active_battles = battles_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
+
+    let email_for_buy = user.email.clone();
+    let buy_freeze = move |_| {
+        let u = email_for_buy.clone();
+        spawn(async move {
+            match crate::services::shop::buy_streak_freeze_server(u).await {
+                Ok(msg) => buy_status.set(msg),
+                Err(e) => {
+                    let mut err_str = e.to_string();
+                    if err_str.starts_with("error running server function: ") {
+                        err_str = err_str.replace("error running server function: ", "");
+                    }
+                    if err_str.ends_with(" (details: None)") {
+                        err_str = err_str.replace(" (details: None)", "");
+                    }
+                    buy_status.set(err_str);
+                }
+            }
+            engagement_resource.restart();
+        });
+    };
+
+    let selected_lang_for_dl = selected_language();
+    let email_for_dl = user.email.clone();
+    let lvl_for_dl = lang_level.clone();
+    let start_offline_download = move |_| {
+        let email = email_for_dl.clone();
+        let lang = selected_lang_for_dl.clone();
+        let lvl = lvl_for_dl.clone();
+        
+        offline_download_status.set("Mengunduh Flashcard...".to_string());
+        spawn(async move {
+            if let Ok(fc) = get_due_flashcards_server(email.clone(), lang.clone(), 50).await {
+                save_offline_flashcards(&lang, &fc);
+            }
+            
+            offline_download_status.set("Mengunduh Lesson...".to_string());
+            if let Ok(lesson) = generate_lesson_server(email.clone(), lang.clone(), lvl.clone(), "General".to_string(), 1).await {
+                save_offline_lesson(&lang, "General", &lesson);
+            }
+            
+            offline_download_status.set("Selesai! Data tersimpan offline.".to_string());
+        });
+    };
+
     rsx! {
         div { class: "min-h-screen bg-slate-50 text-slate-900 p-4 sm:p-8 font-sans",
             div { class: "max-w-5xl mx-auto space-y-6",
@@ -209,16 +274,59 @@ pub fn Dashboard() -> Element {
                             }
                         }
                     }
+                    div { class: "mt-4 bg-indigo-50 border border-indigo-100 rounded-xl p-4 flex items-center justify-between shadow-sm",
+                        div {
+                            p { class: "text-sm font-bold text-indigo-800", "Belum yakin dengan level Anda?" }
+                            p { class: "text-xs text-indigo-600 mt-1 font-medium", "Ikuti tes penempatan singkat (Placement Test) dengan AI." }
+                        }
+                        Link {
+                            to: Route::PlacementTest {},
+                            class: "bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-sm transition-colors",
+                            "Mulai Tes"
+                        }
+                    }
                 }
 
                 if let Some(es) = engagement {
                     div { class: "bg-white border border-slate-200 rounded-2xl p-5 shadow-sm",
-                        p { class: "text-sm font-bold text-slate-800 mb-3 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Achievement" }
+                        div { class: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3",
+                            p { class: "text-sm font-bold text-slate-800 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Pencapaian" }
+                            div { class: "flex gap-2 items-center",
+                                div { class: "px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-xs font-bold border border-amber-200 shadow-sm", "🪙 {es.coins} Koin" }
+                                div { class: "px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-200 shadow-sm", "❄️ {es.streak_freezes} Freeze" }
+                                button {
+                                    class: "px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer",
+                                    onclick: buy_freeze,
+                                    "Beli Freeze (50 Koin)"
+                                }
+                            }
+                        }
+                        if !buy_status().is_empty() {
+                            p { class: "text-xs font-bold text-indigo-600 mb-3", "{buy_status()}" }
+                        }
                         div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
                             div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Current Streak" } p { class: "text-base font-black text-slate-800", "{es.current_streak} hari" } }
                             div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Longest Streak" } p { class: "text-base font-black text-slate-800", "{es.longest_streak} hari" } }
                             div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Quiz Selesai" } p { class: "text-base font-black text-slate-800", "{es.total_quiz_completed}" } }
                             div { class: "bg-slate-50 border border-slate-100 rounded-xl p-3", p { class: "text-slate-500 font-semibold mb-1", "Poin" } p { class: "text-base font-black text-slate-800", "{es.total_points_earned}" } }
+                        }
+
+                        // Badges Section
+                        if !badges.is_empty() {
+                            div { class: "mt-5 pt-5 border-t border-slate-100",
+                                p { class: "text-sm font-bold text-slate-800 mb-3 flex items-center gap-2", span { class: "text-yellow-500", "🏅" } "Badges / Lencana" }
+                                div { class: "flex flex-wrap gap-3",
+                                    for badge in badges {
+                                        div { class: "flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-2.5 pr-4",
+                                            div { class: "w-8 h-8 rounded-full bg-white border border-slate-100 flex items-center justify-center text-lg shadow-sm", "{badge.icon_name}" }
+                                            div {
+                                                p { class: "text-xs font-bold text-slate-800", "{badge.name}" }
+                                                p { class: "text-[10px] text-slate-500 font-medium", "{badge.description}" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -264,6 +372,59 @@ pub fn Dashboard() -> Element {
                 }
 
                 div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2",
+                    
+                    // Arena Pertarungan
+                    div { class: "bg-gradient-to-br from-indigo-500 to-purple-600 border border-indigo-200 rounded-2xl p-5 hover:shadow-lg transition-all group sm:col-span-2 lg:col-span-3 text-white relative overflow-hidden",
+                        div { class: "relative z-10",
+                            h3 { class: "font-black text-xl flex items-center gap-2", span { class: "text-2xl", "⚔️" } "Arena Pertarungan" }
+                            p { class: "text-indigo-100 mt-1 text-sm font-medium mb-4", "Tantang temanmu dan buktikan siapa yang terbaik!" }
+                            
+                            if active_battles.is_empty() {
+                                div { class: "bg-white/10 rounded-xl p-4 text-center",
+                                    p { class: "text-sm", "Belum ada pertarungan aktif." }
+                                }
+                            } else {
+                                div { class: "space-y-3",
+                                    for battle in active_battles {
+                                        {
+                                            let is_challenger = battle.challenger_email == user.email;
+                                            let opponent_name = if is_challenger { &battle.challenged_name } else { &battle.challenger_name };
+                                            let my_score = if is_challenger { Some(battle.challenger_score) } else { battle.challenged_score };
+                                            let op_score = if is_challenger { battle.challenged_score } else { Some(battle.challenger_score) };
+                                            
+                                            rsx! {
+                                                div { class: "bg-white text-slate-800 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm",
+                                                    div {
+                                                        p { class: "font-bold", "Vs {opponent_name}" }
+                                                        p { class: "text-xs text-slate-500 font-medium", "Topik: {battle.goal} ({battle.language})" }
+                                                        if battle.status == "completed" {
+                                                            p { class: "text-xs mt-1 font-bold text-teal-600", "Skor: Kamu {my_score.unwrap_or(0)} - {op_score.unwrap_or(0)} {opponent_name}" }
+                                                        } else {
+                                                            p { class: "text-xs mt-1 font-bold text-amber-500", "Status: Menunggu penyelesaian..." }
+                                                        }
+                                                    }
+                                                    
+                                                    if battle.status == "pending" && my_score.is_none() {
+                                                        Link {
+                                                            to: Route::Quiz { goal: battle.goal.clone(), battle_id: Some(battle.id) },
+                                                            class: "bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors whitespace-nowrap text-center shadow-sm",
+                                                            "Terima Tantangan!"
+                                                        }
+                                                    } else if battle.status == "pending" {
+                                                        span { class: "text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg text-center", "Menunggu Lawan" }
+                                                    } else {
+                                                        span { class: "text-xs font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-lg text-center", "Selesai" }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-10 -mt-10 blur-xl pointer-events-none" }
+                    }
+
                     Link { to: Route::Roadmap {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-orange-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-orange-500 text-lg group-hover:text-orange-600 transition-colors", "Kurikulum Terstruktur" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Pilih topik & materi sesuai levelmu." } }
                     Link { to: Route::ChatRoleplay { goal: "Bebas".to_string() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-indigo-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-indigo-500 text-lg group-hover:text-indigo-600 transition-colors", "Chat AI" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Simulasi percakapan teks bebas." } }
                     Link { to: Route::VoiceChat { goal: "Bebas".to_string() }, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-emerald-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-emerald-500 text-lg group-hover:text-emerald-600 transition-colors", "Live Voice AI" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Ngobrol langsung dengan suara." } }
@@ -271,6 +432,24 @@ pub fn Dashboard() -> Element {
                     Link { to: Route::WeaknessAnalytics {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-fuchsia-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-fuchsia-500 text-lg group-hover:text-fuchsia-600 transition-colors", "Weakness Analytics" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Lihat tren kelemahan detail." } }
                     Link { to: Route::FlashcardReview {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-rose-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-rose-500 text-lg group-hover:text-rose-600 transition-colors", "Flashcard Review" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Review {due_count} kartu jatuh tempo." } }
                     Link { to: Route::Leaderboard {}, class: "bg-white border border-slate-200 rounded-2xl p-5 hover:border-yellow-400 hover:shadow-md transition-all group sm:col-span-2 lg:col-span-3", h3 { class: "font-bold text-yellow-500 text-lg group-hover:text-yellow-600 transition-colors", "🏆 Leaderboard" } p { class: "text-sm text-slate-500 mt-1 font-medium", "Lihat peringkat poin semua pengguna." } }
+                }
+            }
+
+            // Mode Offline Panel
+            div { class: "mt-8 bg-white border border-slate-200 rounded-2xl p-6 shadow-sm",
+                h3 { class: "text-lg font-bold text-slate-800 mb-2 flex items-center gap-2",
+                    "📱 Mode Offline (PWA)"
+                }
+                p { class: "text-sm text-slate-600 mb-4 font-medium",
+                    "Unduh materi Flashcard & Lesson agar bisa dipelajari tanpa koneksi internet."
+                }
+                button {
+                    class: "bg-teal-500 hover:bg-teal-600 text-white font-bold py-2.5 px-5 rounded-xl text-sm transition-colors shadow-sm cursor-pointer",
+                    onclick: start_offline_download,
+                    "Unduh Materi Sekarang"
+                }
+                if !offline_download_status().is_empty() {
+                    p { class: "text-sm text-teal-600 mt-3 font-semibold", "{offline_download_status()}" }
                 }
             }
             if is_modal_open() {

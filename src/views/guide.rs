@@ -3,81 +3,100 @@ use dioxus::prelude::*;
 #[component]
 pub fn Guide() -> Element {
     rsx! {
-        div { class: "min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8",
-            div { class: "max-w-4xl mx-auto px-4 sm:px-6 pt-8",
+        div { class: "min-h-screen bg-slate-50 text-slate-800 pb-20 sm:pb-8 font-sans",
+            div { class: "max-w-5xl mx-auto px-4 sm:px-6 pt-8",
                 div { class: "mb-10 text-center",
                     h1 { class: "text-3xl sm:text-4xl font-black text-slate-800 mb-4 tracking-tight",
-                        "Selamat Datang di LingoMind 🚀"
+                        "Panduan Lengkap LingoMind 🚀"
                     }
                     p { class: "text-slate-600 text-lg max-w-2xl mx-auto font-medium",
-                        "Panduan ringkas untuk memaksimalkan perjalanan belajar bahasa Anda."
+                        "Pelajari cara memaksimalkan semua fitur cerdas di LingoMind untuk menguasai bahasa baru."
                     }
                 }
 
                 div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
                     
-                    // Card 1: Dashboard & Bahasa
+                    // Card 1: Kurikulum & Pembelajaran Adaptif
                     div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
                         div { class: "absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10",
-                            div { class: "w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🏠" }
-                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "1. Pilih Bahasa Anda" }
+                            div { class: "w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🗺️" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "1. Pembelajaran Adaptif" }
                             p { class: "text-slate-600 text-sm leading-relaxed",
-                                "Di halaman utama (Dashboard), Anda dapat memilih bahasa yang ingin dipelajari. Sistem AI kami mendukung aksen dan pelafalan (TTS) khusus untuk setiap bahasa."
+                                "Sistem AI akan menilai tingkat kemampuan Anda melalui Tes Penempatan awal. Ikuti Kurikulum Terstruktur, dan tingkat kesulitan akan otomatis disesuaikan dengan kemampuan Anda. Selesaikan kuis dengan sempurna untuk naik level!"
                             }
                         }
                     }
 
-                    // Card 2: Kurikulum & Kuis (Mastery Flow)
+                    // Card 2: AI Voice Chat & Roleplay
                     div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
                         div { class: "absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10",
-                            div { class: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🗺️" }
-                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "2. Kurikulum & Kuis" }
+                            div { class: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🎙️" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "2. Voice Chat & Roleplay" }
                             p { class: "text-slate-600 text-sm leading-relaxed",
-                                "Ikuti peta jalan (Roadmap) sesuai level Anda. "
-                                span { class: "font-bold text-emerald-600", "Penting: " }
-                                "Untuk naik ke level berikutnya (misal A1 ke A2), Anda harus meraih nilai sempurna (100 poin) pada kuis di level saat ini. Ini memastikan penguasaan (Mastery) Anda."
+                                "Berlatih bicara langsung dengan AI! Gunakan simulasi Roleplay (seperti di Cafe atau Bandara) untuk melatih kemampuan percakapan dunia nyata menggunakan suara."
                             }
                         }
                     }
 
-                    // Card 3: Chat AI & Roleplay
-                    div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
-                        div { class: "absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
-                        div { class: "relative z-10",
-                            div { class: "w-12 h-12 bg-purple-100 text-purple-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🎙️" }
-                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "3. Praktik Bicara (Voice Chat)" }
-                            p { class: "text-slate-600 text-sm leading-relaxed",
-                                "Jangan hanya membaca. Gunakan fitur Roleplay untuk berlatih mengobrol langsung menggunakan suara (Voice AI) di lingkungan yang disimulasikan seperti Cafe, Bandara, atau Wawancara Kerja."
-                            }
-                        }
-                    }
-
-                    // Card 4: Flashcards (Spaced Repetition)
+                    // Card 3: Analisis Kelemahan
                     div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
                         div { class: "absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10",
-                            div { class: "w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🃏" }
-                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "4. Flashcard Review" }
+                            div { class: "w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "📈" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "3. Analisis Kelemahan Cerdas" }
                             p { class: "text-slate-600 text-sm leading-relaxed",
-                                "Setiap kata yang Anda pelajari akan masuk ke Flashcard otomatis. "
-                                "Buka tab Flashcard setiap hari untuk mengulang kosakata agar berpindah ke memori jangka panjang."
+                                "AI LingoMind mendeteksi jenis kesalahan Anda (contoh: Grammar atau Vocabulary) lalu membuat laporan tren mingguan. Anda juga bisa langsung berlatih soal-soal khusus untuk mengatasi kelemahan tersebut."
                             }
                         }
                     }
 
-                    // Card 5: Analisis Kelemahan
+                    // Card 4: Flashcard & Spaced Repetition
+                    div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
+                        div { class: "relative z-10",
+                            div { class: "w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🃏" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "4. Flashcard & Algoritma SM-2" }
+                            p { class: "text-slate-600 text-sm leading-relaxed",
+                                "Kosakata yang sulit akan masuk otomatis ke Flashcard Anda. Dengan algoritma Spaced Repetition (SM-2), kartu-kartu tersebut akan dijadwalkan ulang sesuai tingkat ingatan Anda untuk memastikan memori jangka panjang."
+                            }
+                        }
+                    }
+
+                    // Card 5: Gamifikasi & Badge
+                    div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
+                        div { class: "relative z-10",
+                            div { class: "w-12 h-12 bg-yellow-100 text-yellow-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🏅" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "5. Gamifikasi: Koin & Badges" }
+                            p { class: "text-slate-600 text-sm leading-relaxed",
+                                "Dapatkan koin setiap kali menyelesaikan kuis! Tukarkan koin di Toko untuk membeli Streak Freeze ❄️. Buka juga berbagai pencapaian (Badge) unik seiring berkembangnya kemampuan Anda."
+                            }
+                        }
+                    }
+
+                    // Card 6: Teman & Pertarungan
+                    div { class: "bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative overflow-hidden group",
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-fuchsia-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
+                        div { class: "relative z-10",
+                            div { class: "w-12 h-12 bg-fuchsia-100 text-fuchsia-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "⚔️" }
+                            h2 { class: "text-xl font-bold text-slate-800 mb-3", "6. Mode Sosial & Quiz Battles" }
+                            p { class: "text-slate-600 text-sm leading-relaxed",
+                                "Follow teman Anda dari Leaderboard dan tantang mereka dalam duel kuis (Quiz Battles). Tentukan topik kuis, kerjakan soal yang sama, dan menangkan hadiah tambahan!"
+                            }
+                        }
+                    }
+                    
+                    // Card 7: Mode Offline
                     div { class: "md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 p-6 sm:p-10 rounded-3xl shadow-lg relative overflow-hidden group",
                         div { class: "absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -mr-20 -mt-20 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10 flex flex-col sm:flex-row gap-6 items-center",
-                            div { class: "w-16 h-16 shrink-0 bg-white/10 backdrop-blur text-teal-400 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-white/10", "📊" }
+                            div { class: "w-16 h-16 shrink-0 bg-white/10 backdrop-blur text-teal-400 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-white/10", "📱" }
                             div { class: "text-center sm:text-left",
-                                h2 { class: "text-2xl font-bold text-white mb-2", "5. Analisis Kelemahan & AI Tutor" }
+                                h2 { class: "text-2xl font-bold text-white mb-2", "7. PWA & Mode Offline" }
                                 p { class: "text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl",
-                                    "Jika Anda sering salah di topik Grammar atau Listening, buka halaman "
-                                    span { class: "font-bold text-teal-300", "Analisis" }
-                                    ". AI LingoMind secara otomatis membuat latihan khusus untuk memperbaiki topik terlemah Anda (Weakness Practice)."
+                                    "Instal aplikasi LingoMind langsung ke Homescreen. Anda juga dapat mengunduh materi (Lesson & Flashcard) dari Dashboard agar bisa tetap belajar tanpa koneksi internet!"
                                 }
                             }
                         }
@@ -85,7 +104,7 @@ pub fn Guide() -> Element {
                 }
                 
                 div { class: "mt-12 text-center",
-                    p { class: "text-slate-500 font-medium text-sm", "Sistem Poin (XP) & Leaderboard memotivasi Anda bersaing dengan sehat. Kumpulkan api 🔥 setiap hari!" }
+                    p { class: "text-slate-500 font-medium text-sm", "Teruslah berlatih, pertahankan Streak Anda, dan jadilah Master Bahasa! 🔥" }
                 }
             }
         }

@@ -1,9 +1,10 @@
-const CACHE_NAME = 'lingomind-pwa-cache-v1';
+const CACHE_NAME = 'lingomind-pwa-cache-v2';
 const URLS_TO_CACHE = [
   '/',
   '/assets/tailwind.css',
   '/assets/favicon.ico',
   '/assets/icon.svg',
+  '/assets/logo.png',
   '/assets/manifest.json'
 ];
 
@@ -38,20 +39,32 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Network First, Cache Fallback strategy
+  // Pengecualian untuk URL API/Server Functions yang mungkin butuh ditangani berbeda
+  if (event.request.url.includes('/api/')) {
+    return;
+  }
+
+  // Network First, Cache Fallback strategy untuk aset statis dan routing
   event.respondWith(
     fetch(event.request)
       .then(networkResponse => {
         return caches.open(CACHE_NAME).then(cache => {
-          // Jangan cache response API atau data dinamis (opsional bisa diatur lebih spesifik)
-          if (!event.request.url.includes('/api/')) {
-            cache.put(event.request, networkResponse.clone());
-          }
+          // Cache response sukses
+          cache.put(event.request, networkResponse.clone());
           return networkResponse;
         });
       })
       .catch(() => {
-        return caches.match(event.request);
+        // Jika offline, cari di cache
+        return caches.match(event.request).then(cachedResponse => {
+           if (cachedResponse) {
+               return cachedResponse;
+           }
+           // Jika halaman rute tidak ditemukan di cache, kembalikan ke / (karena ini SPA)
+           if (event.request.mode === 'navigate') {
+               return caches.match('/');
+           }
+        });
       })
   );
 });
