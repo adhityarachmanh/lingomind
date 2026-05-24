@@ -50,7 +50,9 @@ BEGIN
         'quiz_battles',
         'cached_lessons',
         'cached_quizzes',
-        'email_verification_tokens'
+        'email_verification_tokens',
+        'user_progress_logs',
+        'user_language_progress'
     ]
     LOOP
         IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = tbl AND table_schema = 'public') THEN
@@ -63,41 +65,11 @@ BEGIN
 END
 $$;
 
--- 2. Mereset kolom progress dan level pada tabel users ke nilai awal default (28 bahasa)
+-- 2. Mereset score dan preferred_language
 UPDATE users 
 SET 
     score = 0,
-    preferred_language = 'English',
-    current_level = '{
-        "English": "A1.0",
-        "Spanish": "A1.0",
-        "French": "A1.0",
-        "German": "A1.0",
-        "Italian": "A1.0",
-        "Portuguese": "A1.0",
-        "Japanese": "A1.0",
-        "Korean": "A1.0",
-        "Mandarin": "A1.0",
-        "Hindi": "A1.0",
-        "Arabic": "A1.0",
-        "Turkish": "A1.0",
-        "Russian": "A1.0",
-        "Dutch": "A1.0",
-        "Vietnamese": "A1.0",
-        "Thai": "A1.0",
-        "Swedish": "A1.0",
-        "Polish": "A1.0",
-        "Danish": "A1.0",
-        "Finnish": "A1.0",
-        "Norwegian": "A1.0",
-        "Greek": "A1.0",
-        "Ukrainian": "A1.0",
-        "Czech": "A1.0",
-        "Romanian": "A1.0",
-        "Hungarian": "A1.0",
-        "Filipino": "A1.0",
-        "Malay": "A1.0"
-    }'::jsonb;
+    preferred_language = 'English';
 
 COMMIT;
 EOF

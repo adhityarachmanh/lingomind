@@ -1,139 +1,26 @@
 // src/models/constants.rs
+use serde::{Deserialize, Serialize};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct LanguageCourse {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub native_name: &'static str,
-    pub flag: &'static str,
-    pub description: &'static str,
-    pub theme_class: &'static str,
-    pub button_class: &'static str,
-    pub category: &'static str,
-    pub tts_lang_code: &'static str,
+    pub id: String,
+    pub name: String,
+    pub native_name: String,
+    pub flag: String,
+    pub description: String,
+    pub theme_class: String,
+    pub button_class: String,
+    pub category: String,
+    pub tts_lang_code: String,
 }
-
-pub const LANGUAGE_COURSES: &[LanguageCourse] = &[
-    LanguageCourse { id: "English", name: "English Course", native_name: "English", flag: "\u{1F1EC}\u{1F1E7}", description: "Uji grammar, vocabulary, idiom, dan speaking bahasa Inggris berbasis CEFR.", theme_class: "hover:border-teal-500/50 border-slate-800 text-teal-400", button_class: "bg-teal-500 hover:bg-teal-600 text-slate-950", category: "Eropa", tts_lang_code: "en-US" },
-    LanguageCourse { id: "Spanish", name: "Curso de Espanol", native_name: "Espanol", flag: "\u{1F1EA}\u{1F1F8}", description: "Latihan percakapan, conjugacion, dan ekspresi sehari-hari bahasa Spanyol.", theme_class: "hover:border-amber-500/50 border-slate-800 text-amber-400", button_class: "bg-amber-500 hover:bg-amber-600 text-slate-950", category: "Eropa", tts_lang_code: "es-ES" },
-    LanguageCourse { id: "French", name: "Cours de Francais", native_name: "Francais", flag: "\u{1F1EB}\u{1F1F7}", description: "Kuasai kosakata, tata bahasa, dan pronunciation bahasa Prancis untuk konteks nyata.", theme_class: "hover:border-indigo-500/50 border-slate-800 text-indigo-400", button_class: "bg-indigo-500 hover:bg-indigo-600 text-white", category: "Eropa", tts_lang_code: "fr-FR" },
-    LanguageCourse { id: "German", name: "Deutschkurs", native_name: "Deutsch", flag: "\u{1F1E9}\u{1F1EA}", description: "Pelajari artikel, struktur kalimat, dan konjugasi khas bahasa Jerman.", theme_class: "hover:border-orange-500/50 border-slate-800 text-orange-400", button_class: "bg-orange-400 hover:bg-orange-500 text-slate-950", category: "Eropa", tts_lang_code: "de-DE" },
-    LanguageCourse { id: "Italian", name: "Corso di Italiano", native_name: "Italiano", flag: "\u{1F1EE}\u{1F1F9}", description: "Bangun kemampuan speaking dan listening bahasa Italia untuk travel dan daily chat.", theme_class: "hover:border-emerald-500/50 border-slate-800 text-emerald-400", button_class: "bg-emerald-500 hover:bg-emerald-600 text-slate-950", category: "Eropa", tts_lang_code: "it-IT" },
-    LanguageCourse { id: "Portuguese", name: "Curso de Portugues", native_name: "Portugues", flag: "\u{1F1E7}\u{1F1F7}", description: "Latihan bahasa Portugis (Brasil) untuk percakapan natural dan ekspresi sehari-hari.", theme_class: "hover:border-lime-500/50 border-slate-800 text-lime-400", button_class: "bg-lime-500 hover:bg-lime-600 text-slate-950", category: "Amerika", tts_lang_code: "pt-BR" },
-    LanguageCourse { id: "Japanese", name: "Nihongo Course", native_name: "日本語 (Nihongo)", flag: "\u{1F1EF}\u{1F1F5}", description: "Pelajari tata bahasa Jepang, ungkapan harian, dan pola kalimat untuk JLPT awal.", theme_class: "hover:border-rose-500/50 border-slate-800 text-rose-400", button_class: "bg-rose-500 hover:bg-rose-600 text-white", category: "Asia", tts_lang_code: "ja-JP" },
-    LanguageCourse { id: "Korean", name: "Hangugeo Course", native_name: "한국어 (Hangugeo)", flag: "\u{1F1F0}\u{1F1F7}", description: "Fokus pada pola kalimat Korea, partikel, dan speaking untuk situasi sehari-hari.", theme_class: "hover:border-fuchsia-500/50 border-slate-800 text-fuchsia-400", button_class: "bg-fuchsia-500 hover:bg-fuchsia-600 text-white", category: "Asia", tts_lang_code: "ko-KR" },
-    LanguageCourse { id: "Mandarin", name: "Putonghua Course", native_name: "普通话 (Putonghua)", flag: "\u{1F1E8}\u{1F1F3}", description: "Latihan Mandarin modern: pinyin, kosakata inti, dan struktur kalimat praktis.", theme_class: "hover:border-red-500/50 border-slate-800 text-red-400", button_class: "bg-red-500 hover:bg-red-600 text-white", category: "Asia", tts_lang_code: "zh-CN" },
-    LanguageCourse { id: "Hindi", name: "Hindi Course", native_name: "हिन्दी (Hindi)", flag: "\u{1F1EE}\u{1F1F3}", description: "Belajar Hindi dasar-menengah untuk percakapan, tata bahasa, dan pemahaman konteks.", theme_class: "hover:border-yellow-500/50 border-slate-800 text-yellow-400", button_class: "bg-yellow-500 hover:bg-yellow-600 text-slate-950", category: "Asia", tts_lang_code: "hi-IN" },
-    LanguageCourse { id: "Arabic", name: "Arabic Course", native_name: "العربية (Al Arabiyyah)", flag: "\u{1F1F8}\u{1F1E6}", description: "Bangun fondasi bahasa Arab modern untuk komunikasi umum dan profesional.", theme_class: "hover:border-cyan-500/50 border-slate-800 text-cyan-400", button_class: "bg-cyan-500 hover:bg-cyan-600 text-slate-950", category: "Timur Tengah", tts_lang_code: "ar-SA" },
-    LanguageCourse { id: "Turkish", name: "Turkce Course", native_name: "Turkce", flag: "\u{1F1F9}\u{1F1F7}", description: "Pelajari struktur aglutinatif bahasa Turki dengan contoh percakapan realistis.", theme_class: "hover:border-sky-500/50 border-slate-800 text-sky-400", button_class: "bg-sky-500 hover:bg-sky-600 text-slate-950", category: "Timur Tengah", tts_lang_code: "tr-TR" },
-    LanguageCourse { id: "Russian", name: "Kurs Russkogo", native_name: "Русский (Russkiy)", flag: "\u{1F1F7}\u{1F1FA}", description: "Pelajari kasus tata bahasa, kosakata, dan percakapan bahasa Rusia.", theme_class: "hover:border-blue-500/50 border-slate-800 text-blue-400", button_class: "bg-blue-500 hover:bg-blue-600 text-white", category: "Eropa", tts_lang_code: "ru-RU" },
-    LanguageCourse { id: "Dutch", name: "Nederlandse Cursus", native_name: "Nederlands", flag: "\u{1F1F3}\u{1F1F1}", description: "Kuasai tata bahasa Belanda, pelafalan, dan kalimat percakapan sehari-hari.", theme_class: "hover:border-cyan-500/50 border-slate-800 text-cyan-400", button_class: "bg-cyan-500 hover:bg-cyan-600 text-slate-950", category: "Eropa", tts_lang_code: "nl-NL" },
-    LanguageCourse { id: "Vietnamese", name: "Khoa Hoc Tieng Viet", native_name: "Tiếng Việt", flag: "\u{1F1FB}\u{1F1F3}", description: "Latih nada bicara, tata bahasa, dan percakapan praktis bahasa Vietnam.", theme_class: "hover:border-red-500/50 border-slate-800 text-red-400", button_class: "bg-red-500 hover:bg-red-600 text-white", category: "Asia", tts_lang_code: "vi-VN" },
-    LanguageCourse { id: "Thai", name: "Laksoot Phasa Thai", native_name: "ไทย (Thai)", flag: "\u{1F1F9}\u{1F1ED}", description: "Pelajari aksara Thai, nada pengucapan, dan komunikasi harian yang sopan.", theme_class: "hover:border-purple-500/50 border-slate-800 text-purple-400", button_class: "bg-purple-500 hover:bg-purple-600 text-white", category: "Asia", tts_lang_code: "th-TH" },
-    LanguageCourse { id: "Swedish", name: "Svensk Kurs", native_name: "Svenska", flag: "\u{1F1F8}\u{1F1EA}", description: "Pelajari melodi vokal bahasa Swedia, kosakata, dan struktur kalimat dasar.", theme_class: "hover:border-yellow-500/50 border-slate-800 text-yellow-300", button_class: "bg-yellow-400 hover:bg-yellow-500 text-slate-950", category: "Eropa", tts_lang_code: "sv-SE" },
-    LanguageCourse { id: "Polish", name: "Kurs Jezyka Polskiego", native_name: "Polski", flag: "\u{1F1F5}\u{1F1F1}", description: "Tantang tata bahasa dan sistem deklinasi bahasa Polandia yang kaya.", theme_class: "hover:border-rose-400/50 border-slate-800 text-rose-300", button_class: "bg-rose-500 hover:bg-rose-600 text-white", category: "Eropa", tts_lang_code: "pl-PL" },
-    LanguageCourse { id: "Danish", name: "Dansk Kursus", native_name: "Dansk", flag: "\u{1F1E9}\u{1F1F0}", description: "Pelajari tata bahasa dan ungkapan praktis bahasa Denmark.", theme_class: "hover:border-red-400/50 border-slate-800 text-red-300", button_class: "bg-red-500 hover:bg-red-600 text-white", category: "Eropa", tts_lang_code: "da-DK" },
-    LanguageCourse { id: "Finnish", name: "Suomen Kurssi", native_name: "Suomi", flag: "\u{1F1EB}\u{1F1EE}", description: "Pelajari bahasa Finlandia dengan keunikan tata bahasanya.", theme_class: "hover:border-blue-400/50 border-slate-800 text-blue-300", button_class: "bg-blue-500 hover:bg-blue-600 text-white", category: "Eropa", tts_lang_code: "fi-FI" },
-    LanguageCourse { id: "Norwegian", name: "Norsk Kurs", native_name: "Norsk", flag: "\u{1F1F3}\u{1F1F4}", description: "Kuasai tata bahasa dan percakapan harian bahasa Norwegia.", theme_class: "hover:border-red-500/50 border-slate-800 text-red-400", button_class: "bg-red-500 hover:bg-red-600 text-white", category: "Eropa", tts_lang_code: "nb-NO" },
-    LanguageCourse { id: "Greek", name: "Mathimata Ellinikon", native_name: "Ελληνικά (Ellinika)", flag: "\u{1F1EC}\u{1F1F7}", description: "Pelajari alfabet Yunani dan percakapan dasar untuk liburan atau eksplorasi budaya.", theme_class: "hover:border-blue-500/50 border-slate-800 text-blue-400", button_class: "bg-blue-500 hover:bg-blue-600 text-white", category: "Eropa", tts_lang_code: "el-GR" },
-    LanguageCourse { id: "Ukrainian", name: "Kurs Ukrayins'koyi", native_name: "Українська (Ukrainska)", flag: "\u{1F1FA}\u{1F1E6}", description: "Pelajari bahasa Ukraina, mulai dari alfabet Cyrillic hingga ungkapan harian.", theme_class: "hover:border-yellow-500/50 border-slate-800 text-yellow-400", button_class: "bg-yellow-500 hover:bg-yellow-600 text-slate-950", category: "Eropa", tts_lang_code: "uk-UA" },
-    LanguageCourse { id: "Czech", name: "Kurz Cestiny", native_name: "Čeština", flag: "\u{1F1E8}\u{1F1FF}", description: "Kuasai dasar-dasar bahasa Ceko dan frasa untuk perjalanan di Eropa Tengah.", theme_class: "hover:border-red-500/50 border-slate-800 text-red-400", button_class: "bg-red-500 hover:bg-red-600 text-white", category: "Eropa", tts_lang_code: "cs-CZ" },
-    LanguageCourse { id: "Romanian", name: "Curs de Romana", native_name: "Română", flag: "\u{1F1F7}\u{1F1F4}", description: "Pelajari bahasa Roman yang unik ini dengan kosakatanya yang menarik.", theme_class: "hover:border-yellow-500/50 border-slate-800 text-yellow-400", button_class: "bg-yellow-500 hover:bg-yellow-600 text-slate-950", category: "Eropa", tts_lang_code: "ro-RO" },
-    LanguageCourse { id: "Hungarian", name: "Magyar Kurzus", native_name: "Magyar", flag: "\u{1F1ED}\u{1F1FA}", description: "Tantang diri Anda dengan bahasa Hungaria yang memiliki struktur unik.", theme_class: "hover:border-green-500/50 border-slate-800 text-green-400", button_class: "bg-green-500 hover:bg-green-600 text-white", category: "Eropa", tts_lang_code: "hu-HU" },
-    LanguageCourse { id: "Filipino", name: "Kursong Filipino", native_name: "Filipino (Tagalog)", flag: "\u{1F1F5}\u{1F1ED}", description: "Pelajari bahasa Filipino untuk komunikasi harian dan ekspresi kasual.", theme_class: "hover:border-blue-500/50 border-slate-800 text-blue-400", button_class: "bg-blue-500 hover:bg-blue-600 text-white", category: "Asia", tts_lang_code: "fil-PH" },
-    LanguageCourse { id: "Malay", name: "Kursus Bahasa Melayu", native_name: "Bahasa Melayu", flag: "\u{1F1F2}\u{1F1FE}", description: "Pelajari bahasa Melayu untuk komunikasi serumpun yang mudah dan praktis.", theme_class: "hover:border-yellow-500/50 border-slate-800 text-yellow-400", button_class: "bg-yellow-500 hover:bg-yellow-600 text-slate-950", category: "Asia", tts_lang_code: "ms-MY" },
-];
 
 pub const COURSE_CATEGORIES: &[&str] = &["All", "Eropa", "Amerika", "Asia", "Timur Tengah"];
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct CurriculumLevel {
-    pub level: &'static str,
-    pub title: &'static str,
-    pub description: &'static str,
-    pub topics: Vec<&'static str>,
-}
-
-pub fn get_curriculum() -> Vec<CurriculumLevel> {
-    vec![
-        CurriculumLevel {
-            level: "A1",
-            title: "Beginner",
-            description: "Memahami dan menggunakan ekspresi sehari-hari yang sangat dasar.",
-            topics: vec![
-                "Greetings & Introductions",
-                "Basic Numbers & Time",
-                "Everyday Vocabulary",
-                "Simple Sentences",
-            ],
-        },
-        CurriculumLevel {
-            level: "A2",
-            title: "Elementary",
-            description: "Dapat berkomunikasi dalam tugas-tugas sederhana dan rutin.",
-            topics: vec![
-                "Daily Routines",
-                "Past Experiences",
-                "Making Plans",
-                "Giving Directions",
-            ],
-        },
-        CurriculumLevel {
-            level: "B1",
-            title: "Intermediate",
-            description: "Dapat memahami poin utama dari input standar yang jelas.",
-            topics: vec![
-                "Travel & Hobbies",
-                "Expressing Opinions",
-                "Modals & Conditionals",
-                "Understanding Short Texts",
-            ],
-        },
-        CurriculumLevel {
-            level: "B2",
-            title: "Upper Intermediate",
-            description: "Dapat memahami gagasan utama dari teks kompleks.",
-            topics: vec![
-                "Complex Conversations",
-                "Advanced Grammar",
-                "Expressing Emotions",
-                "Debating & Persuasion",
-            ],
-        },
-        CurriculumLevel {
-            level: "C1",
-            title: "Advanced",
-            description: "Dapat mengekspresikan ide dengan lancar dan spontan.",
-            topics: vec![
-                "Nuances of Meaning",
-                "Idiomatic Expressions",
-                "Professional Discussions",
-                "Cultural Contexts",
-            ],
-        },
-        CurriculumLevel {
-            level: "C2",
-            title: "Mastery",
-            description: "Dapat memahami hampir semua hal yang didengar atau dibaca dengan mudah.",
-            topics: vec![
-                "Abstract Concepts",
-                "Literature & Media",
-                "Complex Debates",
-                "Subtle Implication",
-            ],
-        },
-    ]
-}
-
-pub fn get_points_for_level(level: &str) -> i32 {
-    let base = if level.len() >= 2 { &level[0..2] } else { "A1" };
-    match base {
-        "A1" => 10,
-        "A2" => 20,
-        "B1" => 30,
-        "B2" => 40,
-        "C1" => 50,
-        "C2" => 60,
-        _ => 10,
-    }
+    pub level: String,
+    pub title: String,
+    pub description: String,
+    pub base_reward_points: i32,
+    pub topics: Vec<String>,
 }

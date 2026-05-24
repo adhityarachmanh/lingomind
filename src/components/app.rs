@@ -1,7 +1,8 @@
 // src/components/app.rs
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::{LanguageCourse, CurriculumLevel};
+use crate::services::curriculum::{get_all_languages, get_all_curriculum};
 use crate::routes::Route;
 
 const FAVICON: Asset = asset!("/assets/logo.png");
@@ -11,9 +12,9 @@ const LOCAL_STORAGE_KEY: &str = "lingomind_user_session";
 #[allow(dead_code)]
 const LEGACY_LANGUAGE_STORAGE_KEY: &str = "lingomind_selected_language";
 
-fn canonical_language_id(input: &str) -> String {
+fn canonical_language_id(input: &str, languages: &[LanguageCourse]) -> String {
     let trimmed = input.trim();
-    LANGUAGE_COURSES
+    languages
         .iter()
         .find(|c| c.id.eq_ignore_ascii_case(trimmed))
         .map(|c| c.id.to_string())
@@ -22,6 +23,16 @@ fn canonical_language_id(input: &str) -> String {
 
 #[component]
 pub fn App() -> Element {
+    let languages = use_resource(move || async move {
+        get_all_languages().await.unwrap_or_default()
+    });
+    let curriculum = use_resource(move || async move {
+        get_all_curriculum().await.unwrap_or_default()
+    });
+
+    use_context_provider(|| languages);
+    use_context_provider(|| curriculum);
+
     #[allow(unused_mut)]
     let mut session_state = use_context_provider(|| {
         let initial_user: Option<UserProfile> = None;
@@ -69,6 +80,7 @@ pub fn App() -> Element {
     });
 
     use_effect(move || {
+        let Some(langs) = languages() else { return; };
         #[cfg(target_arch = "wasm32")]
         {
             #[derive(serde::Deserialize)]
@@ -84,7 +96,7 @@ pub fn App() -> Element {
                     let storage: web_sys::Storage = local_storage;
                     if let Ok(Some(stored_json)) = storage.get_item(LOCAL_STORAGE_KEY) {
                         if let Ok(mut profile) = serde_json::from_str::<UserProfile>(&stored_json) {
-                            let preferred_lang = canonical_language_id(&profile.preferred_language);
+                            let preferred_lang = canonical_language_id(&profile.preferred_language, &langs);
                             profile.preferred_language = preferred_lang.clone();
                             selected_language.set(preferred_lang);
                             session_state.set((Some(profile), true));
@@ -93,7 +105,7 @@ pub fn App() -> Element {
 
                         if let Ok(legacy_profile) = serde_json::from_str::<LegacyUserProfile>(&stored_json) {
                             let fallback_lang = match storage.get_item(LEGACY_LANGUAGE_STORAGE_KEY) {
-                                Ok(Some(lang)) => canonical_language_id(&lang),
+                                Ok(Some(lang)) => canonical_language_id(&lang, &langs),
                                 _ => "English".to_string(),
                             };
                             let migrated = UserProfile {
@@ -115,10 +127,11 @@ pub fn App() -> Element {
     });
 
     use_effect(move || {
+        let Some(langs) = languages() else { return; };
         let (current_profile, is_ready) = session_state();
         if is_ready {
             if let Some(profile) = current_profile.clone() {
-                let preferred_lang = canonical_language_id(&profile.preferred_language);
+                let preferred_lang = canonical_language_id(&profile.preferred_language, &langs);
                 if selected_language() != preferred_lang {
                     selected_language.set(preferred_lang);
                     return;
@@ -179,6 +192,10 @@ pub fn App() -> Element {
                 }});
             }}"
         }
-        Router::<Route> {}
+        if languages().is_none() || curriculum().is_none() {
+            div { class: "flex items-center justify-center h-screen bg-slate-950 text-teal-500", "Loading LingoMind..." }
+        } else {
+            Router::<Route> {}
+        }
     }
 }

@@ -2,8 +2,6 @@ use dioxus::prelude::*;
 use crate::models::user::UserProfile;
 
 #[cfg(feature = "server")]
-use crate::models::constants::LANGUAGE_COURSES;
-#[cfg(feature = "server")]
 use std::collections::HashMap;
 
 #[cfg(feature = "server")]
@@ -13,15 +11,6 @@ use lettre::{
     transport::smtp::authentication::Credentials,
     Message, SmtpTransport, Transport,
 };
-
-#[cfg(feature = "server")]
-fn generate_default_levels() -> HashMap<String, String> {
-    let mut default_map = HashMap::new();
-    for course in LANGUAGE_COURSES {
-        default_map.insert(course.id.to_string(), "A1".to_string());
-    }
-    default_map
-}
 
 #[cfg(feature = "server")]
 fn is_valid_email(email: &str) -> bool {
@@ -49,18 +38,15 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
         Err(_) => return Err(ServerFnError::new("Gagal memproses keamanan password.")),
     };
 
-    let default_levels = generate_default_levels();
-    let levels_json = serde_json::to_value(&default_levels).unwrap_or_default();
     let email_trimmed = email.trim().to_string();
 
     let result = sqlx::query(
-        "INSERT INTO users (full_name, email, password_hash, preferred_language, score, current_level) VALUES ($1, $2, $3, $4, 0, $5)"
+        "INSERT INTO users (full_name, email, password_hash, preferred_language, score) VALUES ($1, $2, $3, $4, 0)"
     )
     .bind(full_name.trim())
     .bind(&email_trimmed)
     .bind(hashed_password)
     .bind("English")
-    .bind(levels_json)
     .execute(pool)
     .await;
     
@@ -128,11 +114,11 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         return Err(ServerFnError::new("Format email tidak valid."));
     }
 
-    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, current_level, is_verified FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, is_verified FROM users WHERE email = $1")
         .bind(email.trim())
         .fetch_optional(pool)
         .await
-        .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let user_record = match row {
         Some(u) => u,
@@ -154,16 +140,25 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         return Err(ServerFnError::new("UNVERIFIED:Akun Anda belum diverifikasi. Silakan cek email Anda."));
     }
 
-    // Ekstraksi nilai JSONB ke HashMap, fallback ke dinamis generator jika kosong
-    let raw_level: serde_json::Value = user_record.get("current_level");
-    let current_level_map: HashMap<String, String> = serde_json::from_value(raw_level)
-        .unwrap_or_else(|_| generate_default_levels());
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(email.trim())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let mut current_level_map = HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        current_level_map.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
 
     Ok(UserProfile {
         full_name: user_record.get("full_name"),
         email: user_record.get("email"),
         preferred_language: user_record.get("preferred_language"),
-        score: user_record.get::<Option<i32>, _>("score").unwrap_or(0),
+        score: user_record.get::<i32, _>("score"),
         current_level: current_level_map,
     })
 }
@@ -173,19 +168,28 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
 pub async fn update_user_score(email: String, language: String, score_delta: i32, played_topic: Option<String>) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    // 1. Ambil data skor global dan map level saat ini dari database
-    let row = sqlx::query("SELECT score, current_level FROM users WHERE email = $1")
+    // 1. Ambil data skor global dari database
+    let _ = sqlx::query("SELECT score FROM users WHERE email = $1")
         .bind(&email)
         .fetch_one(pool)
         .await
-        .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
+        .map_err(|e| ServerFnError::new(format!("User tidak ditemukan: {}", e)))?;
 
-    let final_score = row.get::<Option<i32>, _>("score").unwrap_or(0) + score_delta;
-    let raw_level: serde_json::Value = row.get("current_level");
-    let mut level_map: HashMap<String, String> = serde_json::from_value(raw_level)
-        .unwrap_or_else(|_| generate_default_levels());
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(&email)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
+    let mut current_level = std::collections::HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        current_level.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
+
+    let current_user_level_for_lang = current_level.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
 
     // Memecah menjadi base_level dan topic_idx
     let (mut base_level, mut topic_idx) = if let Some(idx) = current_user_level_for_lang.find('.') {
@@ -196,66 +200,104 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
         (current_user_level_for_lang.clone(), 0)
     };
 
+    let topics_res = crate::services::curriculum::get_all_curriculum().await.unwrap_or_default();
+    
     // Mastery Flow: Jika user mendapat nilai sempurna di kuis saat ini (5/5 benar).
-    let pts_per_question = crate::models::constants::get_points_for_level(&base_level);
+    let pts_per_question = topics_res.iter().find(|c| c.level == base_level).map(|c| c.base_reward_points).unwrap_or(20);
     let required_score = pts_per_question * 5;
 
     // Cari tahu indeks topik yang sedang dimainkan
     let mut played_topic_idx = 999;
-    if let Some(pt) = played_topic {
-        let curriculum = crate::models::constants::get_curriculum();
-        if let Some(level_data) = curriculum.iter().find(|c| c.level == base_level) {
-            if let Some(idx) = level_data.topics.iter().position(|t| *t == pt.as_str()) {
+    if let Some(ref pt) = played_topic {
+        let decoded_pt = urlencoding::decode(pt).unwrap_or(std::borrow::Cow::Borrowed(pt)).into_owned();
+        if let Some(level_data) = topics_res.iter().find(|c| c.level == base_level) {
+            if let Some(idx) = level_data.topics.iter().position(|t| *t == decoded_pt.as_str()) {
                 played_topic_idx = idx;
             }
         }
     }
 
+    // Insert the progress log (Marksflow)
+    let passed = score_delta >= required_score && played_topic_idx == topic_idx;
+    let topic_name = played_topic.clone().unwrap_or_else(|| "Unknown Topic".to_string());
+    let _ = sqlx::query(
+        "INSERT INTO user_progress_logs (email, language, activity_type, topic, score_gained, passed, base_level, topic_idx) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+    )
+    .bind(&email)
+    .bind(&language)
+    .bind("quiz")
+    .bind(&topic_name)
+    .bind(score_delta)
+    .bind(passed)
+    .bind(&base_level)
+    .bind(topic_idx as i32)
+    .execute(pool)
+    .await;
+
     // Hanya naikkan level jika user BENAR-BENAR memainkan topik maksimum yang sedang ter-unlock
-    // (Bukan ngulang topik lama)
-    if score_delta >= required_score && topic_idx < 4 && played_topic_idx == topic_idx {
+    if passed && topic_idx < 4 {
         topic_idx += 1;
     }
 
-    let calculated_level = format!("{}.{}", base_level, topic_idx);
+    let _ = sqlx::query(
+        "INSERT INTO user_language_progress (email, language_id, base_level, topic_idx) VALUES ($1, $2, $3, $4) ON CONFLICT (email, language_id) DO UPDATE SET base_level = EXCLUDED.base_level, topic_idx = EXCLUDED.topic_idx, updated_at = NOW()"
+    )
+    .bind(&email)
+    .bind(&language)
+    .bind(&base_level)
+    .bind(topic_idx as i32)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    // Perbarui entri map bahasa spesifik tersebut
-    level_map.insert(language, calculated_level);
-    let updated_levels_json = serde_json::to_value(&level_map).unwrap_or_default();
-
-    // 3. Update database secara atomik untuk akumulasi score dan struktur JSONB yang baru
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1, current_level = $2 WHERE email = $3 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET score = score + $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
     )
     .bind(score_delta)
-    .bind(updated_levels_json)
-    .bind(email)
+    .bind(&email)
     .fetch_one(pool)
     .await
-    .map_err(|e| ServerFnError::new(format!("Gagal memperbarui nilai database: {}", e)))?;
+    .map_err(|e| ServerFnError::new(format!("Gagal memperbarui data user: {}", e)))?;
+
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(&email)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let mut final_level_map = std::collections::HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        final_level_map.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
 
     Ok(UserProfile {
         full_name: update_row.get("full_name"),
         email: update_row.get("email"),
         preferred_language: update_row.get("preferred_language"),
-        score: final_score,
-        current_level: level_map,
+        score: update_row.get("score"),
+        current_level: final_level_map,
     })
 }
 
 #[server]
 pub async fn update_preferred_language_server(email: String, preferred_language: String) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
-    let canonical_lang = LANGUAGE_COURSES
-        .iter()
-        .find(|course| course.id.eq_ignore_ascii_case(preferred_language.trim()))
-        .map(|course| course.id.to_string());
-    let Some(trimmed_lang) = canonical_lang else {
+    let lang_check = sqlx::query("SELECT id FROM languages WHERE id ILIKE $1")
+        .bind(preferred_language.trim())
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let Some(lang_row) = lang_check else {
         return Err(ServerFnError::new("Bahasa tidak valid."));
     };
+    let trimmed_lang: String = lang_row.get("id");
 
     let row = sqlx::query(
-        "UPDATE users SET preferred_language = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, current_level"
+        "UPDATE users SET preferred_language = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
     )
     .bind(&trimmed_lang)
     .bind(email.trim())
@@ -263,15 +305,25 @@ pub async fn update_preferred_language_server(email: String, preferred_language:
     .await
     .map_err(|e| ServerFnError::new(format!("Gagal memperbarui bahasa aktif: {}", e)))?;
 
-    let raw_level: serde_json::Value = row.get("current_level");
-    let current_level_map: HashMap<String, String> = serde_json::from_value(raw_level)
-        .unwrap_or_else(|_| generate_default_levels());
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(email.trim())
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let mut current_level_map = HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        current_level_map.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
 
     Ok(UserProfile {
         full_name: row.get("full_name"),
         email: row.get("email"),
         preferred_language: row.get("preferred_language"),
-        score: row.get::<Option<i32>, _>("score").unwrap_or(0),
+        score: row.get::<i32, _>("score"),
         current_level: current_level_map,
     })
 }
@@ -520,19 +572,30 @@ pub async fn resend_verification_email_server(email: String) -> Result<String, S
 pub async fn submit_exam_result(email: String, language: String, passed: bool, score_gained: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    let row = sqlx::query("SELECT score, current_level FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT score FROM users WHERE email = $1")
         .bind(&email)
         .fetch_one(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
 
-    let mut final_score = row.get::<Option<i32>, _>("score").unwrap_or(0);
+    let mut final_score = row.get::<i32, _>("score");
     final_score += score_gained;
-    let raw_level: serde_json::Value = row.get("current_level");
-    let mut level_map: std::collections::HashMap<String, String> = serde_json::from_value(raw_level)
-        .unwrap_or_else(|_| generate_default_levels());
 
-    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(&email)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let mut current_level = std::collections::HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        current_level.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
+
+    let current_user_level_for_lang = current_level.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
 
     let (mut base_level, mut topic_idx) = if let Some(idx) = current_user_level_for_lang.find('.') {
         let base = current_user_level_for_lang[..idx].to_string();
@@ -541,6 +604,20 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
     } else {
         (current_user_level_for_lang.clone(), 0)
     };
+
+    let _ = sqlx::query(
+        "INSERT INTO user_progress_logs (email, language, activity_type, topic, score_gained, passed, base_level, topic_idx) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
+    )
+    .bind(&email)
+    .bind(&language)
+    .bind("exam")
+    .bind("Level Exam")
+    .bind(score_gained)
+    .bind(passed)
+    .bind(&base_level)
+    .bind(topic_idx as i32)
+    .execute(pool)
+    .await;
 
     if passed && topic_idx >= 4 {
         topic_idx = 0;
@@ -554,26 +631,45 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
         };
     }
 
-    let calculated_level = format!("{}.{}", base_level, topic_idx);
-
-    level_map.insert(language, calculated_level);
-    let updated_levels_json = serde_json::to_value(&level_map).unwrap_or_default();
+    let _ = sqlx::query(
+        "INSERT INTO user_language_progress (email, language_id, base_level, topic_idx) VALUES ($1, $2, $3, $4) ON CONFLICT (email, language_id) DO UPDATE SET base_level = EXCLUDED.base_level, topic_idx = EXCLUDED.topic_idx, updated_at = NOW()"
+    )
+    .bind(&email)
+    .bind(&language)
+    .bind(&base_level)
+    .bind(topic_idx as i32)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let update_row = sqlx::query(
-        "UPDATE users SET current_level = $1, score = $2 WHERE email = $3 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET score = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
     )
-    .bind(updated_levels_json)
     .bind(final_score)
-    .bind(email)
+    .bind(&email)
     .fetch_one(pool)
     .await
     .map_err(|e| ServerFnError::new(format!("Gagal memperbarui nilai database: {}", e)))?;
+
+    let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
+        .bind(&email)
+        .fetch_all(pool)
+        .await
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+    let mut final_level_map = std::collections::HashMap::new();
+    for l_row in levels_rows {
+        let lang_id: String = l_row.get("language_id");
+        let base_lvl: String = l_row.get("base_level");
+        let t_idx: i32 = l_row.get("topic_idx");
+        final_level_map.insert(lang_id, format!("{}.{}", base_lvl, t_idx));
+    }
 
     Ok(UserProfile {
         full_name: update_row.get("full_name"),
         email: update_row.get("email"),
         preferred_language: update_row.get("preferred_language"),
         score: final_score,
-        current_level: level_map,
+        current_level: final_level_map,
     })
 }

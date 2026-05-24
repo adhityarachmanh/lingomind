@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::{LanguageCourse, COURSE_CATEGORIES};
 use crate::models::user::UserProfile;
 use crate::routes::Route;
 use crate::services::flashcard::get_due_flashcard_count_server;
@@ -52,12 +52,13 @@ fn change_language(
     mut selected_language: Signal<String>,
     user_opt: Option<UserProfile>,
     mut session_state: Signal<(Option<UserProfile>, bool)>,
+    langs: &[LanguageCourse]
 ) {
     let selected = new_lang.trim().to_string();
     if selected.is_empty() {
         return;
     }
-    if !LANGUAGE_COURSES.iter().any(|course| course.id == selected) {
+    if !langs.iter().any(|course| course.id == selected) {
         return;
     }
 
@@ -79,6 +80,8 @@ fn change_language(
 pub fn Dashboard() -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
     let mut is_modal_open = use_signal(|| false);
     let mut search_query = use_signal(String::new);
     let mut active_tab = use_signal(|| "All".to_string());
@@ -123,12 +126,26 @@ pub fn Dashboard() -> Element {
     let user = user_opt.clone().unwrap();
 
     let selected = selected_language();
-    let course = LANGUAGE_COURSES
+    
+    let default_course = LanguageCourse {
+        id: "English".to_string(),
+        name: "English".to_string(),
+        native_name: "English".to_string(),
+        flag: "🇬🇧".to_string(),
+        description: "".to_string(),
+        theme_class: "".to_string(),
+        button_class: "".to_string(),
+        category: "".to_string(),
+        tts_lang_code: "".to_string(),
+    };
+
+    let course = langs
         .iter()
         .find(|c| c.id == selected)
-        .unwrap_or(&LANGUAGE_COURSES[0]);
+        .cloned()
+        .unwrap_or_else(|| langs.first().cloned().unwrap_or(default_course));
 
-    let lang_level = user.base_level(course.id);
+    let lang_level = user.base_level(&course.id);
     let email = user.email.clone();
     let selected_lang_for_resources = selected_language;
 
@@ -546,7 +563,7 @@ pub fn Dashboard() -> Element {
                             class: "flex-1 overflow-y-auto p-6 space-y-4 min-h-[250px]",
                             {
                                 let q = search_query().to_lowercase();
-                                let filtered = LANGUAGE_COURSES.iter().filter(|c| {
+                                let filtered = langs.iter().filter(|c| {
                                     let matches_search = c.id.to_lowercase().contains(&q) || c.native_name.to_lowercase().contains(&q) || c.name.to_lowercase().contains(&q);
                                     let matches_cat = active_tab() == "All" || c.category == active_tab();
                                     matches_search && matches_cat
@@ -568,8 +585,9 @@ pub fn Dashboard() -> Element {
                                             {
                                                 filtered.into_iter().map(|c| {
                                                     let is_active = c.id == selected_language();
-                                                    let c_id = c.id;
+                                                    let c_id = c.id.clone();
                                                     let user_opt = user_opt.clone();
+                                                    let langs_ref = langs.clone();
                                                     rsx! {
                                                         div {
                                                             key: "{c.id}",
@@ -580,10 +598,11 @@ pub fn Dashboard() -> Element {
                                                             },
                                                             onclick: move |_| {
                                                                 change_language(
-                                                                    c_id.to_string(),
+                                                                    c_id.clone(),
                                                                     selected_language,
                                                                     user_opt.clone(),
                                                                     session_state,
+                                                                    &langs_ref,
                                                                 );
                                                                 is_modal_open.set(false);
                                                                 search_query.set(String::new());

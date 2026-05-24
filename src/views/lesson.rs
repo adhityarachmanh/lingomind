@@ -2,8 +2,7 @@ use dioxus::prelude::*;
 
 use crate::routes::Route;
 use crate::services::gemini::generate_lesson_server;
-#[cfg(target_arch = "wasm32")]
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::LanguageCourse;
 #[cfg(target_arch = "wasm32")]
 use crate::services::gemini::generate_tts_audio_server;
 
@@ -181,6 +180,8 @@ fn split_example(sentence: &str) -> (String, Option<String>) {
 
 #[component]
 pub fn Lesson(goal: String) -> Element {
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
     let selected_language = use_context::<Signal<String>>();
     let session_state = use_context::<Signal<(Option<crate::models::user::UserProfile>, bool)>>();
     let (user_opt, _ready) = session_state();
@@ -192,11 +193,11 @@ pub fn Lesson(goal: String) -> Element {
         .unwrap_or_else(|| "A1".to_string());
 
     #[cfg(target_arch = "wasm32")]
-    let tts_lang_code = LANGUAGE_COURSES
+    let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code)
-        .unwrap_or("en-US");
+        .map(|course| course.tts_lang_code.clone())
+        .unwrap_or_else(|| "en-US".to_string());
 
     let play_text_audio = move |text: String| {
         #[cfg(target_arch = "wasm32")]

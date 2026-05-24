@@ -1,7 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
-use crate::models::constants::{get_curriculum, CurriculumLevel};
+use crate::models::constants::CurriculumLevel;
 
 #[component]
 pub fn Roadmap() -> Element {
@@ -22,7 +22,8 @@ pub fn Roadmap() -> Element {
         .map(|u| u.topic_index(&language))
         .unwrap_or(0);
 
-    let curriculum = get_curriculum();
+    let curriculum_res = use_context::<Resource<Vec<CurriculumLevel>>>();
+    let curriculum = curriculum_res().unwrap_or_default();
     
     // State untuk modal popover saat topik diklik
     let mut selected_topic = use_signal(|| None::<String>);

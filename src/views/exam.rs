@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::models::constants::{LANGUAGE_COURSES, get_points_for_level};
+use crate::models::constants::{LanguageCourse, CurriculumLevel};
 use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_exam_server;
 use crate::services::gemini::resolve_tts_lang_code;
@@ -227,6 +227,10 @@ fn question_audio_text(question: &QuizQuestion) -> String {
 
 #[component]
 pub fn Exam(level: String) -> Element {
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
+    let curriculum_res = use_context::<Resource<Vec<CurriculumLevel>>>();
+    let curriculum = curriculum_res().unwrap_or_default();
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, ready) = session_state();
@@ -336,7 +340,7 @@ pub fn Exam(level: String) -> Element {
         let correct = correct_answers_count();
         let passing_score = (total as f32 * 0.75).ceil() as usize; // 75% to pass
         let passed = correct >= passing_score;
-        let pts_per_correct = get_points_for_level(&level);
+        let pts_per_correct = curriculum.iter().find(|c| c.level == level).map(|c| c.base_reward_points).unwrap_or(10);
         let score_gained = (correct as i32) * pts_per_correct;
 
         return rsx! {
@@ -408,12 +412,12 @@ pub fn Exam(level: String) -> Element {
     let tts_question = question_audio_text(&current_q);
     let question_lines = format_question_for_display(&current_q.question);
     
-    let tts_lang_code = LANGUAGE_COURSES
+    let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code)
-        .unwrap_or("en-US");
-    let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
+        .map(|course| course.tts_lang_code.clone())
+        .unwrap_or_else(|| "en-US".to_string());
+    let question_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &tts_question);
 
     let correct_ans_check = current_q.correct_answer.clone();
     let explanation_text = current_q.explanation.clone();
@@ -515,7 +519,7 @@ pub fn Exam(level: String) -> Element {
                                 let option_for_select = option.clone();
                                 let option_for_listen = option.clone();
                                 let option_for_click = option.clone();
-                                let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &option_for_listen);
+                                let option_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &option_for_listen);
                                 let prefix = match opt_idx {
                                     0 => "A",
                                     1 => "B",

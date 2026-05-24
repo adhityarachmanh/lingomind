@@ -19,3 +19,4 @@ pub mod engagement;
 pub mod leaderboard;
 pub mod badge;
 pub mod shop;
+pub mod curriculum;

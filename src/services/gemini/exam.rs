@@ -1,9 +1,9 @@
 #![allow(dead_code)]
 use dioxus::prelude::*;
 use crate::models::quiz::QuizContainer;
-use crate::models::constants::get_curriculum;
+// Removed get_curriculum
 
-fn build_exam_prompt(language: &str, level: &str) -> String {
+fn build_exam_prompt(language: &str, level: &str, topics_str: &str) -> String {
     let target_level = match level.to_uppercase().as_str() {
         "A1" => "A2",
         "A2" => "B1",
@@ -13,11 +13,11 @@ fn build_exam_prompt(language: &str, level: &str) -> String {
         _ => "C2", // Cap at C2
     };
 
-    let curriculum = get_curriculum();
-    let topics = curriculum.iter()
-        .find(|c| c.level == level)
-        .map(|c| c.topics.join(", "))
-        .unwrap_or_else(|| "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening".to_string());
+    let topics = if topics_str.trim().is_empty() {
+        "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening".to_string()
+    } else {
+        topics_str.to_string()
+    };
 
     format!(
         "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
@@ -45,6 +45,22 @@ pub async fn generate_exam_server(
     level: String,
 ) -> Result<QuizContainer, ServerFnError> {
     use reqwest::Client;
+    use sqlx::Row;
+
+    let topics_str = {
+        let pool = crate::services::db::get_pool();
+        let rows = sqlx::query("SELECT title FROM topics WHERE level_id = $1 ORDER BY order_index ASC")
+            .bind(&level)
+            .fetch_all(pool)
+            .await
+            .unwrap_or_default();
+            
+        let mut titles = Vec::new();
+        for row in rows {
+            titles.push(row.get::<String, _>("title"));
+        }
+        titles.join(", ")
+    };
 
     #[cfg(not(target_arch = "wasm32"))]
     dotenvy::dotenv().ok();
@@ -62,9 +78,7 @@ pub async fn generate_exam_server(
         "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
         gemini_model, gemini_api_key
     );
-
-    let prompt = build_exam_prompt(&language, &level);
-
+    let prompt = build_exam_prompt(&language, &level, &topics_str);
     // Call the shared retry mechanism from quiz.rs
     super::quiz::generate_quiz_with_retries(
         &client,

@@ -1,12 +1,11 @@
 // src/views/quiz.rs
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::{LanguageCourse, CurriculumLevel};
 use crate::models::flashcard::NewFlashcard;
 use crate::models::quiz::QuizQuestion;
 use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::resolve_tts_lang_code;
-use crate::models::constants::get_points_for_level;
 use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::update_user_score;
 use crate::services::engagement::update_engagement_after_quiz_server;
@@ -262,6 +261,10 @@ fn format_question_for_display(question: &str) -> Vec<String> {
 
 #[component]
 pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
+    let curriculum_res = use_context::<Resource<Vec<CurriculumLevel>>>();
+    let curriculum = curriculum_res().unwrap_or_default();
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, _is_ready) = session_state();
@@ -370,7 +373,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         p { class: "text-4xl font-black text-teal-700", "+{score_gained} Poin" }
                     }
                     {
-                        let required_score = get_points_for_level(&active_level) * 5;
+                        let required_score = curriculum.iter().find(|c| c.level == active_level).map(|c| c.base_reward_points).unwrap_or(10) * 5;
                         if score_gained() >= required_score {
                             rsx! {
                                 div { class: "bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 mb-8",
@@ -406,12 +409,12 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
     let question_type_for_skill = current_q.question_type.clone();
     let question_lines = format_question_for_display(&current_q.question);
-    let tts_lang_code = LANGUAGE_COURSES
+    let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code)
-        .unwrap_or("en-US");
-    let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
+        .map(|course| course.tts_lang_code.clone())
+        .unwrap_or_else(|| "en-US".to_string());
+    let question_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &tts_question);
 
     rsx! {
         div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
@@ -506,7 +509,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 let option_for_select = option.clone();
                                 let option_for_listen = option.clone();
                                 let option_for_click = option.clone();
-                                let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &option_for_listen);
+                                let option_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &option_for_listen);
                                 let prefix = match opt_idx {
                                     0 => "A",
                                     1 => "B",
@@ -594,7 +597,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
                                     play_sfx(SFX_CORRECT);
-                                    let pts = get_points_for_level(&active_level);
+                                    let pts = curriculum.iter().find(|c| c.level == active_level).map(|c| c.base_reward_points).unwrap_or(10);
                                     score_gained.set(score_gained() + pts);
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();

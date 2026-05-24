@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::LanguageCourse;
 use crate::models::quiz::QuizQuestion;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
@@ -228,6 +228,8 @@ fn question_audio_text(question: &QuizQuestion) -> String {
 
 #[component]
 pub fn WeaknessPractice(goal: String) -> Element {
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let (user_opt, ready) = session_state();
@@ -312,12 +314,12 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let is_listening_question = current.question_type.eq_ignore_ascii_case("listening");
     let tts_question = question_audio_text(&current);
     let question_lines = format_question_for_display(&current.question);
-    let tts_lang_code = LANGUAGE_COURSES
+    let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code)
-        .unwrap_or("en-US");
-    let question_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &tts_question);
+        .map(|course| course.tts_lang_code.clone())
+        .unwrap_or_else(|| "en-US".to_string());
+    let question_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &tts_question);
 
     let correct_ans_check = current.correct_answer.clone();
     let explanation_text = current.explanation.clone();
@@ -417,7 +419,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                 let option_for_select = option.clone();
                                 let option_for_listen = option.clone();
                                 let option_for_click = option.clone();
-                                let option_tts_lang_code = resolve_tts_lang_code(tts_lang_code, &option_for_listen);
+                                let option_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &option_for_listen);
                                 let prefix = match opt_idx {
                                     0 => "A",
                                     1 => "B",

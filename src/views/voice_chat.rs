@@ -2,7 +2,7 @@
 use dioxus::prelude::*;
 use crate::models::chat::ChatMessage;
 use crate::models::user::UserProfile;
-use crate::models::constants::LANGUAGE_COURSES;
+use crate::models::constants::LanguageCourse;
 use crate::services::gemini::{get_or_create_session_server, sanitize_tts_text};
 
 #[cfg(target_arch = "wasm32")]
@@ -96,6 +96,8 @@ fn normalize_setting_input_for_ui(raw: &str) -> Result<String, String> {
 
 #[component]
 pub fn VoiceChat(goal: String) -> Element {
+    let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let selected_language = use_context::<Signal<String>>();
     let nav = use_navigator();
@@ -128,13 +130,13 @@ pub fn VoiceChat(goal: String) -> Element {
     let lvl_for_setup = active_level.clone();
     let goal_for_setup = goal.clone();
 
-    // Dapatkan bahasa tts_lang_code
-    let tts_lang_code = LANGUAGE_COURSES
-        .iter()
-        .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code)
-        .unwrap_or("en-US");
-    let _ = tts_lang_code;
+    let tts_lang_code_memo = use_memo(move || {
+        let l = languages_res().unwrap_or_default();
+        l.iter()
+            .find(|course| course.id.eq_ignore_ascii_case(&selected_language()))
+            .map(|course| course.tts_lang_code.clone())
+            .unwrap_or_else(|| "en-US".to_string())
+    });
 
     // Fungsi pemutar suara asisten AI
     let speak_response = move |text: String| {
@@ -145,7 +147,8 @@ pub fn VoiceChat(goal: String) -> Element {
 
         #[cfg(target_arch = "wasm32")]
         {
-            let segments = split_tts_segments(tts_lang_code, &normalized)
+            let tts_lang = tts_lang_code_memo();
+            let segments = split_tts_segments(&tts_lang, &normalized)
                 .into_iter()
                 .map(|s| (s.text, s.lang_code))
                 .collect::<Vec<(String, String)>>();
@@ -250,7 +253,7 @@ pub fn VoiceChat(goal: String) -> Element {
 
             async move {
                 if status == "mendengarkan" && id > 0 && !muted {
-                    let speech_lang_code = tts_lang_code.to_string();
+                    let speech_lang_code = tts_lang_code_memo();
                     
                     // Jalankan JS Speech Recognition
                     let mut eval = document::eval(&format!(r#"
