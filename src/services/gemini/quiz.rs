@@ -62,7 +62,6 @@ fn validate_quiz_shape(quiz: &QuizContainer, expected_count: usize, label: &str)
         )));
     }
 
-    let mut listening_count = 0usize;
     for (idx, q) in quiz.questions.iter().enumerate() {
         if q.question.trim().is_empty() {
             return Err(ServerFnError::new(format!(
@@ -123,16 +122,6 @@ fn validate_quiz_shape(quiz: &QuizContainer, expected_count: usize, label: &str)
                 idx + 1
             )));
         }
-        if question_type == "listening" {
-            listening_count += 1;
-        }
-    }
-
-    let min_listening = if expected_count >= 5 { 2 } else { 1 };
-    if listening_count < min_listening {
-        return Err(ServerFnError::new(format!(
-            "Format {label} tidak valid: minimal {min_listening} soal listening dari {expected_count} soal."
-        )));
     }
 
     Ok(())
