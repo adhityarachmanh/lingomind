@@ -20,5 +20,5 @@ script = []
 # serve: [dev-server] only
 script = []
 
-[web.wasm_opt]
-level = "0"
+[web]
+wasm_opt = false
