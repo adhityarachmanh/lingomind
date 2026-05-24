@@ -12,6 +12,9 @@ TRUNCATE TABLE user_language_goals CASCADE;
 TRUNCATE TABLE skill_progress_logs CASCADE;
 TRUNCATE TABLE user_engagement_stats CASCADE;
 TRUNCATE TABLE password_resets CASCADE;
+TRUNCATE TABLE user_badges CASCADE;
+TRUNCATE TABLE followers CASCADE;
+TRUNCATE TABLE quiz_battles CASCADE;
 
 -- 2. Mereset kolom progress dan level pada tabel users ke nilai awal default (28 bahasa)
 UPDATE users 
