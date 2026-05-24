@@ -31,21 +31,37 @@ echo "Memulai reset progress di database LingoMind..."
 psql "$DATABASE_URL" << 'EOF'
 BEGIN;
 
--- 1. Mengosongkan semua tabel data aktivitas/progress yang berelasi dengan pengguna
--- Menggunakan IF EXISTS agar script tidak gagal jika tabel belum dibuat
-TRUNCATE TABLE IF EXISTS chat_sessions CASCADE;
-TRUNCATE TABLE IF EXISTS flashcards CASCADE;
-TRUNCATE TABLE IF EXISTS weakness_logs CASCADE;
-TRUNCATE TABLE IF EXISTS user_language_goals CASCADE;
-TRUNCATE TABLE IF EXISTS skill_progress_logs CASCADE;
-TRUNCATE TABLE IF EXISTS user_engagement_stats CASCADE;
-TRUNCATE TABLE IF EXISTS password_resets CASCADE;
-TRUNCATE TABLE IF EXISTS user_badges CASCADE;
-TRUNCATE TABLE IF EXISTS followers CASCADE;
-TRUNCATE TABLE IF EXISTS quiz_battles CASCADE;
-TRUNCATE TABLE IF EXISTS cached_lessons CASCADE;
-TRUNCATE TABLE IF EXISTS cached_quizzes CASCADE;
-TRUNCATE TABLE IF EXISTS email_verification_tokens CASCADE;
+-- 1. Mengosongkan semua tabel data aktivitas/progress
+-- Menggunakan DO block karena TRUNCATE tidak mendukung IF EXISTS di PostgreSQL
+DO $$
+DECLARE
+    tbl TEXT;
+BEGIN
+    FOREACH tbl IN ARRAY ARRAY[
+        'chat_sessions',
+        'flashcards',
+        'weakness_logs',
+        'user_language_goals',
+        'skill_progress_logs',
+        'user_engagement_stats',
+        'password_resets',
+        'user_badges',
+        'followers',
+        'quiz_battles',
+        'cached_lessons',
+        'cached_quizzes',
+        'email_verification_tokens'
+    ]
+    LOOP
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = tbl AND table_schema = 'public') THEN
+            EXECUTE format('TRUNCATE TABLE %I CASCADE', tbl);
+            RAISE NOTICE 'Truncated: %', tbl;
+        ELSE
+            RAISE NOTICE 'Skipped (not found): %', tbl;
+        END IF;
+    END LOOP;
+END
+$$;
 
 -- 2. Mereset kolom progress dan level pada tabel users ke nilai awal default (28 bahasa)
 UPDATE users 
