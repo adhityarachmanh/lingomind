@@ -21,4 +21,4 @@ script = []
 script = []
 
 [web.wasm_opt]
-pass = false
+level = "0"
