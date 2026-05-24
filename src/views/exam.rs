@@ -266,10 +266,16 @@ pub fn Exam(level: String) -> Element {
     let lang = language.clone();
     let lvl = level.clone();
     
+    let mut is_retrying = use_signal(|| false);
+
     let mut exam_resource = use_resource(move || {
         let l = lang.clone();
         let lv = lvl.clone();
-        async move { generate_exam_server(l, lv).await }
+        async move { 
+            let res = generate_exam_server(l, lv).await;
+            is_retrying.set(false);
+            res
+        }
     });
 
     let mut current_question_idx = use_signal(|| 0usize);
@@ -290,6 +296,16 @@ pub fn Exam(level: String) -> Element {
         };
     };
 
+    if is_retrying() {
+        return rsx! {
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
+                div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }
+                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse", "Mencoba ulang menghubungi AI..." }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-md text-center", "Proses ini mungkin memakan waktu hingga 30 detik." }
+            }
+        };
+    }
+
     let exam_container = match exam_result {
         Ok(q) => q,
         Err(e) => {
@@ -298,7 +314,14 @@ pub fn Exam(level: String) -> Element {
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
                         h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Ujian" }
                         p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
-                        button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| exam_resource.restart(), "Coba Lagi" }
+                        button { 
+                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                            onclick: move |_| {
+                                is_retrying.set(true);
+                                exam_resource.restart();
+                            }, 
+                            "Coba Lagi" 
+                        }
                         Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
                     }
                 }

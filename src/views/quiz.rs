@@ -280,6 +280,8 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
 
+    let mut is_retrying = use_signal(|| false);
+
     let mut quiz_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
         let (resource_user_opt, _) = session_for_resource();
@@ -292,7 +294,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             .map(|u| u.base_level(&lang))
             .unwrap_or_else(|| "A1".to_string());
         let goal_value = goal.clone();
-        async move { generate_quiz_server(email_value, lang, user_level, goal_value).await }
+        async move { 
+            let res = generate_quiz_server(email_value, lang, user_level, goal_value).await;
+            is_retrying.set(false);
+            res
+        }
     });
 
     let Some(quiz_result) = quiz_resource.value()() else {
@@ -304,6 +310,15 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
         };
     };
 
+    if is_retrying() {
+        return rsx! {
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
+                div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Mencoba ulang menghubungi AI..." }
+            }
+        };
+    }
+
     let quiz_container = match quiz_result {
         Ok(data) => data,
         Err(e) => {
@@ -312,7 +327,14 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
                         h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Kuis" }
                         p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
-                        button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| quiz_resource.restart(), "Coba Lagi" }
+                        button { 
+                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                            onclick: move |_| {
+                                is_retrying.set(true);
+                                quiz_resource.restart();
+                            }, 
+                            "Coba Lagi" 
+                        }
                         Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Beranda" }
                     }
                 }

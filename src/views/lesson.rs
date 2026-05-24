@@ -232,6 +232,8 @@ pub fn Lesson(goal: String) -> Element {
     let session_for_resource = session_state;
     let lesson_part_signal = lesson_part;
 
+    let mut is_retrying = use_signal(|| false);
+
     let mut lesson_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
         let (resource_user_opt, _) = session_for_resource();
@@ -242,7 +244,11 @@ pub fn Lesson(goal: String) -> Element {
         let email = resource_user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
         let part_value = lesson_part_signal();
         let goal_value = goal_clone.clone();
-        async move { generate_lesson_server(email, lang, lvl, goal_value, part_value).await }
+        async move { 
+            let res = generate_lesson_server(email, lang, lvl, goal_value, part_value).await;
+            is_retrying.set(false);
+            res
+        }
     });
 
     let lesson_value = lesson_resource.value()();
@@ -257,6 +263,15 @@ pub fn Lesson(goal: String) -> Element {
         };
     };
 
+    if is_retrying() {
+        return rsx! {
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
+                div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }
+                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse", "Mencoba ulang menghubungi AI..." }
+            }
+        };
+    }
+
     let (lesson_data, is_offline) = match lesson_result {
         Ok(data) => (data, false),
         Err(e) => {
@@ -268,7 +283,14 @@ pub fn Lesson(goal: String) -> Element {
                         div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
                             h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Materi" }
                             p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
-                            button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| lesson_resource.restart(), "Coba Lagi" }
+                            button { 
+                                class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                                onclick: move |_| {
+                                    is_retrying.set(true);
+                                    lesson_resource.restart();
+                                }, 
+                                "Coba Lagi" 
+                            }
                             Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
                         }
                     }
