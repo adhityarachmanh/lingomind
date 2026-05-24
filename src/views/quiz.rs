@@ -283,6 +283,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
 
     let mut is_retrying = use_signal(|| false);
 
+    let goal_for_resource = goal.clone();
+    let goal_for_submit = goal.clone();
+
     let mut quiz_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
         let (resource_user_opt, _) = session_for_resource();
@@ -294,7 +297,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             .as_ref()
             .map(|u| u.base_level(&lang))
             .unwrap_or_else(|| "A1".to_string());
-        let goal_value = goal.clone();
+        let goal_value = goal_for_resource.clone();
         async move { 
             let res = generate_quiz_server(email_value, lang, user_level, goal_value).await;
             is_retrying.set(false);
@@ -366,7 +369,28 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2", "Tambahan Skor" }
                         p { class: "text-4xl font-black text-teal-700", "+{score_gained} Poin" }
                     }
-                    Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Dashboard" }
+                    {
+                        let required_score = get_points_for_level(&active_level) * 5;
+                        if score_gained() >= required_score {
+                            rsx! {
+                                div { class: "bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 mb-8",
+                                    p { class: "text-emerald-700 dark:text-emerald-400 font-bold text-sm", "🌟 Luar Biasa! Nilai Sempurna!" }
+                                    p { class: "text-emerald-600 dark:text-emerald-500 text-xs mt-1", "Anda telah menguasai materi ini. Tahap selanjutnya telah terbuka!" }
+                                }
+                            }
+                        } else {
+                            rsx! {
+                                div { class: "bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-200 dark:border-amber-800 mb-8 text-left flex items-start gap-3",
+                                    span { class: "text-2xl", "🔒" }
+                                    div {
+                                        p { class: "text-amber-800 dark:text-amber-400 font-bold text-sm", "Topik Berikutnya Masih Terkunci" }
+                                        p { class: "text-amber-700 dark:text-amber-500 text-xs mt-1", "Sistem LingoMind mensyaratkan Anda untuk mendapatkan nilai sempurna (semua benar) untuk membuktikan penguasaan materi. Anda butuh {required_score} Poin. Ayo coba lagi!" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    Link { to: Route::Roadmap {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Roadmap" }
                 }
             }
         };
@@ -625,9 +649,10 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 let battle = battle_id.clone();
                                 let mut session_state = session_state;
                                 let mut quiz_finished = quiz_finished;
+                                let played_topic = Some(goal_for_submit.clone());
                                 spawn(async move {
                                     if !email.is_empty() {
-                                        if let Ok(updated_profile) = update_user_score(email.clone(), language, score).await {
+                                        if let Ok(updated_profile) = update_user_score(email.clone(), language, score, played_topic).await {
                                             let _ = update_engagement_after_quiz_server(updated_profile.email.clone(), score).await;
                                             if let Some(bid) = battle {
                                                 let _ = crate::services::battle::submit_battle_score_server(bid, email.clone(), score).await;

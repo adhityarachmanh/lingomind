@@ -3833,6 +3833,11 @@
       grid-template-columns: repeat(12, minmax(0, 1fr));
     }
   }
+  .dark\:border-amber-800 {
+    &:where(.dark, .dark *) {
+      border-color: var(--color-amber-800);
+    }
+  }
   .dark\:border-amber-900\/30 {
     &:where(.dark, .dark *) {
       border-color: color-mix(in srgb, oklch(41.4% 0.112 45.904) 30%, transparent);
@@ -3847,6 +3852,11 @@
       @supports (color: color-mix(in lab, red, red)) {
         border-color: color-mix(in oklab, var(--color-amber-900) 50%, transparent);
       }
+    }
+  }
+  .dark\:border-emerald-800 {
+    &:where(.dark, .dark *) {
+      border-color: var(--color-emerald-800);
     }
   }
   .dark\:border-indigo-900\/50 {
@@ -4091,6 +4101,11 @@
   .dark\:text-emerald-400 {
     &:where(.dark, .dark *) {
       color: var(--color-emerald-400);
+    }
+  }
+  .dark\:text-emerald-500 {
+    &:where(.dark, .dark *) {
+      color: var(--color-emerald-500);
     }
   }
   .dark\:text-indigo-200 {

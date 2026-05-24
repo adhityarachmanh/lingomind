@@ -170,7 +170,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
 
 /// Fungsi Server untuk Memperbarui Skor & Evaluasi Naik Level Spesifik per Bahasa setelah Kuis Selesai
 #[server]
-pub async fn update_user_score(email: String, language: String, score_delta: i32) -> Result<UserProfile, ServerFnError> {
+pub async fn update_user_score(email: String, language: String, score_delta: i32, played_topic: Option<String>) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
     // 1. Ambil data skor global dan map level saat ini dari database
@@ -196,10 +196,24 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
         (current_user_level_for_lang.clone(), 0)
     };
 
-    // Mastery Flow: Jika user mendapat nilai sempurna di kuis saat ini (5/5 benar = 100 poin).
-    // Ini akan menaikkan topik, dan jika sudah topik ke-4 (indeks 3), maka topik naik ke indeks 4.
-    // Indeks 4 menandakan "Siap Ujian" dan tidak akan otomatis naik level CEFR.
-    if score_delta >= 100 && topic_idx < 4 {
+    // Mastery Flow: Jika user mendapat nilai sempurna di kuis saat ini (5/5 benar).
+    let pts_per_question = crate::models::constants::get_points_for_level(&base_level);
+    let required_score = pts_per_question * 5;
+
+    // Cari tahu indeks topik yang sedang dimainkan
+    let mut played_topic_idx = 999;
+    if let Some(pt) = played_topic {
+        let curriculum = crate::models::constants::get_curriculum();
+        if let Some(level_data) = curriculum.iter().find(|c| c.level == base_level) {
+            if let Some(idx) = level_data.topics.iter().position(|t| *t == pt.as_str()) {
+                played_topic_idx = idx;
+            }
+        }
+    }
+
+    // Hanya naikkan level jika user BENAR-BENAR memainkan topik maksimum yang sedang ter-unlock
+    // (Bukan ngulang topik lama)
+    if score_delta >= required_score && topic_idx < 4 && played_topic_idx == topic_idx {
         topic_idx += 1;
     }
 
