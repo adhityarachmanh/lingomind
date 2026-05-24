@@ -463,7 +463,7 @@ async fn build_weakness_context(_email: &str, _language: &str, _weakness_topic: 
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-async fn generate_quiz_with_retries(
+pub(crate) async fn generate_quiz_with_retries(
     client: &reqwest::Client,
     url: &str,
     base_prompt: String,

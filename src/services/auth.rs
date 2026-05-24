@@ -185,21 +185,25 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     let mut level_map: HashMap<String, String> = serde_json::from_value(raw_level)
         .unwrap_or_else(|_| generate_default_levels());
 
-    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1".to_string());
+    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
 
-    // Mastery Flow: Level naik jika user mendapat nilai sempurna di kuis saat ini (5/5 benar = 100 poin).
-    // Ini memisahkan XP global dengan proficiency bahasa, mencegah bug lintas bahasa.
-    let mut calculated_level = current_user_level_for_lang.clone();
-    if score_delta >= 100 {
-        calculated_level = match current_user_level_for_lang.as_str() {
-            "A1" => "A2".to_string(),
-            "A2" => "B1".to_string(),
-            "B1" => "B2".to_string(),
-            "B2" => "C1".to_string(),
-            "C1" => "C2".to_string(),
-            _ => current_user_level_for_lang,
-        };
+    // Memecah menjadi base_level dan topic_idx
+    let (mut base_level, mut topic_idx) = if let Some(idx) = current_user_level_for_lang.find('.') {
+        let base = current_user_level_for_lang[..idx].to_string();
+        let topic = current_user_level_for_lang[idx + 1..].parse::<usize>().unwrap_or(0);
+        (base, topic)
+    } else {
+        (current_user_level_for_lang.clone(), 0)
+    };
+
+    // Mastery Flow: Jika user mendapat nilai sempurna di kuis saat ini (5/5 benar = 100 poin).
+    // Ini akan menaikkan topik, dan jika sudah topik ke-4 (indeks 3), maka topik naik ke indeks 4.
+    // Indeks 4 menandakan "Siap Ujian" dan tidak akan otomatis naik level CEFR.
+    if score_delta >= 100 && topic_idx < 4 {
+        topic_idx += 1;
     }
+
+    let calculated_level = format!("{}.{}", base_level, topic_idx);
 
     // Perbarui entri map bahasa spesifik tersebut
     level_map.insert(language, calculated_level);
@@ -495,4 +499,65 @@ pub async fn resend_verification_email_server(email: String) -> Result<String, S
     }
 
     Ok("Tautan verifikasi telah dikirim ulang ke email Anda.".to_string())
+}
+
+/// Fungsi Server untuk memverifikasi dan mencatat kelulusan Exam
+#[server]
+pub async fn submit_exam_result(email: String, language: String, passed: bool) -> Result<UserProfile, ServerFnError> {
+    let pool = super::db::get_pool();
+
+    let row = sqlx::query("SELECT score, current_level FROM users WHERE email = $1")
+        .bind(&email)
+        .fetch_one(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
+
+    let final_score = row.get::<Option<i32>, _>("score").unwrap_or(0);
+    let raw_level: serde_json::Value = row.get("current_level");
+    let mut level_map: std::collections::HashMap<String, String> = serde_json::from_value(raw_level)
+        .unwrap_or_else(|_| generate_default_levels());
+
+    let current_user_level_for_lang = level_map.get(&language).cloned().unwrap_or_else(|| "A1.0".to_string());
+
+    let (mut base_level, mut topic_idx) = if let Some(idx) = current_user_level_for_lang.find('.') {
+        let base = current_user_level_for_lang[..idx].to_string();
+        let topic = current_user_level_for_lang[idx + 1..].parse::<usize>().unwrap_or(0);
+        (base, topic)
+    } else {
+        (current_user_level_for_lang.clone(), 0)
+    };
+
+    if passed && topic_idx >= 4 {
+        topic_idx = 0;
+        base_level = match base_level.as_str() {
+            "A1" => "A2".to_string(),
+            "A2" => "B1".to_string(),
+            "B1" => "B2".to_string(),
+            "B2" => "C1".to_string(),
+            "C1" => "C2".to_string(),
+            _ => base_level,
+        };
+    }
+
+    let calculated_level = format!("{}.{}", base_level, topic_idx);
+
+    level_map.insert(language, calculated_level);
+    let updated_levels_json = serde_json::to_value(&level_map).unwrap_or_default();
+
+    let update_row = sqlx::query(
+        "UPDATE users SET current_level = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
+    )
+    .bind(updated_levels_json)
+    .bind(email)
+    .fetch_one(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal memperbarui nilai database: {}", e)))?;
+
+    Ok(UserProfile {
+        full_name: update_row.get("full_name"),
+        email: update_row.get("email"),
+        preferred_language: update_row.get("preferred_language"),
+        score: final_score,
+        current_level: level_map,
+    })
 }

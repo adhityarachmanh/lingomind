@@ -24,7 +24,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
     let language = selected_language();
     let active_level = user_opt
         .as_ref()
-        .and_then(|u| u.current_level.get(&language).cloned())
+        .map(|u| u.base_level(&language))
         .unwrap_or_else(|| "A1".to_string());
     let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
 

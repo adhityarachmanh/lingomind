@@ -45,10 +45,10 @@ pub async fn evaluate_placement_server(email: String, language: String, chat_his
         .trim();
 
     let valid_levels = ["A1", "A2", "B1", "B2", "C1", "C2"];
-    let mut final_level = "A1".to_string();
+    let mut final_level = "A1.0".to_string();
     for vl in valid_levels.iter() {
         if text_content.contains(vl) {
-            final_level = vl.to_string();
+            final_level = format!("{}.0", vl);
             break;
         }
     }

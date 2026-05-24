@@ -13,11 +13,31 @@ pub struct UserProfile {
 }
 
 impl UserProfile {
-    /// Helper untuk mengambil level bahasa tertentu, jika belum ada otomatis beri "A1"
+    /// Helper untuk mengambil level mentah (bisa berupa "A1" atau "A1.2")
     pub fn get_language_level(&self, language: &str) -> String {
         self.current_level
             .get(language)
             .cloned()
-            .unwrap_or_else(|| "A1".to_string())
+            .unwrap_or_else(|| "A1.0".to_string())
+    }
+
+    /// Helper untuk mengambil level dasar (tanpa titik, misal "A1")
+    pub fn base_level(&self, language: &str) -> String {
+        let level = self.get_language_level(language);
+        if let Some(idx) = level.find('.') {
+            level[..idx].to_string()
+        } else {
+            level
+        }
+    }
+
+    /// Helper untuk mengambil indeks topik yang terbuka di level saat ini
+    pub fn topic_index(&self, language: &str) -> usize {
+        let level = self.get_language_level(language);
+        if let Some(idx) = level.find('.') {
+            level[idx + 1..].parse::<usize>().unwrap_or(0)
+        } else {
+            0
+        }
     }
 }

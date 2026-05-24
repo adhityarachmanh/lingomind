@@ -240,11 +240,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
     };
 
     let language = selected_language();
-    let active_level = user
-        .current_level
-        .get(&language)
-        .cloned()
-        .unwrap_or_else(|| "A1".to_string());
+    let active_level = user.base_level(&language);
 
     let email = user.email.clone();
     let selected_lang_for_weakness = selected_language;
@@ -269,7 +265,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
         let (resource_user_opt, _) = session_for_level();
         let lv = resource_user_opt
             .as_ref()
-            .and_then(|u| u.current_level.get(&l).cloned())
+            .map(|u| u.base_level(&l))
             .unwrap_or_else(|| "A1".to_string());
         let t = topic2.clone();
         async move { generate_weakness_practice_quiz_server(email_value, l, lv, t).await }

@@ -267,7 +267,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let language = selected_language();
     let active_level = user_opt
         .as_ref()
-        .and_then(|u| u.current_level.get(&language).cloned())
+        .map(|u| u.base_level(&language))
         .unwrap_or_else(|| "A1".to_string());
 
     let mut current_question_idx = use_signal(|| 0);
@@ -287,12 +287,12 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             .as_ref()
             .map(|u| u.email.clone())
             .unwrap_or_default();
-        let lvl = resource_user_opt
+        let user_level = resource_user_opt
             .as_ref()
-            .and_then(|u| u.current_level.get(&lang).cloned())
+            .map(|u| u.base_level(&lang))
             .unwrap_or_else(|| "A1".to_string());
         let goal_value = goal.clone();
-        async move { generate_quiz_server(email_value, lang, lvl, goal_value).await }
+        async move { generate_quiz_server(email_value, lang, user_level, goal_value).await }
     });
 
     let Some(quiz_result) = quiz_resource.value()() else {

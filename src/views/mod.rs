@@ -21,3 +21,4 @@ pub mod reset_password;
 pub mod verify_email;
 pub mod guide;
 pub mod placement_test;
+pub mod exam;

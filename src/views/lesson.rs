@@ -188,7 +188,7 @@ pub fn Lesson(goal: String) -> Element {
     let language = selected_language();
     let active_level = user_opt
         .as_ref()
-        .and_then(|u| u.current_level.get(&language).cloned())
+        .map(|u| u.base_level(&language))
         .unwrap_or_else(|| "A1".to_string());
 
     #[cfg(target_arch = "wasm32")]
@@ -237,7 +237,7 @@ pub fn Lesson(goal: String) -> Element {
         let (resource_user_opt, _) = session_for_resource();
         let lvl = resource_user_opt
             .as_ref()
-            .and_then(|u| u.current_level.get(&lang).cloned())
+            .map(|u| u.base_level(&lang))
             .unwrap_or_else(|| "A1".to_string());
         let email = resource_user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
         let part_value = lesson_part_signal();

@@ -128,7 +128,7 @@ pub fn Dashboard() -> Element {
         .find(|c| c.id == selected)
         .unwrap_or(&LANGUAGE_COURSES[0]);
 
-    let lang_level = user.current_level.get(course.id).cloned().unwrap_or_else(|| "A1".to_string());
+    let lang_level = user.base_level(course.id);
     let email = user.email.clone();
     let selected_lang_for_resources = selected_language;
 

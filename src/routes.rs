@@ -17,6 +17,7 @@ use crate::views::reset_password::ResetPassword;
 use crate::views::verify_email::VerifyEmail;
 use crate::views::guide::Guide;
 use crate::views::placement_test::PlacementTest;
+use crate::views::exam::Exam;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -66,6 +67,8 @@ pub enum Route {
     Guide {},
     #[route("/placement")]
     PlacementTest {},
+    #[route("/exam/:level")]
+    Exam { level: String },
 }
 
 #[component]

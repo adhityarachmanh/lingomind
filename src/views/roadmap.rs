@@ -90,10 +90,15 @@ pub fn Roadmap() -> Element {
     let (user_opt, _) = session_state();
     let language = selected_language();
     
-    let active_level = user_opt
+    let base_level = user_opt
         .as_ref()
-        .and_then(|u| u.current_level.get(&language).cloned())
+        .map(|u| u.base_level(&language))
         .unwrap_or_else(|| "A1".to_string());
+        
+    let current_topic_idx = user_opt
+        .as_ref()
+        .map(|u| u.topic_index(&language))
+        .unwrap_or(0);
 
     let curriculum = get_curriculum();
     
@@ -101,12 +106,32 @@ pub fn Roadmap() -> Element {
     let mut selected_topic = use_signal(|| None::<String>);
 
     let levels_order = vec!["A1", "A2", "B1", "B2", "C1", "C2"];
-    let active_index = levels_order.iter().position(|&l| l == active_level.as_str()).unwrap_or(0);
+    let active_index = levels_order.iter().position(|&l| l == base_level.as_str()).unwrap_or(0);
 
-    let mapped_curriculum = curriculum.into_iter().enumerate().map(|(i, level_data)| {
-        let is_unlocked = i <= active_index;
-        let is_current = i == active_index;
-        (level_data, is_unlocked, is_current)
+    let mapped_curriculum = curriculum.into_iter().enumerate().map(|(level_idx, level_data)| {
+        let is_unlocked = level_idx <= active_index;
+        let is_current = level_idx == active_index;
+        
+        let topics_mapped = level_data.topics.clone().into_iter().enumerate().map(|(topic_idx, topic)| {
+            let is_topic_unlocked = if level_idx < active_index {
+                true
+            } else if level_idx == active_index {
+                topic_idx <= current_topic_idx
+            } else {
+                false
+            };
+            (topic, is_topic_unlocked)
+        }).collect::<Vec<_>>();
+
+        let is_exam_unlocked = if level_idx < active_index {
+            true
+        } else if level_idx == active_index {
+            current_topic_idx >= 4
+        } else {
+            false
+        };
+
+        (level_data, is_unlocked, is_current, topics_mapped, is_exam_unlocked)
     }).collect::<Vec<_>>();
 
     rsx! {
@@ -119,13 +144,13 @@ pub fn Roadmap() -> Element {
                     }
                     p { class: "text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto",
                         "Pilih topik pelajaran yang ingin Anda kuasai. Level Anda saat ini adalah "
-                        span { class: "font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-md", "{active_level}" }
+                        span { class: "font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-md", "{base_level}" }
                     }
                 }
 
                 // Garis Waktu / Roadmap
                 div { class: "relative border-l-4 border-slate-200 dark:border-slate-700 ml-4 md:ml-10 space-y-12 pb-8",
-                    for (level_data, is_unlocked, is_current) in mapped_curriculum {
+                    for (level_data, is_unlocked, is_current, topics, is_exam_unlocked) in mapped_curriculum {
                         div { class: "relative pl-8 md:pl-12",
                             // Indikator Node (Titik Timeline)
                             div {
@@ -170,13 +195,14 @@ pub fn Roadmap() -> Element {
 
                                 // Grid Topik
                                 div { class: "grid grid-cols-1 sm:grid-cols-2 gap-3",
-                                    for topic in level_data.topics {
+                                    for (topic, is_topic_unlocked) in topics {
+
                                         button {
                                             r#type: "button",
-                                            disabled: !is_unlocked,
+                                            disabled: !is_topic_unlocked,
                                             class: format!(
                                                 "text-left p-4 rounded-xl border text-sm font-semibold transition-all flex items-center justify-between group {}",
-                                                if is_unlocked {
+                                                if is_topic_unlocked {
                                                     "bg-slate-50 dark:bg-slate-950 border-slate-200/30 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-teal-50/30 dark:bg-teal-900/30 hover:border-teal-300 hover:text-teal-800 hover:shadow-sm"
                                                 } else {
                                                     "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 cursor-not-allowed"
@@ -185,14 +211,38 @@ pub fn Roadmap() -> Element {
                                             onclick: {
                                                 let t = topic.to_string();
                                                 move |_| {
-                                                    if is_unlocked {
+                                                    if is_topic_unlocked {
                                                         selected_topic.set(Some(t.clone()));
                                                     }
                                                 }
                                             },
                                             span { "{topic}" }
-                                            if is_unlocked {
+                                            if is_topic_unlocked {
                                                 span { class: "text-slate-300 group-hover:text-teal-500 transition-colors text-lg", "→" }
+                                            } else {
+                                                span { class: "text-slate-400/50", "🔒" }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                // Tombol Ujian Kenaikan Tingkat (Exam)
+                                if is_unlocked {
+                                    div { class: "mt-4",
+                                        Link {
+                                            to: Route::Exam { level: level_data.title.to_string() },
+                                            class: format!(
+                                                "block w-full text-center p-4 rounded-xl border-2 font-bold transition-all shadow-sm {}",
+                                                if is_exam_unlocked {
+                                                    "bg-gradient-to-r from-amber-500 to-amber-600 border-amber-600 text-white hover:shadow-lg hover:from-amber-600 hover:to-amber-700 hover:-translate-y-0.5"
+                                                } else {
+                                                    "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 opacity-70 pointer-events-none"
+                                                }
+                                            ),
+                                            if is_exam_unlocked {
+                                                "🎓 Ujian Kenaikan Tingkat"
+                                            } else {
+                                                "🔒 Ujian Kenaikan Tingkat (Selesaikan semua topik)"
                                             }
                                         }
                                     }
