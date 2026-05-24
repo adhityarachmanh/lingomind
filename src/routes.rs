@@ -14,6 +14,7 @@ use crate::views::roadmap::Roadmap;
 use crate::views::leaderboard::Leaderboard;
 use crate::views::forgot_password::ForgotPassword;
 use crate::views::reset_password::ResetPassword;
+use crate::views::verify_email::VerifyEmail;
 use crate::views::guide::Guide;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
@@ -24,6 +25,8 @@ pub enum Route {
     Login {},
     #[route("/register")]
     Register {},
+    #[route("/verify-email?:token")]
+    VerifyEmail { token: String },
     #[route("/forgot-password")]
     ForgotPassword {},
     #[route("/reset-password?:token")]

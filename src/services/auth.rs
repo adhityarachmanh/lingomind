@@ -34,7 +34,7 @@ fn is_valid_email(email: &str) -> bool {
 
 /// Fungsi Server untuk Mendaftarkan Pengguna Baru
 #[server]
-pub async fn register_user(full_name: String, email: String, password_plain: String) -> Result<UserProfile, ServerFnError> {
+pub async fn register_user(full_name: String, email: String, password_plain: String) -> Result<String, ServerFnError> {
     let pool = super::db::get_pool();
 
     if full_name.trim().is_empty() || email.trim().is_empty() || password_plain.len() < 6 {
@@ -49,40 +49,75 @@ pub async fn register_user(full_name: String, email: String, password_plain: Str
         Err(_) => return Err(ServerFnError::new("Gagal memproses keamanan password.")),
     };
 
-    // Buat objek default level secara dinamis dan serahkan ke query berupa Value JSON
     let default_levels = generate_default_levels();
     let levels_json = serde_json::to_value(&default_levels).unwrap_or_default();
+    let email_trimmed = email.trim().to_string();
 
     let result = sqlx::query(
-        "INSERT INTO users (full_name, email, password_hash, preferred_language, score, current_level) VALUES ($1, $2, $3, $4, 0, $5) RETURNING full_name, email, preferred_language, score, current_level"
+        "INSERT INTO users (full_name, email, password_hash, preferred_language, score, current_level) VALUES ($1, $2, $3, $4, 0, $5)"
     )
     .bind(full_name.trim())
-    .bind(email.trim())
+    .bind(&email_trimmed)
     .bind(hashed_password)
     .bind("English")
     .bind(levels_json)
-    .fetch_one(pool)
+    .execute(pool)
     .await;
-    let row = match result {
-        Ok(r) => r,
+    
+    match result {
+        Ok(_) => {},
         Err(sqlx::Error::Database(db_err)) if db_err.is_unique_violation() => {
             return Err(ServerFnError::new("Email sudah digunakan, silakan gunakan email lain."));
         }
         Err(e) => return Err(ServerFnError::new(format!("Database error: {}", e))),
     };
 
-    // Ekstraksi nilai JSONB dari PostgreSQL kembali menjadi HashMap Rust
-    let raw_level: serde_json::Value = row.get("current_level");
-    let current_level_map: HashMap<String, String> = serde_json::from_value(raw_level)
-        .unwrap_or_else(|_| default_levels);
+    // Generate Verification Token
+    let token = uuid::Uuid::new_v4().to_string();
+    sqlx::query(
+        "INSERT INTO email_verification_tokens (email, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL '24 hours')"
+    )
+    .bind(&email_trimmed)
+    .bind(&token)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal membuat token verifikasi: {}", e)))?;
 
-    Ok(UserProfile {
-        full_name: row.get("full_name"),
-        email: row.get("email"),
-        preferred_language: row.get("preferred_language"),
-        score: row.get::<Option<i32>, _>("score").unwrap_or(0),
-        current_level: current_level_map,
-    })
+    // Send Verification Email
+    let smtp_username = std::env::var("SMTP_USERNAME").unwrap_or_else(|_| "lingomindid@gmail.com".to_string());
+    let smtp_password = std::env::var("SMTP_PASSWORD").ok();
+    let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    let verify_link = format!("{}/verify-email?token={}", app_url, token);
+    
+    let subject = "Verifikasi Akun - LingoMind";
+    let body = format!(
+        "Halo {},\n\nTerima kasih telah mendaftar di LingoMind!\n\n\
+        Silakan klik link berikut untuk mengaktifkan akun Anda (berlaku 24 jam):\n\
+        {}\n\n\
+        Jika Anda tidak merasa mendaftar, abaikan email ini.\n\n\
+        Salam,\nLingoMind Team",
+        full_name.trim(), verify_link
+    );
+
+    if let Some(pwd) = smtp_password {
+        let email_msg = Message::builder()
+            .from(format!("LingoMind <{}>", smtp_username).parse().unwrap())
+            .to(email_trimmed.parse().unwrap())
+            .subject(subject)
+            .body(body)
+            .map_err(|e| ServerFnError::new(format!("Gagal menyusun email verifikasi: {}", e)))?;
+
+        let creds = Credentials::new(smtp_username.clone(), pwd);
+        let mailer = SmtpTransport::relay("smtp.gmail.com")
+            .unwrap()
+            .credentials(creds)
+            .port(587)
+            .build();
+
+        let _ = tokio::task::spawn_blocking(move || mailer.send(&email_msg)).await;
+    }
+
+    Ok("Pendaftaran berhasil! Tautan verifikasi telah dikirim ke email Anda. Silakan periksa folder Inbox atau Spam.".to_string())
 }
 
 /// Fungsi Server untuk Masuk Log (Login) Kontrol Password
@@ -93,7 +128,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         return Err(ServerFnError::new("Format email tidak valid."));
     }
 
-    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, current_level FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, current_level, is_verified FROM users WHERE email = $1")
         .bind(email.trim())
         .fetch_optional(pool)
         .await
@@ -112,6 +147,11 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
 
     if !is_password_match {
         return Err(ServerFnError::new("Email atau password salah."));
+    }
+
+    let is_verified: bool = user_record.get("is_verified");
+    if !is_verified {
+        return Err(ServerFnError::new("UNVERIFIED:Akun Anda belum diverifikasi. Silakan cek email Anda."));
     }
 
     // Ekstraksi nilai JSONB ke HashMap, fallback ke dinamis generator jika kosong
@@ -353,4 +393,110 @@ pub async fn reset_password_server(token: String, new_password_plain: String) ->
         .await;
 
     Ok("Password Anda berhasil direset! Silakan login dengan password baru Anda.".to_string())
+}
+
+#[server]
+pub async fn verify_email_server(token: String) -> Result<String, ServerFnError> {
+    let pool = super::db::get_pool();
+
+    let row = sqlx::query("SELECT email FROM email_verification_tokens WHERE token = $1 AND expires_at > NOW()")
+        .bind(&token)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal memvalidasi token: {}", e)))?;
+
+    let record = match row {
+        Some(r) => r,
+        None => return Err(ServerFnError::new("Token verifikasi tidak valid atau sudah kedaluwarsa.")),
+    };
+
+    let email: String = record.get("email");
+
+    sqlx::query("UPDATE users SET is_verified = true WHERE email = $1")
+        .bind(&email)
+        .execute(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Gagal memverifikasi user: {}", e)))?;
+
+    let _ = sqlx::query("DELETE FROM email_verification_tokens WHERE email = $1")
+        .bind(&email)
+        .execute(pool)
+        .await;
+
+    Ok("Akun Anda berhasil diverifikasi! Silakan login.".to_string())
+}
+
+#[server]
+pub async fn resend_verification_email_server(email: String) -> Result<String, ServerFnError> {
+    let pool = super::db::get_pool();
+    let email_trimmed = email.trim().to_string();
+
+    let user_row = sqlx::query("SELECT is_verified, full_name FROM users WHERE email = $1")
+        .bind(&email_trimmed)
+        .fetch_optional(pool)
+        .await
+        .map_err(|e| ServerFnError::new(format!("Database error: {}", e)))?;
+
+    let (is_verified, full_name) = match user_row {
+        Some(r) => {
+            let verified: bool = r.get("is_verified");
+            let name: String = r.get("full_name");
+            (verified, name)
+        },
+        None => return Err(ServerFnError::new("Email tidak terdaftar.")),
+    };
+
+    if is_verified {
+        return Err(ServerFnError::new("Akun ini sudah diverifikasi."));
+    }
+
+    let token = uuid::Uuid::new_v4().to_string();
+    let _ = sqlx::query("DELETE FROM email_verification_tokens WHERE email = $1")
+        .bind(&email_trimmed)
+        .execute(pool)
+        .await;
+
+    sqlx::query(
+        "INSERT INTO email_verification_tokens (email, token, expires_at) VALUES ($1, $2, NOW() + INTERVAL '24 hours')"
+    )
+    .bind(&email_trimmed)
+    .bind(&token)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(format!("Gagal membuat token: {}", e)))?;
+
+    let smtp_username = std::env::var("SMTP_USERNAME").unwrap_or_else(|_| "lingomindid@gmail.com".to_string());
+    let smtp_password = std::env::var("SMTP_PASSWORD").ok();
+    let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
+    let verify_link = format!("{}/verify-email?token={}", app_url, token);
+    
+    let subject = "Verifikasi Akun - LingoMind";
+    let body = format!(
+        "Halo {},\n\nTerima kasih telah mendaftar di LingoMind!\n\n\
+        Silakan klik link berikut untuk mengaktifkan akun Anda (berlaku 24 jam):\n\
+        {}\n\n\
+        Jika Anda tidak merasa mendaftar, abaikan email ini.\n\n\
+        Salam,\nLingoMind Team",
+        full_name, verify_link
+    );
+
+    if let Some(pwd) = smtp_password {
+        let email_msg = Message::builder()
+            .from(format!("LingoMind <{}>", smtp_username).parse().unwrap())
+            .to(email_trimmed.parse().unwrap())
+            .subject(subject)
+            .body(body)
+            .map_err(|e| ServerFnError::new(format!("Gagal menyusun email verifikasi: {}", e)))?;
+
+        let creds = Credentials::new(smtp_username.clone(), pwd);
+        let mailer = SmtpTransport::relay("smtp.gmail.com")
+            .unwrap()
+            .credentials(creds)
+            .port(587)
+            .build();
+
+        let _ = tokio::task::spawn_blocking(move || mailer.send(&email_msg)).await;
+    }
+
+    Ok("Tautan verifikasi telah dikirim ulang ke email Anda.".to_string())
 }

@@ -16,10 +16,11 @@ pub fn Register() -> Element {
     let mut show_confirm_password = use_signal(|| false);
     
     let mut error_message = use_signal(|| Option::<String>::None);
+    let mut is_success_msg = use_signal(|| Option::<String>::None);
     let mut is_loading = use_signal(|| false); 
     
     // PERBAIKAN: Sesuaikan tipe data context pembungkus menjadi format tuple
-    let mut user_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
+    let user_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let navigator = use_navigator();
 
     // Redirect ke dashboard jika sudah login
@@ -59,11 +60,9 @@ pub fn Register() -> Element {
         is_loading.set(true);
 
         match register_user(full_name, email, password).await {
-            Ok(profile) => {
-                // PERBAIKAN: Set state dalam bentuk tuple agar status inisialisasi bernilai true
-                user_state.set((Some(profile), true));
+            Ok(msg) => {
+                is_success_msg.set(Some(msg));
                 is_loading.set(false);
-                navigator.push(Route::Dashboard {});
             }
             Err(err) => {
                 is_loading.set(false); 
@@ -84,99 +83,112 @@ pub fn Register() -> Element {
                 h2 { class: "text-3xl font-extrabold text-teal-600 mb-2", "Join LingoMind" }
                 p { class: "text-slate-500 font-medium text-sm mb-6", "Create an account to track your study scores" }
                 
-                if let Some(msg) = error_message() {
-                    div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex items-center gap-2",
-                        "⚠️ {msg}"
+                if let Some(msg) = is_success_msg() {
+                    div { class: "py-6",
+                        div { class: "w-16 h-16 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl", "📩" }
+                        h3 { class: "text-xl font-bold text-slate-800 mb-2", "Cek Email Anda" }
+                        p { class: "text-sm text-slate-600 leading-relaxed mb-6", "{msg}" }
+                        Link {
+                            to: Route::Login {},
+                            class: "block w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg",
+                            "Kembali ke Halaman Login"
+                        }
                     }
-                }
-
-                div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Nama Lengkap" }
-                    input {
-                        class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
-                        placeholder: "Masukkan nama lengkap...",
-                        value: "{full_name_input}",
-                        disabled: is_loading(),
-                        oninput: move |e| full_name_input.set(e.value()),
+                } else {
+                    if let Some(msg) = error_message() {
+                        div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex items-center gap-2",
+                            "⚠️ {msg}"
+                        }
                     }
-                }
 
-                div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Email" }
-                    input {
-                        r#type: "email",
-                        class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
-                        placeholder: "Masukkan email aktif Anda...",
-                        value: "{email_input}",
-                        disabled: is_loading(),
-                        oninput: move |e| email_input.set(e.value()),
-                    }
-                }
-
-                // Input Password Utama
-                div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Password" }
-                    div { class: "relative flex items-center",
+                    div { class: "mb-4 text-left",
+                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Nama Lengkap" }
                         input {
-                            r#type: if show_password() { "text" } else { "password" },
-                            class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
-                            placeholder: "Buat password aman...",
-                            value: "{password_input}",
+                            class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                            placeholder: "Masukkan nama lengkap...",
+                            value: "{full_name_input}",
                             disabled: is_loading(),
-                            oninput: move |e| password_input.set(e.value()),
-                        }
-                        button {
-                            r#type: "button",
-                            class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
-                            disabled: is_loading(),
-                            onclick: move |_| show_password.set(!show_password()),
-                            if show_password() { "HIDE" } else { "SHOW" }
+                            oninput: move |e| full_name_input.set(e.value()),
                         }
                     }
-                    span { class: "text-[10px] text-slate-500 mt-1 block font-medium", "Minimal panjang password adalah 6 karakter." }
-                }
 
-                // Input Konfirmasi Password
-                div { class: "mb-6 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Confirm Password" }
-                    div { class: "relative flex items-center",
+                    div { class: "mb-4 text-left",
+                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Email" }
                         input {
-                            r#type: if show_confirm_password() { "text" } else { "password" },
-                            class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
-                            placeholder: "Ulangi password...",
-                            value: "{confirm_password_input}",
+                            r#type: "email",
+                            class: "w-full bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                            placeholder: "Masukkan email aktif Anda...",
+                            value: "{email_input}",
                             disabled: is_loading(),
-                            oninput: move |e| confirm_password_input.set(e.value()),
-                        }
-                        button {
-                            r#type: "button",
-                            class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
-                            disabled: is_loading(),
-                            onclick: move |_| show_confirm_password.set(!show_confirm_password()),
-                            if show_confirm_password() { "HIDE" } else { "SHOW" }
+                            oninput: move |e| email_input.set(e.value()),
                         }
                     }
-                }
-                
-                // Tombol Submit
-                button {
-                    class: format!(
-                        "w-full font-bold py-3 px-4 rounded-xl transition-all text-sm shadow-md flex justify-center items-center gap-2 {}",
+
+                    // Input Password Utama
+                    div { class: "mb-4 text-left",
+                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Password" }
+                        div { class: "relative flex items-center",
+                            input {
+                                r#type: if show_password() { "text" } else { "password" },
+                                class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                                placeholder: "Buat password aman...",
+                                value: "{password_input}",
+                                disabled: is_loading(),
+                                oninput: move |e| password_input.set(e.value()),
+                            }
+                            button {
+                                r#type: "button",
+                                class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
+                                disabled: is_loading(),
+                                onclick: move |_| show_password.set(!show_password()),
+                                if show_password() { "HIDE" } else { "SHOW" }
+                            }
+                        }
+                        span { class: "text-[10px] text-slate-500 mt-1 block font-medium", "Minimal panjang password adalah 6 karakter." }
+                    }
+
+                    // Input Konfirmasi Password
+                    div { class: "mb-6 text-left",
+                        label { class: "block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2", "Confirm Password" }
+                        div { class: "relative flex items-center",
+                            input {
+                                r#type: if show_confirm_password() { "text" } else { "password" },
+                                class: "w-full bg-white border border-slate-300 rounded-xl pl-4 pr-12 py-2.5 text-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
+                                placeholder: "Ulangi password...",
+                                value: "{confirm_password_input}",
+                                disabled: is_loading(),
+                                oninput: move |e| confirm_password_input.set(e.value()),
+                            }
+                            button {
+                                r#type: "button",
+                                class: "absolute right-4 text-slate-400 hover:text-teal-600 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
+                                disabled: is_loading(),
+                                onclick: move |_| show_confirm_password.set(!show_confirm_password()),
+                                if show_confirm_password() { "HIDE" } else { "SHOW" }
+                            }
+                        }
+                    }
+                    
+                    // Tombol Submit
+                    button {
+                        class: format!(
+                            "w-full font-bold py-3 px-4 rounded-xl transition-all text-sm shadow-md flex justify-center items-center gap-2 {}",
+                            if is_loading() {
+                                "bg-teal-100 text-teal-800 cursor-not-allowed opacity-80"
+                            } else {
+                                "bg-teal-500 hover:bg-teal-600 text-white hover:shadow-lg hover:shadow-teal-500/30"
+                            }
+                        ),
+                        disabled: is_loading(),
+                        onclick: handle_register,
                         if is_loading() {
-                            "bg-teal-100 text-teal-800 cursor-not-allowed opacity-80"
+                            div { class: "flex items-center gap-2",
+                                div { class: "animate-spin rounded-full h-4 w-4 border-2 border-teal-600 border-t-transparent" }
+                                span { "Mendaftarkan Akun Baru..." }
+                            }
                         } else {
-                            "bg-teal-500 hover:bg-teal-600 text-white hover:shadow-lg hover:shadow-teal-500/30"
+                            span { "Buat Akun Baru 🎉" }
                         }
-                    ),
-                    disabled: is_loading(),
-                    onclick: handle_register,
-                    if is_loading() {
-                        div { class: "flex items-center gap-2",
-                            div { class: "animate-spin rounded-full h-4 w-4 border-2 border-teal-600 border-t-transparent" }
-                            span { "Mendaftarkan Akun Baru..." }
-                        }
-                    } else {
-                        span { "Buat Akun Baru 🎉" }
                     }
                 }
 

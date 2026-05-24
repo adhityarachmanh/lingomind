@@ -10,6 +10,8 @@ pub fn Login() -> Element {
     let mut password_input = use_signal(String::new);
     let mut show_password = use_signal(|| false); 
     let mut error_message = use_signal(|| Option::<String>::None);
+    let mut is_unverified = use_signal(|| false);
+    let mut resend_message = use_signal(|| Option::<String>::None);
     let mut is_loading = use_signal(|| false); 
     
     // PERBAIKAN: Sesuaikan tipe data context pembungkus menjadi format tuple
@@ -28,6 +30,7 @@ pub fn Login() -> Element {
         if is_loading() { return; }
 
         error_message.set(None);
+        resend_message.set(None);
 
         let email = email_input();
         let password = password_input();
@@ -48,8 +51,26 @@ pub fn Login() -> Element {
             }
             Err(err) => {
                 is_loading.set(false); 
-                error_message.set(Some(err.to_string()));
+                let err_str = err.to_string();
+                if err_str.starts_with("UNVERIFIED:") {
+                    is_unverified.set(true);
+                    error_message.set(Some(err_str.replace("UNVERIFIED:", "")));
+                } else {
+                    is_unverified.set(false);
+                    error_message.set(Some(err_str));
+                }
             }
+        }
+    };
+
+    let handle_resend_email = move |_| async move {
+        let email = email_input();
+        if email.trim().is_empty() { return; }
+        
+        resend_message.set(Some("Mengirim ulang email...".to_string()));
+        match crate::services::auth::resend_verification_email_server(email).await {
+            Ok(msg) => resend_message.set(Some(msg)),
+            Err(e) => resend_message.set(Some(format!("Gagal: {}", e))),
         }
     };
 
@@ -66,8 +87,23 @@ pub fn Login() -> Element {
                 p { class: "text-slate-500 text-sm mb-6 font-medium", "Learn English & German powered by Gemini AI" }
                 
                 if let Some(msg) = error_message() {
-                    div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex items-center gap-2",
-                        "⚠️ {msg}"
+                    div { class: "mb-4 p-3 bg-rose-50 border border-rose-200 rounded-lg text-rose-600 text-xs text-left font-semibold flex flex-col gap-2",
+                        div { class: "flex items-center gap-2",
+                            "⚠️ {msg}"
+                        }
+                        if is_unverified() {
+                            button {
+                                class: "mt-1 self-start text-xs font-bold text-teal-600 hover:text-teal-700 hover:underline bg-transparent border-none cursor-pointer p-0",
+                                onclick: handle_resend_email,
+                                "Kirim ulang email verifikasi"
+                            }
+                        }
+                    }
+                }
+                
+                if let Some(msg) = resend_message() {
+                    div { class: "mb-4 p-3 bg-teal-50 border border-teal-200 rounded-lg text-teal-700 text-xs text-left font-semibold flex items-center gap-2",
+                        "📩 {msg}"
                     }
                 }
 

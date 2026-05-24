@@ -20,6 +20,12 @@ fn main() {
                     std::process::exit(1);
                 }
                 println!("Database Neon PostgreSQL berhasil terhubung & Migration sukses diterapkan! 🚀");
+
+                if let Err(err) = services::cron::start_cron_jobs().await {
+                    eprintln!("Gagal memulai cron jobs: {}", err);
+                } else {
+                    println!("Cron Scheduler berhasil dijalankan! ⏰");
+                }
             });
     }
 

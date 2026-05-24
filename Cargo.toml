@@ -28,6 +28,7 @@ tokio = { version = "1", features = ["full"] } # Menggunakan "1" agar otomatis m
 bcrypt = "0.15"
 lettre = { version = "0.11", features = ["tokio1", "tokio1-native-tls"] }
 uuid = { version = "1.0", features = ["v4"] }
+tokio-cron-scheduler = "0.13"
 
 [features]
 default = ["web"]
