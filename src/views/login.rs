@@ -109,7 +109,7 @@ pub fn Login() -> Element {
 
                 // Input Email
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
                     input {
                         r#type: "email",
                         class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
@@ -123,7 +123,7 @@ pub fn Login() -> Element {
                 // Input Password
                 div { class: "mb-6 text-left",
                     div { class: "flex justify-between items-center mb-2",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider", "Password" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider", "Password" }
                         Link {
                             to: Route::ForgotPassword {},
                             class: "text-[11px] font-bold text-teal-600 dark:text-teal-400 hover:underline",

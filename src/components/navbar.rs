@@ -5,17 +5,13 @@ use crate::routes::Route;
 #[component]
 pub fn Navbar() -> Element {
     let mut session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
-    let mut theme_state = use_context::<Signal<String>>();
+    let mut is_dark_mode = use_context::<Signal<bool>>();
     let navigator = use_navigator();
     let (user_opt, _is_ready) = session_state();
     let current_route = use_route::<Route>();
 
     let toggle_theme = move |_| {
-        if theme_state() == "dark" {
-            theme_state.set("light".to_string());
-        } else {
-            theme_state.set("dark".to_string());
-        }
+        is_dark_mode.set(!is_dark_mode());
     };
 
     let handle_logout = move |_| {
@@ -86,7 +82,7 @@ pub fn Navbar() -> Element {
                             button {
                                 class: "p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors shadow-sm cursor-pointer text-sm",
                                 onclick: toggle_theme,
-                                if theme_state() == "dark" { "☀️" } else { "🌙" }
+                                if is_dark_mode() { "☀️\u{FE0F}" } else { "🌙\u{FE0F}" }
                             }
                             button {
                                 r#type: "button",
@@ -102,9 +98,9 @@ pub fn Navbar() -> Element {
                                 span { "{user.score} pts" }
                             }
                             button {
-                                class: "p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500/10 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors shadow-sm cursor-pointer text-sm",
+                                class: "p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors shadow-sm cursor-pointer text-sm",
                                 onclick: toggle_theme,
-                                if theme_state() == "dark" { "☀️" } else { "🌙" }
+                                if is_dark_mode() { "☀️\u{FE0F}" } else { "🌙\u{FE0F}" }
                             }
                         }
                     } else {

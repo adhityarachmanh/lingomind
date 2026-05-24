@@ -28,7 +28,7 @@ pub fn App() -> Element {
         Signal::new((initial_user, false))
     });
     let mut selected_language = use_context_provider(|| Signal::new("English".to_string()));
-    let mut theme_state = use_context_provider(|| Signal::new("light".to_string()));
+    let mut is_dark_mode = use_context_provider(|| Signal::new(false));
 
     use_effect(move || {
         #[cfg(target_arch = "wasm32")]
@@ -36,8 +36,10 @@ pub fn App() -> Element {
             if let Some(window) = web_sys::window() {
                 if let Ok(Some(local_storage)) = window.local_storage() {
                     if let Ok(Some(stored_theme)) = local_storage.get_item("lingomind_theme") {
-                        if stored_theme == "dark" || stored_theme == "light" {
-                            theme_state.set(stored_theme);
+                        if stored_theme == "dark" {
+                            is_dark_mode.set(true);
+                        } else if stored_theme == "light" {
+                            is_dark_mode.set(false);
                         }
                     }
                 }
@@ -46,13 +48,13 @@ pub fn App() -> Element {
     });
 
     use_effect(move || {
-        let current_theme = theme_state();
+        let dark_mode = is_dark_mode();
         #[cfg(target_arch = "wasm32")]
         {
             if let Some(window) = web_sys::window() {
                 if let Some(document) = window.document() {
                     if let Some(doc_element) = document.document_element() {
-                        if current_theme == "dark" {
+                        if dark_mode {
                             let _ = doc_element.class_list().add_1("dark");
                         } else {
                             let _ = doc_element.class_list().remove_1("dark");
@@ -60,7 +62,7 @@ pub fn App() -> Element {
                     }
                 }
                 if let Ok(Some(local_storage)) = window.local_storage() {
-                    let _ = local_storage.set_item("lingomind_theme", &current_theme);
+                    let _ = local_storage.set_item("lingomind_theme", if dark_mode { "dark" } else { "light" });
                 }
             }
         }

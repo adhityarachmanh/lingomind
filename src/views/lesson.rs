@@ -365,7 +365,7 @@ pub fn Lesson(goal: String) -> Element {
                             div { class: "space-y-3",
                                 for vocab in lesson_data.vocabulary.iter() {
                                     div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-rose-300 transition-colors group",
-                                        p { class: "text-base font-bold text-slate-800/30 dark:text-slate-200 pr-10", "{vocab.word}" }
+                                        p { class: "text-base font-bold text-slate-800 dark:text-slate-200 pr-10", "{vocab.word}" }
                                         p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "{vocab.meaning}" }
                                         button {
                                             class: "absolute top-4 right-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50/30 dark:bg-rose-900/30 transition-colors p-2 rounded-full",
@@ -383,7 +383,7 @@ pub fn Lesson(goal: String) -> Element {
                         }
 
                         div { class: "hidden sm:block bg-white dark:bg-slate-900 border border-slate-200/20 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
-                            p { class: "text-sm font-medium text-slate-600/20 dark:text-slate-400 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
+                            p { class: "text-sm font-medium text-slate-600 dark:text-slate-400 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
                             div { class: "space-y-3",
                                 button {
                                     class: if is_loading_next_lesson {

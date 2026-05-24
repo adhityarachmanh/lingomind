@@ -178,10 +178,10 @@ pub fn ChatRoleplay(goal: String) -> Element {
         let custom_scenarios = custom_settings();
 
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 p-4 md:p-8 flex flex-col justify-center items-center font-sans",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 md:p-8 flex flex-col justify-center items-center font-sans",
                 div { class: "max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-xl text-center",
                     span { class: "text-xs font-bold bg-teal-50/30 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border border-teal-100/50 dark:border-teal-900/50 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm", "Mode Roleplay - {language}" }
-                    p { class: "text-xs text-slate-500/30 dark:text-slate-400 mb-3 font-medium", "Global language: ", span { class: "text-teal-600 dark:text-teal-400 font-bold", "{selected_language}" } }
+                    p { class: "text-xs text-slate-500 dark:text-slate-400 mb-3 font-medium", "Global language: ", span { class: "text-teal-600 dark:text-teal-400 font-bold", "{selected_language}" } }
                     h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mb-3", "Pilih Skenario Obrolan" }
                     p { class: "text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto", "Pilih skenario siap pakai atau tambah skenario custom. Partner AI menyesuaikan tingkat {active_level}." }
 
@@ -196,7 +196,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                                     move |_| click_setting(scenario_name.clone())
                                 },
                                 div {
-                                    p { class: "text-slate-800/20 dark:text-slate-200 group-hover:text-teal-700 transition-colors text-base", "{title}" }
+                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-teal-700 transition-colors text-base", "{title}" }
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed", "{desc}" }
                                 }
                                 span { class: "text-slate-400 group-hover:text-teal-500 transition-colors mt-0.5", "->" }
@@ -210,7 +210,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                         div { class: "flex flex-col sm:flex-row gap-3",
                             input {
                                 r#type: "text",
-                                class: "flex-1 bg-white dark:bg-slate-900 border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-4 py-3 text-sm text-slate-800/30 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 shadow-sm",
+                                class: "flex-1 bg-white dark:bg-slate-900 border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 shadow-sm",
                                 placeholder: "Tulis nama skenario custom...",
                                 value: "{custom_setting_input}",
                                 maxlength: 50,
@@ -239,7 +239,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                                     button {
                                         key: "{scenario}",
                                         r#type: "button",
-                                        class: "bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 border border-slate-300 hover:border-teal-400 text-slate-700/30 dark:text-slate-300 hover:text-teal-700 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm",
+                                        class: "bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 border border-slate-300 hover:border-teal-400 text-slate-700 dark:text-slate-300 hover:text-teal-700 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm",
                                         onclick: {
                                             let mut click_custom_setting = handle_select_setting.clone();
                                             let scenario_for_click = scenario.clone();
@@ -281,13 +281,13 @@ pub fn ChatRoleplay(goal: String) -> Element {
     }).collect::<Vec<_>>();
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/50 dark:text-slate-50 flex flex-col justify-between pt-20 pb-8 px-4 md:px-8 font-sans",
+        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-between pt-20 pb-8 px-4 md:px-8 font-sans",
             div { class: "max-w-4xl w-full mx-auto flex-1 flex flex-col justify-between bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 rounded-3xl shadow-xl overflow-hidden min-h-[600px]",
                 div { class: "bg-slate-50 dark:bg-slate-950 p-5 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center",
                     div { class: "flex items-center gap-4",
                         div { class: "h-3.5 w-3.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" }
                         div {
-                            h3 { class: "text-base font-extrabold text-slate-800/50 dark:text-slate-200", "Simulasi Peran: {setting_title}" }
+                            h3 { class: "text-base font-extrabold text-slate-800 dark:text-slate-200", "Simulasi Peran: {setting_title}" }
                             p { class: "text-xs text-slate-500 dark:text-slate-400 font-bold tracking-wide mt-0.5", "{language} - {active_level}" }
                             p { class: "text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-0.5", "Global language: {selected_language}" }
                         }
@@ -317,7 +317,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                                         if msg.sender == "user" {
                                             "bg-teal-500 text-white font-medium rounded-tr-none"
                                         } else {
-                                            "bg-white dark:bg-slate-900 text-slate-800/30 dark:text-slate-200 border border-slate-200/30 dark:border-slate-700 font-medium rounded-tl-none shadow-md"
+                                            "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200/30 dark:border-slate-700 font-medium rounded-tl-none shadow-md"
                                         }
                                     ),
                                     "{main_text}"
@@ -341,7 +341,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     }
 
                     if is_loading() {
-                        div { class: "flex justify-start items-center gap-3 text-slate-500/20 dark:text-slate-400 text-sm font-medium bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-slate-200/20 dark:border-slate-700 w-fit animate-pulse shadow-sm",
+                        div { class: "flex justify-start items-center gap-3 text-slate-500 dark:text-slate-400 text-sm font-medium bg-white dark:bg-slate-900 px-5 py-3 rounded-2xl border border-slate-200/20 dark:border-slate-700 w-fit animate-pulse shadow-sm",
                             div { class: "h-2 w-2 bg-teal-500 rounded-full animate-bounce shadow-sm" }
                             "Partner AI sedang mengetik..."
                         }
@@ -355,7 +355,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
 
                         input {
                             r#type: "text",
-                            class: "flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-5 py-4 text-base text-slate-800/30 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 disabled:opacity-50 shadow-inner",
+                            class: "flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-300 hover:border-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 rounded-xl px-5 py-4 text-base text-slate-800 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 disabled:opacity-50 shadow-inner",
                             placeholder: "Ketik balasan dalam bahasa {language}...",
                             value: "{input_text}",
                             disabled: is_loading(),

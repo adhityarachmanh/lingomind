@@ -249,7 +249,7 @@ pub fn Dashboard() -> Element {
     };
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/20 dark:text-slate-50 p-4 sm:p-8 font-sans",
+        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 sm:p-8 font-sans",
             div { class: "max-w-5xl mx-auto space-y-6",
                 div { class: "relative overflow-hidden bg-gradient-to-br from-teal-500 to-teal-700 rounded-3xl p-6 sm:p-10 shadow-xl shadow-teal-500/20 text-white",
                     div { class: "relative z-10",
@@ -279,31 +279,31 @@ pub fn Dashboard() -> Element {
                     }
                     div { class: "grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6",
                         div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100/30 dark:border-slate-800 rounded-xl p-3 flex items-center gap-3", 
-                            div { class: "w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 text-lg", "⏰" }
-                            div {
+                            div { class: "w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center text-rose-500 text-lg shrink-0", "⏰" }
+                            div { class: "min-w-0 flex-1",
                                 p { class: "text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400", "Due Flashcard" }
-                                p { class: "text-lg font-black text-slate-800 dark:text-slate-200", "{due_count}" }
+                                p { class: "text-lg font-black text-slate-800 dark:text-slate-200 truncate", "{due_count}" }
                             }
                         }
                         div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3 flex items-center gap-3", 
-                            div { class: "w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-lg", "📈" }
-                            div {
+                            div { class: "w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-500 text-lg shrink-0", "📈" }
+                            div { class: "min-w-0 flex-1",
                                 p { class: "text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400", "Trend Kelemahan" }
-                                p { class: "text-lg font-black text-slate-800 dark:text-slate-200 capitalize", "{trend_label}" }
+                                p { class: "text-lg font-black text-slate-800 dark:text-slate-200 capitalize truncate", "{trend_label}" }
                             }
                         }
                         div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3 flex items-center gap-3", 
-                            div { class: "w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 text-lg", "🎯" }
-                            div {
+                            div { class: "w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-500 text-lg shrink-0", "🎯" }
+                            div { class: "min-w-0 flex-1",
                                 p { class: "text-[10px] uppercase font-bold text-slate-500 dark:text-slate-400", "Topik Lemah" }
-                                p { class: "text-sm font-black text-slate-800 dark:text-slate-200 capitalize line-clamp-1", "{weak_text}" }
+                                p { class: "text-sm font-black text-slate-800 dark:text-slate-200 capitalize truncate", "{weak_text}" }
                             }
                         }
                     }
                     div { class: "mt-4 bg-indigo-50/30 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-4 flex items-center justify-between shadow-sm",
                         div {
-                            p { class: "text-sm font-bold text-indigo-800", "Belum yakin dengan level Anda?" }
-                            p { class: "text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium", "Ikuti tes penempatan singkat (Placement Test) dengan AI." }
+                            p { class: "text-sm font-bold text-indigo-800 dark:text-white", "Belum yakin dengan level Anda?" }
+                            p { class: "text-xs text-indigo-600 dark:text-indigo-200 mt-1 font-medium", "Ikuti tes penempatan singkat (Placement Test) dengan AI." }
                         }
                         Link {
                             to: Route::PlacementTest {},
@@ -316,7 +316,7 @@ pub fn Dashboard() -> Element {
                 if let Some(es) = engagement {
                     div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-5 shadow-sm",
                         div { class: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3",
-                            p { class: "text-sm font-bold text-slate-800/30 dark:text-slate-200 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Pencapaian" }
+                            p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Pencapaian" }
                             div { class: "flex gap-2 items-center",
                                 div { class: "px-3 py-1 bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-900/50 shadow-sm", "🪙 {es.coins} Koin" }
                                 div { class: "px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-200 shadow-sm", "❄️ {es.streak_freezes} Freeze" }
@@ -419,7 +419,7 @@ pub fn Dashboard() -> Element {
                                             let op_score = if is_challenger { battle.challenged_score } else { Some(battle.challenger_score) };
                                             
                                             rsx! {
-                                                div { class: "bg-white dark:bg-slate-900 text-slate-800/5 dark:text-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm",
+                                                div { class: "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm",
                                                     div {
                                                         p { class: "font-bold", "Vs {opponent_name}" }
                                                         p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Topik: {battle.goal} ({battle.language})" }
@@ -516,7 +516,7 @@ pub fn Dashboard() -> Element {
                                     "🔍"
                                 }
                                 input {
-                                    class: "w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-800/20 dark:text-slate-200 placeholder-slate-400 font-semibold focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all",
+                                    class: "w-full pl-11 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 font-semibold focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all",
                                     placeholder: "Cari nama bahasa...",
                                     value: "{search_query()}",
                                     oninput: move |e| search_query.set(e.value()),

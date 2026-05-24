@@ -2034,12 +2034,6 @@
   .text-slate-500 {
     color: var(--color-slate-500);
   }
-  .text-slate-500\/10 {
-    color: color-mix(in srgb, oklch(55.4% 0.046 257.417) 10%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      color: color-mix(in oklab, var(--color-slate-500) 10%, transparent);
-    }
-  }
   .text-slate-500\/20 {
     color: color-mix(in srgb, oklch(55.4% 0.046 257.417) 20%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -2783,13 +2777,6 @@
       }
     }
   }
-  .hover\:border-teal-100 {
-    &:hover {
-      @media (hover: hover) {
-        border-color: var(--color-teal-100);
-      }
-    }
-  }
   .hover\:border-teal-100\/50 {
     &:hover {
       @media (hover: hover) {
@@ -2845,13 +2832,6 @@
         @supports (color: color-mix(in lab, red, red)) {
           border-color: color-mix(in oklab, var(--color-yellow-500) 50%, transparent);
         }
-      }
-    }
-  }
-  .hover\:bg-amber-50 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-amber-50);
       }
     }
   }
@@ -2980,13 +2960,6 @@
       }
     }
   }
-  .hover\:bg-rose-50 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-rose-50);
-      }
-    }
-  }
   .hover\:bg-rose-50\/30 {
     &:hover {
       @media (hover: hover) {
@@ -3064,13 +3037,6 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-slate-900);
-      }
-    }
-  }
-  .hover\:bg-teal-50 {
-    &:hover {
-      @media (hover: hover) {
-        background-color: var(--color-teal-50);
       }
     }
   }
@@ -3925,6 +3891,11 @@
       color: var(--color-amber-400);
     }
   }
+  .dark\:text-indigo-200 {
+    &:where(.dark, .dark *) {
+      color: var(--color-indigo-200);
+    }
+  }
   .dark\:text-indigo-400 {
     &:where(.dark, .dark *) {
       color: var(--color-indigo-400);
@@ -3963,6 +3934,11 @@
   .dark\:text-teal-400 {
     &:where(.dark, .dark *) {
       color: var(--color-teal-400);
+    }
+  }
+  .dark\:text-white {
+    &:where(.dark, .dark *) {
+      color: var(--color-white);
     }
   }
   .dark\:hover\:text-teal-400 {

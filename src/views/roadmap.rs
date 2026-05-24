@@ -114,7 +114,7 @@ pub fn Roadmap() -> Element {
             div { class: "max-w-4xl mx-auto",
                 // Header
                 div { class: "mb-10 text-center",
-                    h1 { class: "text-3xl md:text-4xl font-black text-slate-800/30 dark:text-slate-200 tracking-tight mb-3",
+                    h1 { class: "text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-200 tracking-tight mb-3",
                         "Peta Kurikulum " span { class: "text-teal-600 dark:text-teal-400", "{language}" }
                     }
                     p { class: "text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto",
@@ -177,7 +177,7 @@ pub fn Roadmap() -> Element {
                                             class: format!(
                                                 "text-left p-4 rounded-xl border text-sm font-semibold transition-all flex items-center justify-between group {}",
                                                 if is_unlocked {
-                                                    "bg-slate-50 dark:bg-slate-950 border-slate-200/30 dark:border-slate-700 text-slate-700/30 dark:text-slate-300 hover:bg-teal-50/30 dark:bg-teal-900/30 hover:border-teal-300 hover:text-teal-800 hover:shadow-sm"
+                                                    "bg-slate-50 dark:bg-slate-950 border-slate-200/30 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-teal-50/30 dark:bg-teal-900/30 hover:border-teal-300 hover:text-teal-800 hover:shadow-sm"
                                                 } else {
                                                     "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 cursor-not-allowed"
                                                 }
@@ -210,7 +210,7 @@ pub fn Roadmap() -> Element {
                     
                     div { class: "relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200",
                         button {
-                            class: "absolute top-4 right-4 h-8 w-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-600/30 dark:text-slate-400 rounded-full flex items-center justify-center transition-colors font-bold",
+                            class: "absolute top-4 right-4 h-8 w-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full flex items-center justify-center transition-colors font-bold",
                             onclick: move |_| selected_topic.set(None),
                             "✕"
                         }
@@ -230,7 +230,7 @@ pub fn Roadmap() -> Element {
                                 },
                                 div { class: "text-2xl", "📚" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800/30 dark:text-slate-200 group-hover:text-teal-800", "Pelajari Materi" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Pelajari Materi" }
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Baca penjelasan teori & contoh" }
                                 }
                             }
@@ -243,7 +243,7 @@ pub fn Roadmap() -> Element {
                                 },
                                 div { class: "text-2xl", "📝" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800/30 dark:text-slate-200 group-hover:text-teal-800", "Latihan Kuis" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Latihan Kuis" }
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Uji pengetahuan dengan soal interaktif" }
                                 }
                             }
@@ -256,7 +256,7 @@ pub fn Roadmap() -> Element {
                                 },
                                 div { class: "text-2xl", "💬" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800/30 dark:text-slate-200 group-hover:text-teal-800", "Chat Percakapan" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Chat Percakapan" }
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Simulasi chat interaktif berbasis teks dengan AI" }
                                 }
                             }

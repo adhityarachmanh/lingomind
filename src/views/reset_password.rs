@@ -67,7 +67,7 @@ pub fn ResetPassword(token: String) -> Element {
                 }
                 
                 h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Reset Password" }
-                p { class: "text-slate-500/30 dark:text-slate-400 text-sm mb-6 font-medium", "Masukkan kata sandi baru Anda di bawah ini." }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium", "Masukkan kata sandi baru Anda di bawah ini." }
 
                 if let Some((is_error, msg)) = status_message() {
                     div {
@@ -87,7 +87,7 @@ pub fn ResetPassword(token: String) -> Element {
                 if !reset_success() {
                     // Password Utama
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Kata Sandi Baru" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Kata Sandi Baru" }
                         div { class: "relative flex items-center",
                             input {
                                 r#type: if show_passwords() { "text" } else { "password" },
@@ -109,7 +109,7 @@ pub fn ResetPassword(token: String) -> Element {
 
                     // Konfirmasi Password
                     div { class: "mb-6 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Konfirmasi Kata Sandi" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Konfirmasi Kata Sandi" }
                         input {
                             r#type: if show_passwords() { "text" } else { "password" },
                             class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",

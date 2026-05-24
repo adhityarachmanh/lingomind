@@ -453,7 +453,7 @@ pub fn VoiceChat(goal: String) -> Element {
                                     move |_| click_setting(scenario_name.clone())
                                 },
                                 div {
-                                    p { class: "text-slate-800/20 dark:text-slate-200 group-hover:text-emerald-700 transition-colors text-base", "{title}" }
+                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 transition-colors text-base", "{title}" }
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed", "{desc}" }
                                 }
                                 span { class: "text-slate-400 group-hover:text-emerald-500 transition-colors mt-0.5", "🎙️" }
@@ -466,7 +466,7 @@ pub fn VoiceChat(goal: String) -> Element {
                         div { class: "flex flex-col sm:flex-row gap-3",
                             input {
                                 r#type: "text",
-                                class: "flex-1 bg-white dark:bg-slate-900 border border-slate-300 hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl px-4 py-3 text-sm text-slate-800/30 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 shadow-sm",
+                                class: "flex-1 bg-white dark:bg-slate-900 border border-slate-300 hover:border-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 rounded-xl px-4 py-3 text-sm text-slate-800 dark:text-slate-200 focus:outline-none transition-all placeholder-slate-400 shadow-sm",
                                 placeholder: "Contoh: Wawancara Visa, Telpon Customer Service...",
                                 value: "{custom_setting_input}",
                                 maxlength: 50,

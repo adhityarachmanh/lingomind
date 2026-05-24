@@ -102,7 +102,7 @@ pub fn Register() -> Element {
                     }
 
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Nama Lengkap" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Nama Lengkap" }
                         input {
                             class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
                             placeholder: "Masukkan nama lengkap...",
@@ -113,7 +113,7 @@ pub fn Register() -> Element {
                     }
 
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
                         input {
                             r#type: "email",
                             class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
@@ -126,7 +126,7 @@ pub fn Register() -> Element {
 
                     // Input Password Utama
                     div { class: "mb-4 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Password" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Password" }
                         div { class: "relative flex items-center",
                             input {
                                 r#type: if show_password() { "text" } else { "password" },
@@ -149,7 +149,7 @@ pub fn Register() -> Element {
 
                     // Input Konfirmasi Password
                     div { class: "mb-6 text-left",
-                        label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Confirm Password" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Confirm Password" }
                         div { class: "relative flex items-center",
                             input {
                                 r#type: if show_confirm_password() { "text" } else { "password" },

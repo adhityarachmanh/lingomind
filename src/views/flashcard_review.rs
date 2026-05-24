@@ -29,7 +29,7 @@ pub fn FlashcardReview() -> Element {
 
     if !ready {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/20 dark:text-slate-50 flex items-center justify-center font-sans",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex items-center justify-center font-sans",
                 div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" }
             }
         };
@@ -95,7 +95,7 @@ pub fn FlashcardReview() -> Element {
 
     if finished() {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/20 dark:text-slate-50 flex items-center justify-center p-6 font-sans",
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex items-center justify-center p-6 font-sans",
                 div { class: "bg-white dark:bg-slate-900 border border-slate-200/20 dark:border-slate-700 rounded-3xl p-8 max-w-md w-full text-center shadow-xl hover:shadow-2xl transition-all",
                     div { class: "text-6xl mb-4 animate-bounce", "🎉" }
                     h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2 tracking-tight", "Sesi Selesai!" }
@@ -150,7 +150,7 @@ pub fn FlashcardReview() -> Element {
 
                 // Title Header
                 div { class: "flex justify-between items-center mb-6",
-                    h2 { class: "text-lg font-black text-slate-800/30 dark:text-slate-200 tracking-tight", 
+                    h2 { class: "text-lg font-black text-slate-800 dark:text-slate-200 tracking-tight", 
                         "Ulasan Flashcard" 
                     }
                     span { class: "flex gap-2",

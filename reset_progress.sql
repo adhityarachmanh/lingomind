@@ -15,6 +15,8 @@ TRUNCATE TABLE password_resets CASCADE;
 TRUNCATE TABLE user_badges CASCADE;
 TRUNCATE TABLE followers CASCADE;
 TRUNCATE TABLE quiz_battles CASCADE;
+TRUNCATE TABLE cached_lessons CASCADE;
+TRUNCATE TABLE cached_flashcard_generations CASCADE;
 
 -- 2. Mereset kolom progress dan level pada tabel users ke nilai awal default (28 bahasa)
 UPDATE users 

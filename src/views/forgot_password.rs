@@ -46,7 +46,7 @@ pub fn ForgotPassword() -> Element {
                 }
                 
                 h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Lupa Password" }
-                p { class: "text-slate-500/30 dark:text-slate-400 text-sm mb-6 font-medium", "Masukkan email Anda untuk menerima tautan reset password." }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium", "Masukkan email Anda untuk menerima tautan reset password." }
 
                 if let Some((is_error, msg)) = status_message() {
                     div {
@@ -65,7 +65,7 @@ pub fn ForgotPassword() -> Element {
 
                 // Input Email
                 div { class: "mb-6 text-left",
-                    label { class: "block text-xs font-bold text-slate-500/20 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
                     input {
                         r#type: "email",
                         class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",

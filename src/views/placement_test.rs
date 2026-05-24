@@ -85,7 +85,7 @@ pub fn PlacementTest() -> Element {
     };
 
     rsx! {
-        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 p-4 sm:p-8 font-sans pb-24",
+        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 sm:p-8 font-sans pb-24",
             div { class: "max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-3xl p-6 shadow-sm flex flex-col h-[80vh]",
                 div { class: "flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800 pb-4",
                     h1 { class: "text-xl font-black text-slate-800 dark:text-slate-200", "Tes Penempatan" }
@@ -98,7 +98,7 @@ pub fn PlacementTest() -> Element {
                             p { class: "text-rose-500 font-bold mb-4", "{evaluation_result()}" }
                         } else {
                             div { class: "text-6xl mb-4", "🎉" }
-                            h2 { class: "text-2xl font-black text-slate-800/30 dark:text-slate-200 mb-2", "Evaluasi Selesai!" }
+                            h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2", "Evaluasi Selesai!" }
                             p { class: "text-slate-600 dark:text-slate-400 mb-6", "Level bahasa Anda saat ini adalah:" }
                             div { class: "text-5xl font-black text-teal-600 dark:text-teal-400 mb-8 bg-teal-50/30 dark:bg-teal-900/30 w-32 h-32 flex items-center justify-center rounded-full mx-auto border-4 border-teal-100/50 dark:border-teal-900/50", 
                                 "{evaluation_result()}" 
