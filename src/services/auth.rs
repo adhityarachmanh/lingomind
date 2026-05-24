@@ -324,7 +324,6 @@ pub async fn send_reset_password_email(email: String) -> Result<String, ServerFn
         let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay("smtp.gmail.com")
             .unwrap()
             .credentials(creds)
-            .port(587)
             .build();
 
         use lettre::AsyncTransport;

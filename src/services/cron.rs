@@ -70,7 +70,6 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
     let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay("smtp.gmail.com")
         .unwrap()
         .credentials(creds)
-        .port(587)
         .build();
 
     let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
