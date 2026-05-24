@@ -9,6 +9,14 @@ if [ ! -f "$ENV_FILE" ]; then
     exit 1
 fi
 
+# Cek apakah memiliki izin membaca file environment
+if [ ! -r "$ENV_FILE" ]; then
+    echo "Error: Tidak memiliki izin membaca file $ENV_FILE."
+    echo "Silakan jalankan ulang script menggunakan 'sudo':"
+    echo "sudo ./reset_progress.sh"
+    exit 1
+fi
+
 # Mengambil nilai DATABASE_URL secara dinamis
 DATABASE_URL=$(grep -E "^DATABASE_URL=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
 
