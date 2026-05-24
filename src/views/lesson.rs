@@ -232,7 +232,7 @@ pub fn Lesson(goal: String) -> Element {
     let session_for_resource = session_state;
     let lesson_part_signal = lesson_part;
 
-    let lesson_resource = use_resource(move || {
+    let mut lesson_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
         let (resource_user_opt, _) = session_for_resource();
         let lvl = resource_user_opt
@@ -264,7 +264,14 @@ pub fn Lesson(goal: String) -> Element {
                 (cached, true)
             } else {
                 return rsx! {
-                    div { class: "p-8 text-rose-600 dark:text-rose-400 text-center mt-20 font-bold bg-rose-50/30 dark:bg-rose-900/30 border border-rose-200 rounded-xl m-4", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
+                    div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
+                        div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
+                            h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Materi" }
+                            p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
+                            button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| lesson_resource.restart(), "Coba Lagi" }
+                            Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
+                        }
+                    }
                 }
             }
         }

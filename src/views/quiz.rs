@@ -280,7 +280,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
 
-    let quiz_resource = use_resource(move || {
+    let mut quiz_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
         let (resource_user_opt, _) = session_for_resource();
         let email_value = resource_user_opt
@@ -306,7 +306,18 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
 
     let quiz_container = match quiz_result {
         Ok(data) => data,
-        Err(_) => return rsx! { div { class: "p-8 text-rose-600 dark:text-rose-400 font-bold text-center", "Gagal memuat kuis dari AI Studio. Cek koneksi/.env." } }
+        Err(e) => {
+            return rsx! {
+                div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
+                    div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
+                        h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Kuis" }
+                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
+                        button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| quiz_resource.restart(), "Coba Lagi" }
+                        Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Beranda" }
+                    }
+                }
+            };
+        }
     };
 
     if quiz_container.questions.is_empty() {

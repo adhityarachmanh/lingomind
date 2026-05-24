@@ -266,7 +266,7 @@ pub fn Exam(level: String) -> Element {
     let lang = language.clone();
     let lvl = level.clone();
     
-    let exam_resource = use_resource(move || {
+    let mut exam_resource = use_resource(move || {
         let l = lang.clone();
         let lv = lvl.clone();
         async move { generate_exam_server(l, lv).await }
@@ -298,6 +298,7 @@ pub fn Exam(level: String) -> Element {
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
                         h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Ujian" }
                         p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
+                        button { class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", onclick: move |_| exam_resource.restart(), "Coba Lagi" }
                         Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
                     }
                 }
