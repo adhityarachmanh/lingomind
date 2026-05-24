@@ -72,10 +72,36 @@ fn is_rich_lesson(lesson: &LessonContainer) -> bool {
 #[server]
 pub async fn generate_lesson_server(language: String, level: String, goal: String, part: i32) -> Result<LessonContainer, ServerFnError> {
     use reqwest::Client;
+    #[cfg(not(target_arch = "wasm32"))]
+    use sqlx::Row;
 
     #[cfg(not(target_arch = "wasm32"))]
     dotenvy::dotenv().ok();
 
+    let part_value = part.max(1);
+    let pool = super::super::db::get_pool();
+
+    // === CACHE HIT: Cek apakah lesson sudah pernah di-generate sebelumnya ===
+    let cached = sqlx::query(
+        "SELECT content_json FROM cached_lessons WHERE language = $1 AND level = $2 AND goal = $3 AND part = $4 LIMIT 1"
+    )
+    .bind(&language)
+    .bind(&level)
+    .bind(&goal)
+    .bind(part_value)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    if let Some(row) = cached {
+        let json_str: String = row.get("content_json");
+        if let Ok(lesson) = serde_json::from_str::<LessonContainer>(&json_str) {
+            return Ok(lesson);
+        }
+    }
+
+    // === CACHE MISS: Generate dari Gemini API ===
     let gemini_api_key = std::env::var("GEMINI_API_KEY")
         .map_err(|_| ServerFnError::new("Kunci GEMINI_API_KEY belum dikonfigurasi di file .env!"))?;
 
@@ -90,7 +116,6 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
         gemini_model, gemini_api_key
     );
 
-    let part_value = part.max(1);
     let part_note = if part_value <= 1 {
         "Ini bagian pertama."
     } else {
@@ -137,6 +162,20 @@ pub async fn generate_lesson_server(language: String, level: String, goal: Strin
 
     if lesson.title.trim().is_empty() || lesson.content.trim().is_empty() {
         return Err(ServerFnError::new("Respons lesson tidak valid: judul atau konten kosong."));
+    }
+
+    // === SIMPAN KE CACHE untuk pengguna berikutnya (gratis!) ===
+    if let Ok(json_str) = serde_json::to_string(&lesson) {
+        let _ = sqlx::query(
+            "INSERT INTO cached_lessons (language, level, goal, part, content_json) VALUES ($1, $2, $3, $4, $5)"
+        )
+        .bind(&language)
+        .bind(&level)
+        .bind(&goal)
+        .bind(part_value)
+        .bind(&json_str)
+        .execute(pool)
+        .await;
     }
 
     Ok(lesson)

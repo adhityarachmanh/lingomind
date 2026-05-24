@@ -551,10 +551,34 @@ async fn generate_quiz_with_retries(
 #[server]
 pub async fn generate_quiz_server(email: String, language: String, level: String, goal: String) -> Result<QuizContainer, ServerFnError> {
     use reqwest::Client;
+    #[cfg(not(target_arch = "wasm32"))]
+    use sqlx::Row;
 
     #[cfg(not(target_arch = "wasm32"))]
     dotenvy::dotenv().ok();
 
+    let pool = super::super::db::get_pool();
+
+    // === CACHE HIT: Cek apakah quiz sudah pernah di-generate sebelumnya ===
+    let cached = sqlx::query(
+        "SELECT content_json FROM cached_quizzes WHERE language = $1 AND level = $2 AND goal = $3 ORDER BY RANDOM() LIMIT 1"
+    )
+    .bind(&language)
+    .bind(&level)
+    .bind(&goal)
+    .fetch_optional(pool)
+    .await
+    .ok()
+    .flatten();
+
+    if let Some(row) = cached {
+        let json_str: String = row.get("content_json");
+        if let Ok(quiz) = serde_json::from_str::<QuizContainer>(&json_str) {
+            return Ok(quiz);
+        }
+    }
+
+    // === CACHE MISS: Generate dari Gemini API ===
     let gemini_api_key = std::env::var("GEMINI_API_KEY")
         .map_err(|_| ServerFnError::new("Kunci GEMINI_API_KEY belum dikonfigurasi di file .env!"))?;
 
@@ -572,7 +596,22 @@ pub async fn generate_quiz_server(email: String, language: String, level: String
     let weakness_context = build_quiz_context(&email, &language).await;
     let prompt = build_quiz_prompt(&language, &level, &goal, &weakness_context);
 
-    generate_quiz_with_retries(&client, &url, prompt, 5, "kuis", None).await
+    let quiz = generate_quiz_with_retries(&client, &url, prompt, 5, "kuis", None).await?;
+
+    // === SIMPAN KE CACHE untuk pengguna berikutnya (gratis!) ===
+    if let Ok(json_str) = serde_json::to_string(&quiz) {
+        let _ = sqlx::query(
+            "INSERT INTO cached_quizzes (language, level, goal, content_json) VALUES ($1, $2, $3, $4)"
+        )
+        .bind(&language)
+        .bind(&level)
+        .bind(&goal)
+        .bind(&json_str)
+        .execute(pool)
+        .await;
+    }
+
+    Ok(quiz)
 }
 
 #[server]

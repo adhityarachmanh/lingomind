@@ -67,7 +67,7 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let creds = Credentials::new(smtp_username.clone(), smtp_password.unwrap());
-    let mailer = SmtpTransport::relay("smtp.gmail.com")
+    let mailer = lettre::AsyncSmtpTransport::<lettre::Tokio1Executor>::relay("smtp.gmail.com")
         .unwrap()
         .credentials(creds)
         .port(587)
@@ -75,6 +75,7 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
 
     let app_url = std::env::var("APP_URL").unwrap_or_else(|_| "http://localhost:8080".to_string());
 
+    use lettre::AsyncTransport;
     for row in rows {
         let email: String = row.get("email");
         let full_name: String = row.get("full_name");
@@ -107,11 +108,10 @@ async fn send_daily_reminders() -> Result<(), Box<dyn std::error::Error>> {
             .body(body);
 
         if let Ok(email_msg) = email_msg_res {
-            let mailer_clone = mailer.clone();
-            let _ = tokio::task::spawn_blocking(move || {
-                let _ = mailer_clone.send(&email_msg);
-            }).await;
-            println!("Pengingat harian dikirim ke: {}", email);
+            match mailer.send(email_msg).await {
+                Ok(_) => println!("Pengingat harian dikirim ke: {}", email),
+                Err(e) => eprintln!("Gagal mengirim pengingat ke {}: {}", email, e),
+            }
         }
     }
 

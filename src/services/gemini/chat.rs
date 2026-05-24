@@ -266,7 +266,8 @@ pub async fn send_chat_message_server(
         .map_err(|e| ServerFnError::new(format!("Gagal menyimpan pesan user: {e}")))?;
 
     // Kirim hanya jendela konteks terbaru ke model agar latency/tokens lebih stabil.
-    let recent_messages = fetch_session_history(pool, session_id, 18).await?;
+    // 10 pesan = ~5 bolak-balik percakapan, cukup untuk konteks latihan bahasa.
+    let recent_messages = fetch_session_history(pool, session_id, 10).await?;
 
     let mut contents_payload = Vec::with_capacity(recent_messages.len());
     for msg in &recent_messages {
