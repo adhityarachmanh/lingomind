@@ -314,11 +314,12 @@ async fn request_quiz_from_gemini(
 
 fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: &str) -> String {
     format!(
-        "Buat 5 soal kuis pilihan ganda bahasa {} untuk level CEFR {} dan goal '{}'.\n\
+        "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
+        Buat 5 soal kuis pilihan ganda bahasa {} untuk level CEFR {} dan goal '{}'.\n\
         Wajib kualitas:\n\
         1) Setiap soal 4 opsi, hanya 1 benar.\n\
         2) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
-        3) Explanation dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
+        3) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
         4) Variasikan tipe soal: grammar, vocabulary, contextual comprehension, dan listening.\n\
         5) Minimal 2 soal harus bertipe listening.\n\
         6) Pertahankan kosakata sesuai level CEFR.\n\
@@ -328,16 +329,17 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
            - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
            - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
            - untuk question_type='text', listen_text boleh diisi string kosong.\n\
-        9) Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text wajib ditulis dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
+        9) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
         10) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
         Konteks kelemahan user:\n{}",
-        language, level, goal, language, weakness_context
+        language, language, level, goal, language, weakness_context
     )
 }
 
 fn build_weakness_prompt(language: &str, level: &str, weakness_topic: &str, weakness_context: &str) -> String {
     format!(
-        "Buat 3 soal latihan weakness-focused bahasa {} level CEFR {}.\n\
+        "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
+        Buat 3 soal latihan weakness-focused bahasa {} level CEFR {}.\n\
         Topik kelemahan utama: {}.\n\
         Data konteks kesalahan user terbaru: {}\n\
         Aturan:\n\
@@ -350,9 +352,10 @@ fn build_weakness_prompt(language: &str, level: &str, weakness_topic: &str, weak
            - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).\n\
            - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
            - untuk question_type='text', listen_text boleh string kosong.\n\
-        6) Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text wajib ditulis dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
+        6) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
         7) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
         8) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
+        language,
         language,
         level,
         weakness_topic,

@@ -153,7 +153,8 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
     };
 
     let prompt = format!(
-        "Buat satu materi pelajaran KOMPREHENSIF untuk bahasa {} level CEFR {} dengan tujuan belajar: {}.\
+        "TARGET BAHASA MATERI: {} (Penjelasan 'content' dalam bahasa Indonesia, TAPI isi 'vocabulary' dan kalimat target pada 'example_sentences' WAJIB dalam bahasa {}).\n\n\
+        Buat satu materi pelajaran KOMPREHENSIF untuk bahasa {} level CEFR {} dengan tujuan belajar: {}.\
         \n\nSerial materi: Bagian ke-{}. {}{}\
         \n\nPedoman level:\
         \n- A1/A2: konkret, sederhana, fokus pola dasar.\
@@ -171,21 +172,22 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
         \n<isi kesalahan umum>\
         \n[Tips Praktik]\
         \n<isi tips praktik>.\
-        \n- vocabulary minimal 8 item relevan topik.\
-        \n- example_sentences minimal 8 kalimat; setiap item format: \"<kalimat target> || <arti Indonesia>\".\
+        \n- vocabulary minimal 8 item relevan topik (dalam bahasa target {}).\
+        \n- example_sentences minimal 8 kalimat; setiap item format: \"<kalimat bahasa {}> || <arti Indonesia>\".\
         \n- hindari penjelasan terlalu umum.",
-        language, level, goal, part_value, part_note, modifier_prompt
+        language, language, language, level, goal, part_value, part_note, modifier_prompt, language, language
     );
 
     let mut lesson = request_lesson_from_gemini(&client, &url, prompt).await?;
 
     if !is_rich_lesson(&lesson) {
         let enrich_prompt = format!(
-            "Perbaiki JSON materi berikut agar lebih kaya dan tetap satu topik.\n\
-            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, label bagian [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik] harus ada dan masing-masing berada di baris sendiri, vocabulary minimal 8, example_sentences minimal 8 format \"kalimat || arti\".\n\
+            "TARGET BAHASA MATERI: {} (Penjelasan bahasa Indonesia, TAPI kosakata/kalimat WAJIB dalam bahasa {}).\n\n\
+            Perbaiki JSON materi berikut agar lebih kaya dan tetap satu topik.\n\
+            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, label bagian [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik] harus ada dan masing-masing berada di baris sendiri, vocabulary minimal 8 (dalam bahasa {}), example_sentences minimal 8 format \"kalimat bahasa {} || arti Indonesia\".\n\
             Kembalikan JSON dengan schema yang sama, tanpa teks lain.\n\
             JSON awal:\n{}",
-            serde_json::to_string(&lesson).unwrap_or_default()
+            language, language, language, language, serde_json::to_string(&lesson).unwrap_or_default()
         );
         lesson = request_lesson_from_gemini(&client, &url, enrich_prompt).await?;
     }

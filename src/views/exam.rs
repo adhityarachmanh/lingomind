@@ -285,6 +285,8 @@ pub fn Exam(level: String) -> Element {
     let mut listen_speed = use_signal(|| 0.95_f32);
     let mut exam_finished = use_signal(|| false);
     let mut submitting_result = use_signal(|| false);
+    
+    let navigator = use_navigator();
 
     let Some(exam_result) = exam_resource.value()() else {
         return rsx! {
@@ -374,13 +376,13 @@ pub fn Exam(level: String) -> Element {
                             let email_val = user.email.clone();
                             let lang_val = language.clone();
                             let passed_val = passed;
+                            let nav = navigator.clone();
                             spawn(async move {
                                 if let Ok(updated_profile) = submit_exam_result(email_val, lang_val, passed_val).await {
                                     session_state.set((Some(updated_profile), true));
                                 }
                                 // Navigate anyway
-                                let navigator = use_navigator();
-                                navigator.replace(Route::Roadmap {});
+                                nav.replace(Route::Roadmap {});
                             });
                         },
                         if submitting_result() {

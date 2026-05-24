@@ -49,7 +49,8 @@ async fn generate_ai_opening_message(
     let is_topic_based = setting == goal && goal != "Bebas";
     let system_instruction = if is_topic_based {
         format!(
-            "Anda adalah seorang tutor/partner percakapan yang ahli dan ramah. \
+            "TARGET BAHASA: {0} (WAJIB GUNAKAN BAHASA INI UNTUK PERCAKAPAN!)\n\n\
+            Anda adalah seorang tutor/partner percakapan yang ahli dan ramah. \
             Bahasa target: {0}. Level CEFR user: {2}. Topik yang sedang dilatih: '{1}'. \
             Tugas Anda adalah memulai obrolan atau simulasi percakapan untuk melatih pemahaman user mengenai topik '{1}'. \
             Sapa user dengan antusias, lalu ajukan sebuah pertanyaan atau berikan pernyataan yang memancing user untuk mempraktikkan topik tersebut secara langsung. Berikan setidaknya 3 kalimat lengkap agar percakapan terasa hidup. \
@@ -58,7 +59,8 @@ async fn generate_ai_opening_message(
         )
     } else {
         format!(
-            "Anda sedang memainkan peran secara penuh dan mendalam sebagai karakter di skenario '{1}'. Anda adalah seorang penutur asli bahasa {0}. \
+            "TARGET BAHASA: {0} (WAJIB GUNAKAN BAHASA INI UNTUK PERCAKAPAN!)\n\n\
+            Anda sedang memainkan peran secara penuh dan mendalam sebagai karakter di skenario '{1}'. Anda adalah seorang penutur asli bahasa {0}. \
             Tugas Anda adalah memberikan sapaan pembuka yang sangat natural, hidup, dan benar-benar menjiwai peran Anda di lingkungan '{1}' secara nyata. \
             Sapa user dengan ramah dan tanyakan sesuatu yang relevan dengan peran Anda untuk memancing percakapan (berikan setidaknya 3 kalimat lengkap agar terasa imersif). \
             Jangan pernah keluar dari karakter Anda (contoh: jika Anda kasir, jadilah kasir sungguhan yang menyapa dan menawarkan sesuatu). Bahasa keluaran WAJIB bahasa {0} sepenuhnya. Sesuaikan kompleksitas bahasa dengan level CEFR user: {2}. Goal belajar: {3}. \
@@ -278,7 +280,8 @@ pub async fn send_chat_message_server(
     let is_topic_based = normalized_setting == goal && goal != "Bebas";
     let system_instruction = if is_topic_based {
         format!(
-            "Anda adalah tutor/partner percakapan untuk user yang belajar bahasa {0} di level {2}. Topik saat ini: '{1}'. \
+            "TARGET BAHASA: {0} (WAJIB GUNAKAN BAHASA INI UNTUK PERCAKAPAN!)\n\n\
+            Anda adalah tutor/partner percakapan untuk user yang belajar bahasa {0} di level {2}. Topik saat ini: '{1}'. \
             Berikan respons yang suportif, natural, dan terus kembangkan obrolan untuk menguji atau memandu user menggunakan tata bahasa/kosakata terkait '{1}'. \
             Balasan utama WAJIB dalam bahasa {0} sepenuhnya. Berikan respons lengkap (sekitar 3 kalimat) agar percakapan terus berjalan. Pastikan kalimat tidak terpotong.\n\
             Setelah balasan utama, tambahkan bagian 'Koreksi:' di baris baru dalam Bahasa Indonesia (maksimal 2 poin ringkas) HANYA untuk memperbaiki tata bahasa atau kosakata dari pesan user terakhir jika ada yang salah (jika pesannya sudah benar dan bisa dipahami, jangan berikan koreksi).",
@@ -286,7 +289,8 @@ pub async fn send_chat_message_server(
         )
     } else {
         format!(
-            "Anda adalah karakter yang sedang berada di lingkungan '{1}' dan sedang berbicara dengan user. Anda adalah penutur asli bahasa {0}. User belajar level CEFR {2} dengan goal {3}. \
+            "TARGET BAHASA: {0} (WAJIB GUNAKAN BAHASA INI UNTUK PERCAKAPAN!)\n\n\
+            Anda adalah karakter yang sedang berada di lingkungan '{1}' dan sedang berbicara dengan user. Anda adalah penutur asli bahasa {0}. User belajar level CEFR {2} dengan goal {3}. \
             Anda HARUS sepenuhnya menjiwai peran Anda dalam skenario ini secara sangat mendalam dan realistis. Berikan respons yang sangat natural, hidup, imersif, dan sesuai dengan kepribadian peran Anda seolah-olah interaksi ini benar-benar terjadi di dunia nyata. Jangan pernah keluar dari karakter. \
             Balasan utama WAJIB dalam bahasa {0} sepenuhnya. Berikan respons lengkap dan wajar seperti manusia berbicara (sekitar 3 kalimat) agar percakapan terus berjalan. Pastikan kalimat tidak terpotong.\n\
             Setelah balasan utama, tambahkan bagian 'Koreksi:' di baris baru dalam Bahasa Indonesia (maksimal 2 poin ringkas) HANYA untuk memperbaiki tata bahasa atau kosakata dari pesan user terakhir jika ada yang salah (jika pesannya sudah benar dan bisa dipahami, jangan berikan koreksi).",

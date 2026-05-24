@@ -13,7 +13,8 @@ fn build_exam_prompt(language: &str, level: &str) -> String {
     };
 
     format!(
-        "Buat 8 soal ujian sertifikasi pilihan ganda tingkat lanjut bahasa {} untuk menguji kelayakan kelulusan dari level CEFR {} menuju {}.\n\
+        "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
+        Buat 8 soal ujian sertifikasi pilihan ganda tingkat lanjut bahasa {} untuk menguji kelayakan kelulusan dari level CEFR {} menuju {}.\n\
         Wajib kualitas (LEVEL UJIAN AKHIR):\n\
         1) Soal harus mencakup semua topik di level {}: Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening.\n\
         2) Setiap soal wajib memiliki 4 opsi yang sangat mengecoh, hanya 1 benar.\n\
@@ -26,8 +27,8 @@ fn build_exam_prompt(language: &str, level: &str) -> String {
            - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
            - untuk question_type='text', listen_text boleh string kosong.\n\
         7) Explanation Bahasa Indonesia wajib komprehensif, minimal 3 kalimat mendalam tentang aturan grammar/kosakata mengapa opsi lain salah.\n\
-        8) Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text wajib ditulis FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.",
-        language, level, target_level, level, language
+        8) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.",
+        language, language, level, target_level, level, language
     )
 }
 
