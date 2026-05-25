@@ -14,7 +14,8 @@ pub async fn get_leaderboard_server(limit: i32) -> Result<Vec<LeaderboardEntry>,
         r#"
             SELECT u.email, u.full_name, u.score,
                    COALESCE(e.current_streak, 0) AS current_streak,
-                   COALESCE(e.total_quiz_completed, 0) AS total_quiz_completed
+                   COALESCE(e.total_quiz_completed, 0) AS total_quiz_completed,
+                   e.active_frame
             FROM users u
             LEFT JOIN user_engagement_stats e ON u.email = e.email
             WHERE u.role != 'admin'
@@ -35,6 +36,7 @@ pub async fn get_leaderboard_server(limit: i32) -> Result<Vec<LeaderboardEntry>,
             score: row.get::<Option<i32>, _>("score").unwrap_or(0),
             current_streak: row.get("current_streak"),
             total_quiz_completed: row.get("total_quiz_completed"),
+            active_frame: row.try_get::<String, _>("active_frame").ok(),
         });
     }
 

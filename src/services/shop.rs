@@ -2,16 +2,18 @@ use dioxus::prelude::*;
 use crate::models::shop::ShopItem;
 
 #[server]
-pub async fn get_shop_items_server() -> Result<Vec<ShopItem>, ServerFnError> {
+pub async fn get_shop_items_server(email: String) -> Result<Vec<ShopItem>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         use sqlx::Row;
         let pool = super::db::get_pool();
         
         let rows = sqlx::query(
-            "SELECT id, name, description, cost, effect_type, icon_name 
-             FROM shop_items ORDER BY cost ASC"
+            "SELECT s.id, s.name, s.description, s.cost, s.effect_type, s.icon_name,
+                    (SELECT COUNT(*) FROM user_inventory i WHERE i.email = $1 AND i.item_type = s.effect_type) > 0 as is_owned
+             FROM shop_items s ORDER BY s.cost ASC"
         )
+        .bind(&email)
         .fetch_all(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal fetch shop items: {e}")))?;
@@ -25,6 +27,7 @@ pub async fn get_shop_items_server() -> Result<Vec<ShopItem>, ServerFnError> {
                 cost: row.get("cost"),
                 effect_type: row.get("effect_type"),
                 icon_name: row.get("icon_name"),
+                is_owned: row.get("is_owned"),
             });
         }
         Ok(items)
@@ -101,9 +104,31 @@ pub async fn buy_shop_item_server(email: String, item_id: i32) -> Result<String,
                 sqlx::query("UPDATE user_engagement_stats SET has_weekend_amulet = TRUE WHERE email = $1")
                     .bind(&email).execute(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
             },
-            "profile_frame_gold" => {
-                sqlx::query("UPDATE user_engagement_stats SET active_frame = 'gold' WHERE email = $1")
-                    .bind(&email).execute(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+            "profile_frame_gold" | "profile_frame_diamond" | "profile_frame_mythic" => {
+                let frame_value = match effect_type.as_str() {
+                    "profile_frame_gold" => "gold",
+                    "profile_frame_diamond" => "diamond",
+                    "profile_frame_mythic" => "mythic",
+                    _ => "gold",
+                };
+
+                // Check if already owned
+                let count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM user_inventory WHERE email = $1 AND item_type = $2 AND item_value = $3")
+                    .bind(&email).bind(&effect_type).bind(frame_value)
+                    .fetch_one(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+                
+                if count.0 > 0 {
+                    return Err(ServerFnError::new("Anda sudah memiliki bingkai ini!"));
+                }
+
+                // Insert to inventory
+                sqlx::query("INSERT INTO user_inventory (email, item_type, item_value) VALUES ($1, $2, $3)")
+                    .bind(&email).bind(&effect_type).bind(frame_value)
+                    .execute(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+                // Auto-equip
+                sqlx::query("UPDATE user_engagement_stats SET active_frame = $1 WHERE email = $2")
+                    .bind(frame_value).bind(&email).execute(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
             },
             "mystery_box" => {
                 let mut rng = rand::thread_rng();

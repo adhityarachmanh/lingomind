@@ -90,3 +90,31 @@ pub async fn get_public_profile_server(email: String) -> Result<PublicProfile, S
         })
     }
 }
+
+#[server]
+pub async fn get_user_frames_server(email: String) -> Result<Vec<String>, ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use sqlx::Row;
+        let pool = crate::services::db::get_pool();
+        let rows = sqlx::query("SELECT item_value FROM user_inventory WHERE email = $1 AND item_type LIKE 'profile_frame_%'")
+            .bind(&email).fetch_all(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(rows.into_iter().map(|r| r.get("item_value")).collect())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(vec![]) }
+}
+
+#[server]
+pub async fn equip_frame_server(email: String, frame: String) -> Result<(), ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let pool = crate::services::db::get_pool();
+        let frame_opt = if frame.is_empty() { None } else { Some(frame) };
+        sqlx::query("UPDATE user_engagement_stats SET active_frame = $1 WHERE email = $2")
+            .bind(frame_opt).bind(&email).execute(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(()) }
+}

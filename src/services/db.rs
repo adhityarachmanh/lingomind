@@ -37,3 +37,6 @@ pub use server_db::{init_db, get_pool};
 // Sediakan mock kosong agar frontend WASM tidak error saat proses build
 #[cfg(target_arch = "wasm32")]
 pub async fn init_db() -> Result<(), String> { Ok(()) }
+// Trigger migration 20260526020000
+
+// Trigger migration 20260526023000

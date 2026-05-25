@@ -131,6 +131,7 @@ pub fn Leaderboard() -> Element {
                                 rank: e.rank,
                                 current_streak: e.current_streak,
                                 total_quiz_completed: e.total_quiz_completed,
+                                active_frame: e.active_frame.clone(),
                             }).collect();
                             rsx! { LeaderboardList { entries: mapped, current_name: current_user_name.clone(), is_global: true, on_challenge: handle_challenge } }
                         }
@@ -261,6 +262,22 @@ pub fn Leaderboard() -> Element {
     }
 }
 
+fn get_frame_class(active_frame: Option<&str>, base_classes: &str, is_me: bool, default_bg: &str, me_bg: &str) -> String {
+    let is_gold = active_frame == Some("gold") || active_frame == Some("profile_frame_gold");
+    let is_diamond = active_frame == Some("diamond") || active_frame == Some("profile_frame_diamond");
+    let is_mythic = active_frame == Some("mythic") || active_frame == Some("profile_frame_mythic");
+
+    if is_mythic {
+        format!("{} bg-gradient-to-r from-purple-500 via-fuchsia-500 to-pink-500 text-white border-2 border-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.7)] animate-pulse", base_classes)
+    } else if is_diamond {
+        format!("{} bg-cyan-100 text-cyan-800 border-2 border-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.6)]", base_classes)
+    } else if is_gold {
+        format!("{} bg-yellow-500 text-slate-900 border-2 border-yellow-400 shadow-[0_0_10px_rgba(234,179,8,0.5)]", base_classes)
+    } else {
+        format!("{} {}", base_classes, if is_me { me_bg } else { default_bg })
+    }
+}
+
 // Komponen Pembantu untuk menampilkan list leaderboard (Global / Teman)
 #[component]
 fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bool, on_challenge: EventHandler<String>) -> Element {
@@ -279,7 +296,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center",
-                                        div { class: format!("w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400" } else { "bg-gradient-to-br from-slate-100 to-slate-200" }), "🥈" }
+                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg", is_me, "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700", "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400"), "🥈" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
                                             class: "hover:underline",
@@ -297,7 +314,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center -mt-4",
-                                        div { class: format!("w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl {}", if is_me { "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400" } else { "bg-gradient-to-br from-amber-100 to-yellow-200" }), "🥇" }
+                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl", is_me, "bg-gradient-to-br from-amber-100 to-yellow-200 text-amber-800", "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400"), "🥇" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
                                             class: "hover:underline",
@@ -315,7 +332,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center",
-                                        div { class: format!("w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400" } else { "bg-gradient-to-br from-orange-50 to-orange-100" }), "🥉" }
+                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg", is_me, "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-800", "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400"), "🥉" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
                                             class: "hover:underline",
@@ -340,7 +357,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: format!("flex items-center gap-4 px-6 py-3.5 transition-colors {}", if is_me { "bg-amber-50/30 dark:bg-amber-900/30 border-l-4 border-amber-400" } else { "hover:bg-slate-50 dark:bg-slate-950" }),
-                                        div { class: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500 dark:text-slate-400 shrink-0", "{entry.rank}" }
+                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0", is_me, "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"), "{entry.rank}" }
                                         div { class: "flex-1 min-w-0",
                                             p { class: format!("text-sm font-bold truncate {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }),
                                                 Link {

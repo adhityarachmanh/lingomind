@@ -489,3 +489,27 @@ pub async fn reset_user_progress_admin(admin_email: String, target_email: String
 
     Ok(())
 }
+
+#[server]
+pub async fn update_user_stats_admin(admin_email: String, target_email: String, coins: i32, streak: i32) -> Result<(), ServerFnError> {
+    if !check_is_admin_server(admin_email).await? {
+        return Err(ServerFnError::new("Akses ditolak."));
+    }
+    
+    let pool = crate::services::db::get_pool();
+    
+    sqlx::query(
+        "INSERT INTO user_engagement_stats (email, coins, current_streak, longest_streak) 
+         VALUES ($1, $2, $3, $3)
+         ON CONFLICT (email) 
+         DO UPDATE SET coins = EXCLUDED.coins, current_streak = EXCLUDED.current_streak, longest_streak = GREATEST(user_engagement_stats.longest_streak, EXCLUDED.current_streak)"
+    )
+    .bind(target_email)
+    .bind(coins)
+    .bind(streak)
+    .execute(pool)
+    .await
+    .map_err(|e| ServerFnError::new(e.to_string()))?;
+        
+    Ok(())
+}

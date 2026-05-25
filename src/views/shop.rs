@@ -21,8 +21,10 @@ pub fn Shop() -> Element {
     let user = user_opt.unwrap();
     let email = user.email.clone();
     
+    let email_for_shop = email.clone();
     let mut shop_items_resource = use_resource(move || {
-        async move { get_shop_items_server().await }
+        let u = email_for_shop.clone();
+        async move { get_shop_items_server(u).await }
     });
     
     let mut engagement_resource = use_resource(move || {
@@ -84,15 +86,16 @@ pub fn Shop() -> Element {
                                     let email_for_buy = user.email.clone();
                                     let item_id = item.id;
                                     let can_afford = coins >= item.cost;
-                                    
                                     rsx! {
                                         button {
-                                            class: if can_afford {
+                                            class: if item.is_owned {
+                                                "px-5 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold rounded-xl text-sm cursor-not-allowed"
+                                            } else if can_afford {
                                                 "px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-indigo-500/30 disabled:opacity-50"
                                             } else {
                                                 "px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed"
                                             },
-                                            disabled: !can_afford || is_loading(),
+                                            disabled: item.is_owned || !can_afford || is_loading(),
                                             onclick: move |_| {
                                                 let u = email_for_buy.clone();
                                                 buy_status.set(String::new());
@@ -109,7 +112,7 @@ pub fn Shop() -> Element {
                                                     is_loading.set(false);
                                                 });
                                             },
-                                            if is_loading() { "Memproses..." } else if can_afford { "Beli" } else { "Koin Kurang" }
+                                            if is_loading() { "Memproses..." } else if item.is_owned { "Dimiliki" } else if can_afford { "Beli" } else { "Koin Kurang" }
                                         }
                                     }
                                 }

@@ -9,4 +9,5 @@ pub struct LeaderboardEntry {
     pub score: i32,
     pub current_streak: i32,
     pub total_quiz_completed: i32,
+    pub active_frame: Option<String>,
 }

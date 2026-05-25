@@ -1,6 +1,6 @@
 use dioxus::prelude::*;
 use crate::models::admin::UserAdminItem;
-use crate::services::admin::{get_users_admin, update_user_role_admin, reset_user_progress_admin};
+use crate::services::admin::{get_users_admin, update_user_role_admin, reset_user_progress_admin, update_user_stats_admin};
 
 #[component]
 pub fn UserPanel(email: String) -> Element {
@@ -99,6 +99,9 @@ pub fn UserPanel(email: String) -> Element {
 #[component]
 fn UserRow(admin_email: String, user: UserAdminItem, on_update: EventHandler<()>) -> Element {
     let mut is_updating = use_signal(|| false);
+    let mut is_editing_stats = use_signal(|| false);
+    let mut edit_coins = use_signal(|| user.coins.to_string());
+    let mut edit_streak = use_signal(|| user.streak_days.to_string());
     
     let target = user.email.clone();
     let is_admin = user.role == "admin";
@@ -133,6 +136,26 @@ fn UserRow(admin_email: String, user: UserAdminItem, on_update: EventHandler<()>
             spawn(async move {
                 is_updating.set(true);
                 if let Ok(_) = reset_user_progress_admin(e, t).await {
+                    on_update.call(());
+                }
+                is_updating.set(false);
+            });
+        }
+    };
+
+    let save_stats_action = {
+        let admin_email_save = admin_email.clone();
+        let target_save = target.clone();
+        move |_| {
+            let e = admin_email_save.clone();
+            let t = target_save.clone();
+            let coins_val = edit_coins().parse::<i32>().unwrap_or(0);
+            let streak_val = edit_streak().parse::<i32>().unwrap_or(0);
+            
+            spawn(async move {
+                is_updating.set(true);
+                if let Ok(_) = update_user_stats_admin(e, t, coins_val, streak_val).await {
+                    is_editing_stats.set(false);
                     on_update.call(());
                 }
                 is_updating.set(false);
@@ -194,6 +217,13 @@ fn UserRow(admin_email: String, user: UserAdminItem, on_update: EventHandler<()>
             td { class: "px-6 py-4 text-right",
                 div { class: "flex justify-end gap-2",
                     button {
+                        class: "px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-xs font-bold transition-colors border border-blue-200 flex items-center gap-1.5",
+                        onclick: move |_| is_editing_stats.set(true),
+                        disabled: is_updating(),
+                        i { class: "fa-solid fa-pen-to-square text-[10px]" }
+                        "Edit Stats"
+                    }
+                    button {
                         class: "px-3 py-1.5 bg-orange-100 hover:bg-orange-200 text-orange-600 rounded-lg text-xs font-bold transition-colors border border-orange-200 flex items-center gap-1.5",
                         onclick: reset_progress_action,
                         disabled: is_updating(),
@@ -220,6 +250,64 @@ fn UserRow(admin_email: String, user: UserAdminItem, on_update: EventHandler<()>
                         } else {
                             i { class: "fa-solid fa-user-plus text-[10px]" }
                             "Jadikan Admin"
+                        }
+                    }
+                }
+            }
+        }
+        if is_editing_stats() {
+            div { class: "fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/50 backdrop-blur-sm",
+                div { class: "bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden",
+                    div { class: "px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-slate-50",
+                        h3 { class: "font-bold text-slate-800", "Edit Stats: {user.full_name}" }
+                        button {
+                            class: "text-slate-400 hover:text-slate-600 transition-colors",
+                            onclick: move |_| {
+                                is_editing_stats.set(false);
+                                edit_coins.set(user.coins.to_string());
+                                edit_streak.set(user.streak_days.to_string());
+                            },
+                            i { class: "fa-solid fa-xmark text-lg" }
+                        }
+                    }
+                    div { class: "p-6 space-y-4",
+                        div {
+                            label { class: "block text-sm font-semibold text-slate-700 mb-1", "Coins" }
+                            input {
+                                class: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 text-slate-800 font-medium",
+                                r#type: "number",
+                                value: "{edit_coins}",
+                                oninput: move |e| edit_coins.set(e.value())
+                            }
+                        }
+                        div {
+                            label { class: "block text-sm font-semibold text-slate-700 mb-1", "Streak (Days)" }
+                            input {
+                                class: "w-full px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 text-slate-800 font-medium",
+                                r#type: "number",
+                                value: "{edit_streak}",
+                                oninput: move |e| edit_streak.set(e.value())
+                            }
+                        }
+                    }
+                    div { class: "px-6 py-4 bg-slate-50 border-t border-slate-200 flex justify-end gap-3",
+                        button {
+                            class: "px-4 py-2 text-sm font-bold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors",
+                            onclick: move |_| {
+                                is_editing_stats.set(false);
+                                edit_coins.set(user.coins.to_string());
+                                edit_streak.set(user.streak_days.to_string());
+                            },
+                            "Batal"
+                        }
+                        button {
+                            class: "px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2",
+                            onclick: save_stats_action,
+                            disabled: is_updating(),
+                            if is_updating() {
+                                i { class: "fa-solid fa-spinner fa-spin" }
+                            }
+                            "Simpan"
                         }
                     }
                 }

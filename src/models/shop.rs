@@ -8,4 +8,5 @@ pub struct ShopItem {
     pub cost: i32,
     pub effect_type: String,
     pub icon_name: Option<String>,
+    pub is_owned: bool,
 }
