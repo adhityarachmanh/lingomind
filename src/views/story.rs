@@ -29,10 +29,11 @@ pub fn Story(goal: String) -> Element {
     let email = user.email.clone();
     let goal_for_future = goal.clone();
     let level_for_future = level.clone();
+    let language_for_future = language.clone();
     
     // Server Future for generating the story
     let mut story_future = use_server_future(move || {
-        let l = language.clone();
+        let l = language_for_future.clone();
         let lv = level_for_future.clone();
         let g = goal_for_future.clone();
         async move {
@@ -46,17 +47,16 @@ pub fn Story(goal: String) -> Element {
     let mut is_completed = use_signal(|| false);
     let mut reward_status = use_signal(|| String::new());
 
-    let play_tts = move |text: &str, lang: &str| {
-        let tts_lang = match lang.to_lowercase().as_str() {
-            "english" => "en-US",
-            "spanish" => "es-ES",
-            "french" => "fr-FR",
-            "german" => "de-DE",
-            "japanese" => "ja-JP",
-            "korean" => "ko-KR",
-            _ => "en-US", // Default
-        };
+    let languages_res = use_context::<Resource<Vec<crate::models::constants::LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
+    let default_code = "en-US".to_string();
+    let tts_lang_code = langs
+        .iter()
+        .find(|l| l.id.eq_ignore_ascii_case(&language) || l.name.eq_ignore_ascii_case(&language))
+        .map(|l| l.tts_lang_code.clone())
+        .unwrap_or(default_code);
 
+    let play_tts = move |text: &str, tts_lang: &str| {
         if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(text) {
             utterance.set_lang(tts_lang);
             utterance.set_rate(0.9);
@@ -159,9 +159,9 @@ pub fn Story(goal: String) -> Element {
                 // Use effect to play when idx changes
                 use_effect({
                     let text = segment.text.clone();
-                    let lang = selected_language();
+                    let lang_code = tts_lang_code.clone();
                     move || {
-                        play_tts(&text, &lang);
+                        play_tts(&text, &lang_code);
                     }
                 });
 
@@ -186,8 +186,8 @@ pub fn Story(goal: String) -> Element {
                                     class: "absolute top-4 right-4 w-10 h-10 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center hover:bg-indigo-100 hover:scale-110 transition-all focus:outline-none",
                                     onclick: {
                                         let text = segment.text.clone();
-                                        let lang = selected_language();
-                                        move |_| play_tts(&text, &lang)
+                                        let lang_code = tts_lang_code.clone();
+                                        move |_| play_tts(&text, &lang_code)
                                     },
                                     span { class: "text-xl", "🔊" }
                                 }

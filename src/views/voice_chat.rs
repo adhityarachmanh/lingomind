@@ -138,6 +138,14 @@ pub fn VoiceChat(goal: String) -> Element {
             .unwrap_or_else(|| "en-US".to_string())
     });
 
+    let edge_tts_voice_memo = use_memo(move || {
+        let l = languages_res().unwrap_or_default();
+        l.iter()
+            .find(|course| course.id.eq_ignore_ascii_case(&selected_language()))
+            .map(|course| course.edge_tts_voice.clone())
+            .unwrap_or_else(|| "en-US-AriaNeural".to_string())
+    });
+
     // Fungsi pemutar suara asisten AI
     let speak_response = move |text: String| {
         let normalized = sanitize_tts_text(&text);
@@ -147,10 +155,10 @@ pub fn VoiceChat(goal: String) -> Element {
 
         #[cfg(target_arch = "wasm32")]
         {
-            let tts_lang = tts_lang_code_memo();
-            let segments = split_tts_segments(&tts_lang, &normalized)
+            let edge_tts_voice = edge_tts_voice_memo();
+            let segments = split_tts_segments(&edge_tts_voice, &normalized)
                 .into_iter()
-                .map(|s| (s.text, s.lang_code))
+                .map(|s| (s.text, s.edge_tts_voice))
                 .collect::<Vec<(String, String)>>();
 
             let request_id = AUDIO_REQUEST_SEQ.fetch_add(1, Ordering::SeqCst) + 1;

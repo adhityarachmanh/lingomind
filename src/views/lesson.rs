@@ -193,20 +193,20 @@ pub fn Lesson(goal: String) -> Element {
         .unwrap_or_else(|| "A1".to_string());
 
     #[cfg(target_arch = "wasm32")]
-    let tts_lang_code = langs
+    let edge_tts_voice = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
-        .map(|course| course.tts_lang_code.clone())
-        .unwrap_or_else(|| "en-US".to_string());
+        .map(|course| course.edge_tts_voice.clone())
+        .unwrap_or_else(|| "en-US-AriaNeural".to_string());
 
     let play_text_audio = move |text: String| {
         #[cfg(target_arch = "wasm32")]
         {
-            let lang = tts_lang_code.to_string();
+            let voice = edge_tts_voice.to_string();
             let request_id = LESSON_AUDIO_SEQ.fetch_add(1, Ordering::SeqCst) + 1;
             
             spawn(async move {
-                if let Ok(src) = generate_tts_audio_server(text, lang, 1.0).await {
+                if let Ok(src) = generate_tts_audio_server(text, voice, 1.0).await {
                     if LESSON_AUDIO_SEQ.load(Ordering::SeqCst) == request_id {
                         if let Ok(audio) = web_sys::HtmlAudioElement::new_with_src(&src) {
                             LESSON_ACTIVE_AUDIO.with(|slot| {

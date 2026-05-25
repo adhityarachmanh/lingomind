@@ -117,18 +117,18 @@ async fn play_edge_audio_segments(
     Ok(())
 }
 
-fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) {
+fn speak_with_edge_or_fallback(edge_tts_voice: String, fallback_lang_code: String, text: String, speed: f32) {
     let normalized_text = sanitize_tts_text(&text);
     if normalized_text.is_empty() {
         return;
     }
     #[cfg(not(target_arch = "wasm32"))]
-    let _ = (tts_lang_code, speed);
+    let _ = (fallback_lang_code, speed);
 
     #[cfg(target_arch = "wasm32")]
-    let segments = split_tts_segments(&tts_lang_code, &normalized_text)
+    let segments = split_tts_segments(&edge_tts_voice, &normalized_text)
         .into_iter()
-        .map(|seg| (seg.text, seg.lang_code))
+        .map(|seg| (seg.text, seg.edge_tts_voice))
         .collect::<Vec<(String, String)>>();
 
     #[cfg(target_arch = "wasm32")]
@@ -150,15 +150,11 @@ fn speak_with_edge_or_fallback(tts_lang_code: String, text: String, speed: f32) 
             if let Some(window) = web_sys::window() {
                 if let Ok(synth) = window.speech_synthesis() {
                     synth.cancel();
-                    for (segment_text, segment_lang) in segments {
-                        if let Ok(utterance) =
-                            web_sys::SpeechSynthesisUtterance::new_with_text(&segment_text)
-                        {
-                            utterance.set_lang(&segment_lang);
-                            utterance.set_rate(speed);
-                            utterance.set_pitch(1.0);
-                            synth.speak(&utterance);
-                        }
+                    if let Ok(utterance) = web_sys::SpeechSynthesisUtterance::new_with_text(&normalized_text) {
+                        utterance.set_lang(&fallback_lang_code);
+                        utterance.set_rate(speed);
+                        utterance.set_pitch(1.0);
+                        synth.speak(&utterance);
                     }
                 }
             }
@@ -414,7 +410,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
         .find(|course| course.id.eq_ignore_ascii_case(&language))
         .map(|course| course.tts_lang_code.clone())
         .unwrap_or_else(|| "en-US".to_string());
-    let question_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &tts_question);
+    let edge_tts_voice = langs
+        .iter()
+        .find(|course| course.id.eq_ignore_ascii_case(&language))
+        .map(|course| course.edge_tts_voice.clone())
+        .unwrap_or_else(|| "en-US-AriaNeural".to_string());
 
     rsx! {
         div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
@@ -473,7 +473,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         div { class: "flex items-center gap-2",
                             button {
                                 class: "w-9 h-9 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center text-sm font-bold transition-all shadow-md shadow-teal-500/20 active:scale-95 cursor-pointer",
-                                onclick: move |_| speak_with_edge_or_fallback(question_tts_lang_code.clone(), tts_question.clone(), listen_speed()),
+                                onclick: move |_| speak_with_edge_or_fallback(edge_tts_voice.clone(), tts_lang_code.clone(), tts_question.clone(), listen_speed()),
                                 "🔊"
                             }
                             button {
@@ -509,7 +509,8 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 let option_for_select = option.clone();
                                 let option_for_listen = option.clone();
                                 let option_for_click = option.clone();
-                                let option_tts_lang_code = resolve_tts_lang_code(&tts_lang_code, &option_for_listen);
+                                let option_edge_tts_voice = edge_tts_voice.clone();
+                                let option_tts_lang_code = tts_lang_code.clone();
                                 let prefix = match opt_idx {
                                     0 => "A",
                                     1 => "B",
@@ -553,7 +554,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                             disabled: show_explanation(),
                                             onclick: move |e| {
                                                 e.stop_propagation();
-                                                speak_with_edge_or_fallback(option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed());
+                                                speak_with_edge_or_fallback(option_edge_tts_voice.clone(), option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed());
                                             },
                                             "🔊"
                                         }

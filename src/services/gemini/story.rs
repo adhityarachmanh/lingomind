@@ -56,7 +56,6 @@ pub async fn generate_story_server(language: String, level: String, goal: String
                                 "translation": { "type": "STRING", "description": "Terjemahan teks cerita" },
                                 "question": {
                                     "type": "OBJECT",
-                                    "nullable": true,
                                     "properties": {
                                         "question_text": { "type": "STRING" },
                                         "options": { "type": "ARRAY", "items": { "type": "STRING" } },
@@ -66,7 +65,7 @@ pub async fn generate_story_server(language: String, level: String, goal: String
                                     "required": ["question_text", "options", "correct_answer", "explanation"]
                                 }
                             },
-                            "required": ["text", "translation"]
+                            "required": ["text", "translation", "question"]
                         }
                     }
                 },

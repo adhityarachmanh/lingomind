@@ -113,11 +113,13 @@ pub fn FlashcardReview() -> Element {
     let total_cards = cards.len();
     let current = cards[index().min(total_cards - 1)].clone();
 
-    let tts_lang_code = match language.as_str() {
-        "English" => "en-US".to_string(),
-        "German" => "de-DE".to_string(),
-        _ => "en-US".to_string(),
-    };
+    let languages_res = use_context::<Resource<Vec<crate::models::constants::LanguageCourse>>>();
+    let langs = languages_res().unwrap_or_default();
+    let tts_lang_code = langs
+        .iter()
+        .find(|l| l.id.eq_ignore_ascii_case(&language) || l.name.eq_ignore_ascii_case(&language))
+        .map(|l| l.tts_lang_code.clone())
+        .unwrap_or_else(|| "en-US".to_string());
 
     let progress_pct = ((index() as f64) / (total_cards as f64)) * 100.0;
 

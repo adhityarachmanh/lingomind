@@ -59,7 +59,7 @@ struct ScriptStats {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TtsSegment {
     pub text: String,
-    pub lang_code: String,
+    pub edge_tts_voice: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -98,31 +98,31 @@ fn script_bucket(c: char) -> ScriptBucket {
     }
 }
 
-fn lang_code_from_bucket(
+fn voice_from_bucket(
     bucket: ScriptBucket,
-    preferred_lang_code: &str,
+    preferred_edge_voice: &str,
     indonesian_context: bool,
 ) -> String {
     match bucket {
         ScriptBucket::Latin => {
             if indonesian_context {
-                "id-ID".to_string()
+                "id-ID-ArdiNeural".to_string()
             } else {
-                preferred_lang_code.to_string()
+                preferred_edge_voice.to_string()
             }
         }
-        ScriptBucket::Hangul => "ko-KR".to_string(),
-        ScriptBucket::Kana => "ja-JP".to_string(),
+        ScriptBucket::Hangul => "ko-KR-SunHiNeural".to_string(),
+        ScriptBucket::Kana => "ja-JP-NanamiNeural".to_string(),
         ScriptBucket::Han => {
-            if preferred_lang_code.starts_with("ja") {
-                "ja-JP".to_string()
+            if preferred_edge_voice.starts_with("ja") {
+                "ja-JP-NanamiNeural".to_string()
             } else {
-                "zh-CN".to_string()
+                "zh-CN-XiaoxiaoNeural".to_string()
             }
         }
-        ScriptBucket::Arabic => "ar-SA".to_string(),
-        ScriptBucket::Devanagari => "hi-IN".to_string(),
-        ScriptBucket::Other => preferred_lang_code.to_string(),
+        ScriptBucket::Arabic => "ar-SA-HamedNeural".to_string(),
+        ScriptBucket::Devanagari => "hi-IN-SwaraNeural".to_string(),
+        ScriptBucket::Other => preferred_edge_voice.to_string(),
     }
 }
 
@@ -209,36 +209,36 @@ fn looks_like_indonesian_text(text: &str) -> bool {
         && tokens.len() >= 4
 }
 
-pub fn split_tts_segments(preferred_lang_code: &str, text: &str) -> Vec<TtsSegment> {
+pub fn split_tts_segments(preferred_edge_voice: &str, text: &str) -> Vec<TtsSegment> {
     let cleaned = sanitize_tts_text(text);
     if cleaned.is_empty() {
         return Vec::new();
     }
 
     let indonesian_context = looks_like_indonesian_text(&cleaned);
-    let default_lang = if indonesian_context {
-        "id-ID".to_string()
+    let default_voice = if indonesian_context {
+        "id-ID-ArdiNeural".to_string()
     } else {
-        preferred_lang_code.to_string()
+        preferred_edge_voice.to_string()
     };
 
     let mut segments: Vec<TtsSegment> = Vec::new();
     let mut current_text = String::new();
-    let mut current_lang = default_lang.clone();
+    let mut current_voice = default_voice.clone();
 
     for c in cleaned.chars() {
         if c.is_alphabetic() {
-            let next_lang =
-                lang_code_from_bucket(script_bucket(c), preferred_lang_code, indonesian_context);
-            if next_lang != current_lang && !current_text.trim().is_empty() {
+            let next_voice =
+                voice_from_bucket(script_bucket(c), preferred_edge_voice, indonesian_context);
+            if next_voice != current_voice && !current_text.trim().is_empty() {
                 segments.push(TtsSegment {
                     text: current_text.trim().to_string(),
-                    lang_code: current_lang.clone(),
+                    edge_tts_voice: current_voice.clone(),
                 });
                 current_text.clear();
-                current_lang = next_lang;
+                current_voice = next_voice;
             } else if current_text.is_empty() {
-                current_lang = next_lang;
+                current_voice = next_voice;
             }
         }
         current_text.push(c);
@@ -247,14 +247,14 @@ pub fn split_tts_segments(preferred_lang_code: &str, text: &str) -> Vec<TtsSegme
     if !current_text.trim().is_empty() {
         segments.push(TtsSegment {
             text: current_text.trim().to_string(),
-            lang_code: current_lang,
+            edge_tts_voice: current_voice,
         });
     }
 
     if segments.is_empty() {
         vec![TtsSegment {
             text: cleaned,
-            lang_code: default_lang,
+            edge_tts_voice: default_voice,
         }]
     } else {
         segments
@@ -347,46 +347,11 @@ mod tests {
     }
 }
 
-#[cfg(not(target_arch = "wasm32"))]
-fn voice_from_lang(lang_code: &str) -> &'static str {
-    match lang_code {
-        l if l.starts_with("id") => "id-ID-ArdiNeural",
-        l if l.starts_with("de") => "de-DE-KatjaNeural",
-        l if l.starts_with("ja") => "ja-JP-NanamiNeural",
-        l if l.starts_with("ko") => "ko-KR-SunHiNeural",
-        l if l.starts_with("zh-CN") => "zh-CN-XiaoxiaoNeural",
-        l if l.starts_with("ar") => "ar-SA-HamedNeural",
-        l if l.starts_with("hi") => "hi-IN-SwaraNeural",
-        l if l.starts_with("tr") => "tr-TR-AhmetNeural",
-        l if l.starts_with("fr") => "fr-FR-DeniseNeural",
-        l if l.starts_with("es") => "es-ES-ElviraNeural",
-        l if l.starts_with("it") => "it-IT-ElsaNeural",
-        l if l.starts_with("pt-BR") => "pt-BR-FranciscaNeural",
-        l if l.starts_with("ru") => "ru-RU-SvetlanaNeural",
-        l if l.starts_with("nl") => "nl-NL-ColetteNeural",
-        l if l.starts_with("vi") => "vi-VN-HoaiMyNeural",
-        l if l.starts_with("th") => "th-TH-AcharaNeural",
-        l if l.starts_with("sv") => "sv-SE-SofieNeural",
-        l if l.starts_with("pl") => "pl-PL-ZofiaNeural",
-        l if l.starts_with("da") => "da-DK-ChristelNeural",
-        l if l.starts_with("fi") => "fi-FI-SelmaNeural",
-        l if l.starts_with("nb") || l.starts_with("no") => "nb-NO-PernilleNeural",
-        l if l.starts_with("el") => "el-GR-AthinaNeural",
-        l if l.starts_with("uk") => "uk-UA-PolinaNeural",
-        l if l.starts_with("cs") => "cs-CZ-VlastaNeural",
-        l if l.starts_with("ro") => "ro-RO-AlinaNeural",
-        l if l.starts_with("hu") => "hu-HU-NoemiNeural",
-        l if l.starts_with("fil") => "fil-PH-BlessicaNeural",
-        l if l.starts_with("ms") => "ms-MY-YasminNeural",
-        _ => "en-US-AriaNeural",
-    }
-}
-
 #[server]
-pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f32) -> Result<String, ServerFnError> {
+pub async fn generate_tts_audio_server(text: String, edge_tts_voice: String, speed: f32) -> Result<String, ServerFnError> {
     #[cfg(target_arch = "wasm32")]
     {
-        let _ = (text, lang_code, speed);
+        let _ = (text, edge_tts_voice, speed);
         return Err(ServerFnError::new("TTS hanya berjalan di server."));
     }
 
@@ -404,7 +369,6 @@ pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f
             .as_millis();
         output_path.push(format!("lingomind-tts-{stamp}.mp3"));
 
-        let voice = voice_from_lang(&lang_code);
         let rate = if speed < 0.9 {
             "-25%"
         } else if speed > 1.0 {
@@ -414,7 +378,7 @@ pub async fn generate_tts_audio_server(text: String, lang_code: String, speed: f
         };
         let status = tokio::process::Command::new("edge-tts")
             .arg("--voice")
-            .arg(voice)
+            .arg(&edge_tts_voice)
             .arg("--rate")
             .arg(rate)
             .arg("--text")

@@ -12,6 +12,7 @@ pub struct LanguageCourse {
     pub button_class: String,
     pub category: String,
     pub tts_lang_code: String,
+    pub edge_tts_voice: String,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]

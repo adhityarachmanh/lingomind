@@ -1,5 +1,5 @@
 // src/services/db.rs
-
+// Force recompile to pick up new migration
 #[cfg(not(target_arch = "wasm32"))]
 mod server_db {
     use sqlx::PgPool;

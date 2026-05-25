@@ -12,7 +12,7 @@ pub async fn get_all_languages() -> Result<Vec<LanguageCourse>, ServerFnError> {
     let database_url = env::var("DATABASE_URL").map_err(|_| ServerFnError::new("DATABASE_URL not set"))?;
     let pool = PgPool::connect(&database_url).await.map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    let rows = sqlx::query("SELECT id, name, native_name, flag, description, theme_class, button_class, category, tts_lang_code FROM languages ORDER BY name ASC")
+    let rows = sqlx::query("SELECT id, name, native_name, flag, description, theme_class, button_class, category, tts_lang_code, edge_tts_voice FROM languages ORDER BY name ASC")
         .fetch_all(&pool)
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
@@ -29,6 +29,7 @@ pub async fn get_all_languages() -> Result<Vec<LanguageCourse>, ServerFnError> {
             button_class: row.get("button_class"),
             category: row.get("category"),
             tts_lang_code: row.get("tts_lang_code"),
+            edge_tts_voice: row.get("edge_tts_voice"),
         });
     }
 

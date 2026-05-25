@@ -136,6 +136,7 @@ pub fn Dashboard() -> Element {
         button_class: "".to_string(),
         category: "".to_string(),
         tts_lang_code: "".to_string(),
+        edge_tts_voice: "".to_string(),
     };
 
     let mut dynamic_categories = vec!["All".to_string()];
