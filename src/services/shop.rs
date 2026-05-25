@@ -28,7 +28,7 @@ pub async fn buy_streak_freeze_server(email: String) -> Result<String, ServerFnE
             stats.get("coins")
         } else {
             // User belum punya baris engagement, buat dulu dengan 0 coins
-            sqlx::query("INSERT INTO user_engagement_stats (email, coins, streak_days, streak_freezes) VALUES ($1, 0, 0, 0) ON CONFLICT (email) DO NOTHING")
+            sqlx::query("INSERT INTO user_engagement_stats (email, coins, current_streak, streak_freezes) VALUES ($1, 0, 0, 0) ON CONFLICT (email) DO NOTHING")
                 .bind(&email)
                 .execute(pool)
                 .await
