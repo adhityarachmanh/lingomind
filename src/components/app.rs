@@ -114,6 +114,7 @@ pub fn App() -> Element {
                                 preferred_language: fallback_lang.clone(),
                                 score: legacy_profile.score,
                                 current_level: legacy_profile.current_level,
+                                role: "user".to_string(),
                             };
                             selected_language.set(fallback_lang);
                             session_state.set((Some(migrated), true));

@@ -114,7 +114,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         return Err(ServerFnError::new("Format email tidak valid."));
     }
 
-    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, is_verified FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT full_name, email, password_hash, preferred_language, score, is_verified, role FROM users WHERE email = $1")
         .bind(email.trim())
         .fetch_optional(pool)
         .await
@@ -160,6 +160,7 @@ pub async fn login_user(email: String, password_plain: String) -> Result<UserPro
         preferred_language: user_record.get("preferred_language"),
         score: user_record.get::<i32, _>("score"),
         current_level: current_level_map,
+        role: user_record.get::<String, _>("role"),
     })
 }
 
@@ -234,8 +235,13 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     .execute(pool)
     .await;
 
+    let mut topics_in_level = 4;
+    if let Some(level_data) = topics_res.iter().find(|c| c.level == base_level) {
+        topics_in_level = level_data.topics.len();
+    }
+
     // Hanya naikkan level jika user BENAR-BENAR memainkan topik maksimum yang sedang ter-unlock
-    if passed && topic_idx < 4 {
+    if passed && (topic_idx as usize) < topics_in_level {
         topic_idx += 1;
     }
 
@@ -251,7 +257,7 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET score = score + $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
     )
     .bind(score_delta)
     .bind(&email)
@@ -279,6 +285,7 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
         preferred_language: update_row.get("preferred_language"),
         score: update_row.get("score"),
         current_level: final_level_map,
+        role: update_row.get("role"),
     })
 }
 
@@ -297,7 +304,7 @@ pub async fn update_preferred_language_server(email: String, preferred_language:
     let trimmed_lang: String = lang_row.get("id");
 
     let row = sqlx::query(
-        "UPDATE users SET preferred_language = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET preferred_language = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
     )
     .bind(&trimmed_lang)
     .bind(email.trim())
@@ -325,6 +332,7 @@ pub async fn update_preferred_language_server(email: String, preferred_language:
         preferred_language: row.get("preferred_language"),
         score: row.get::<i32, _>("score"),
         current_level: current_level_map,
+        role: row.get("role"),
     })
 }
 
@@ -619,16 +627,22 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
     .execute(pool)
     .await;
 
-    if passed && topic_idx >= 4 {
+    let topics_res = crate::services::curriculum::get_all_curriculum().await.unwrap_or_default();
+    let mut topics_in_level = 4;
+    let mut current_level_pos = 0;
+    for (i, lvl) in topics_res.iter().enumerate() {
+        if lvl.level == base_level {
+            topics_in_level = lvl.topics.len();
+            current_level_pos = i;
+            break;
+        }
+    }
+
+    if passed && (topic_idx as usize) >= topics_in_level {
         topic_idx = 0;
-        base_level = match base_level.as_str() {
-            "A1" => "A2".to_string(),
-            "A2" => "B1".to_string(),
-            "B1" => "B2".to_string(),
-            "B2" => "C1".to_string(),
-            "C1" => "C2".to_string(),
-            _ => base_level,
-        };
+        if current_level_pos + 1 < topics_res.len() {
+            base_level = topics_res[current_level_pos + 1].level.clone();
+        }
     }
 
     let _ = sqlx::query(
@@ -643,7 +657,7 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
     .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let update_row = sqlx::query(
-        "UPDATE users SET score = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score"
+        "UPDATE users SET score = $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
     )
     .bind(final_score)
     .bind(&email)
@@ -671,5 +685,6 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
         preferred_language: update_row.get("preferred_language"),
         score: final_score,
         current_level: final_level_map,
+        role: update_row.get("role"),
     })
 }

@@ -1,5 +1,5 @@
 use dioxus::prelude::*;
-use crate::models::constants::{LanguageCourse, COURSE_CATEGORIES};
+use crate::models::constants::LanguageCourse;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
 use crate::services::flashcard::get_due_flashcard_count_server;
@@ -138,6 +138,13 @@ pub fn Dashboard() -> Element {
         category: "".to_string(),
         tts_lang_code: "".to_string(),
     };
+
+    let mut dynamic_categories = vec!["All".to_string()];
+    for lang in &langs {
+        if !dynamic_categories.contains(&lang.category) && !lang.category.is_empty() {
+            dynamic_categories.push(lang.category.clone());
+        }
+    }
 
     let course = langs
         .iter()
@@ -544,14 +551,14 @@ pub fn Dashboard() -> Element {
                             // Category tabs
                             div {
                                 class: "flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none w-full",
-                                for cat in &["All", "Eropa", "Asia", "Amerika", "Timur Tengah"] {
+                                for cat in dynamic_categories.clone() {
                                     button {
                                         class: if active_tab() == *cat {
                                             "px-3.5 py-1.5 rounded-full text-xs font-bold bg-teal-500 text-white shadow-sm transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
                                         } else {
                                             "px-3.5 py-1.5 rounded-full text-xs font-bold bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:bg-slate-950 hover:text-slate-800 dark:text-slate-200 transition-all cursor-pointer flex-shrink-0 whitespace-nowrap"
                                         },
-                                        onclick: move |_| active_tab.set(cat.to_string()),
+                                        onclick: move |_| active_tab.set(cat.clone()),
                                         "{cat}"
                                     }
                                 }

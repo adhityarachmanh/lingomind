@@ -14,8 +14,6 @@ pub struct LanguageCourse {
     pub tts_lang_code: String,
 }
 
-pub const COURSE_CATEGORIES: &[&str] = &["All", "Eropa", "Amerika", "Asia", "Timur Tengah"];
-
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct CurriculumLevel {
     pub level: String,
@@ -24,3 +22,4 @@ pub struct CurriculumLevel {
     pub base_reward_points: i32,
     pub topics: Vec<String>,
 }
+

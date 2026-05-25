@@ -10,6 +10,7 @@ pub struct UserProfile {
     pub score: i32,
     // Menggunakan HashMap -> {"English": "A2", "German": "A1"}
     pub current_level: HashMap<String, String>,
+    pub role: String,
 }
 
 impl UserProfile {

@@ -1,4 +1,5 @@
 // src/views/mod.rs
+pub mod admin;
 pub mod login;
 pub mod register;
 pub mod dashboard;

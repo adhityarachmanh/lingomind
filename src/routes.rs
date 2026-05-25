@@ -18,6 +18,8 @@ use crate::views::verify_email::VerifyEmail;
 use crate::views::guide::Guide;
 use crate::views::placement_test::PlacementTest;
 use crate::views::exam::Exam;
+use crate::views::admin::login::AdminLogin;
+use crate::views::admin::dashboard::AdminDashboard;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -69,6 +71,13 @@ pub enum Route {
     PlacementTest {},
     #[route("/exam/:level")]
     Exam { level: String },
+
+    #[end_layout]
+    #[route("/admin/login")]
+    AdminLogin {},
+    #[redirect("/admin", || Route::AdminDashboard { tab: "konfigurasi".to_string() })]
+    #[route("/admin/:tab")]
+    AdminDashboard { tab: String },
 }
 
 #[component]

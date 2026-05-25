@@ -20,3 +20,4 @@ pub mod leaderboard;
 pub mod badge;
 pub mod shop;
 pub mod curriculum;
+pub mod admin;
