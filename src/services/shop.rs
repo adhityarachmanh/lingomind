@@ -24,23 +24,29 @@ pub async fn buy_streak_freeze_server(email: String) -> Result<String, ServerFnE
             .await
             .map_err(|e| ServerFnError::new(format!("Gagal fetch stats: {e}")))?;
 
-        if let Some(stats) = stats_opt {
-            let coins: i32 = stats.get("coins");
-            if coins >= cost {
-                if effect_type == "streak_freeze" {
-                    sqlx::query("UPDATE user_engagement_stats SET coins = coins - $1, streak_freezes = streak_freezes + 1 WHERE email = $2")
-                        .bind(cost)
-                        .bind(&email)
-                        .execute(pool)
-                        .await
-                        .map_err(|e| ServerFnError::new(format!("Gagal proses pembelian: {e}")))?;
-                    return Ok("Berhasil membeli Streak Freeze!".to_string());
-                }
-            } else {
-                return Err(ServerFnError::new(format!("Koin tidak cukup (butuh {cost}). Kerjakan kuis untuk mendapatkannya!")));
-            }
+        let coins: i32 = if let Some(stats) = stats_opt {
+            stats.get("coins")
+        } else {
+            // User belum punya baris engagement, buat dulu dengan 0 coins
+            sqlx::query("INSERT INTO user_engagement_stats (email, coins, streak_days, streak_freezes) VALUES ($1, 0, 0, 0) ON CONFLICT (email) DO NOTHING")
+                .bind(&email)
+                .execute(pool)
+                .await
+                .map_err(|e| ServerFnError::new(format!("Gagal init stats: {e}")))?;
+            0
+        };
+
+        if coins >= cost {
+            sqlx::query("UPDATE user_engagement_stats SET coins = coins - $1, streak_freezes = streak_freezes + 1 WHERE email = $2")
+                .bind(cost)
+                .bind(&email)
+                .execute(pool)
+                .await
+                .map_err(|e| ServerFnError::new(format!("Gagal proses pembelian: {e}")))?;
+            return Ok("Berhasil membeli Streak Freeze!".to_string());
+        } else {
+            return Err(ServerFnError::new(format!("Koin tidak cukup (butuh {cost}). Kerjakan kuis untuk mendapatkannya!")));
         }
-        Err(ServerFnError::new("Data user tidak ditemukan!"))
     }
     #[cfg(target_arch = "wasm32")]
     {
