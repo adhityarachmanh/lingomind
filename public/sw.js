@@ -1,11 +1,11 @@
-const CACHE_NAME = 'lingomind-pwa-cache-v2';
+const CACHE_NAME = 'lingomind-pwa-cache-v3';
 const URLS_TO_CACHE = [
   '/',
   '/assets/tailwind.css',
   '/assets/favicon.ico',
   '/assets/icon.svg',
   '/assets/logo.png',
-  '/assets/manifest.json'
+  '/manifest.json'
 ];
 
 self.addEventListener('install', event => {

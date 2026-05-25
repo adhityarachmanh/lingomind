@@ -163,7 +163,7 @@ pub fn App() -> Element {
         document::Meta { name: "theme-color", content: "#14b8a6" }
         document::Meta { name: "apple-mobile-web-app-capable", content: "yes" }
         document::Meta { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" }
-        document::Link { rel: "manifest", href: "/assets/manifest.json" }
+        document::Link { rel: "manifest", href: "/manifest.json" }
         document::Link { rel: "apple-touch-icon", href: "/assets/icon.svg" }
         document::Link { rel: "icon", href: FAVICON }
         document::Link { rel: "stylesheet", href: TAILWIND_CSS }
@@ -178,23 +178,39 @@ pub fn App() -> Element {
         document::Script {
             "if ('serviceWorker' in navigator) {{
                 window.addEventListener('load', () => {{
-                    // Coba daftarkan dari root (produksi) agar memiliki scope penuh /
                     navigator.serviceWorker.register('/sw.js')
                         .then(registration => {{
                             console.log('SW registered with root scope:', registration.scope);
                         }})
                         .catch(error => {{
-                            console.log('Root SW failed, falling back to assets SW:', error);
-                            // Fallback untuk local dev jika /sw.js tidak dimap
-                            navigator.serviceWorker.register('/assets/sw.js')
-                                .then(reg => {{ console.log('SW registered with assets scope:', reg.scope); }})
-                                .catch(err => {{ console.log('Assets SW failed:', err); }});
+                            console.log('SW registration failed:', error);
                         }});
                 }});
             }}"
         }
         if languages().is_none() || curriculum().is_none() {
-            div { class: "flex items-center justify-center h-screen bg-slate-950 text-teal-500", "Loading LingoMind..." }
+            div { class: "flex flex-col items-center justify-center min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300",
+                div { class: "relative flex items-center justify-center mb-6",
+                    div { class: "absolute inset-0 bg-teal-500/20 dark:bg-teal-400/20 rounded-full blur-2xl animate-pulse" }
+                    img {
+                        src: FAVICON,
+                        alt: "LingoMind Logo",
+                        class: "w-28 h-28 sm:w-36 sm:h-36 object-contain relative z-10 animate-bounce"
+                    }
+                }
+                h2 { class: "text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-400 mb-6 drop-shadow-sm",
+                    "LingoMind"
+                }
+                div { class: "flex flex-col items-center gap-4",
+                    div { class: "flex items-center gap-3",
+                        i { class: "fa-solid fa-circle-notch fa-spin text-teal-500 text-xl" }
+                        span { class: "text-slate-600 dark:text-slate-300 font-medium tracking-wide", "Memuat Aplikasi..." }
+                    }
+                    div { class: "w-64 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner",
+                        div { class: "h-full bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full animate-[pulse_1.5s_ease-in-out_infinite] w-[60%]" }
+                    }
+                }
+            }
         } else {
             Router::<Route> {}
         }

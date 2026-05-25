@@ -24,6 +24,7 @@ pub fn Navbar() -> Element {
     let is_leaderboard = matches!(current_route, Route::Leaderboard {});
     let is_analytics = matches!(current_route, Route::WeaknessAnalytics {});
     let is_guide = matches!(current_route, Route::Guide {});
+    let is_shop = matches!(current_route, Route::Shop {});
 
     let tab_class = |active: bool| -> &'static str {
         if active {
@@ -73,6 +74,11 @@ pub fn Navbar() -> Element {
                                 to: Route::Guide {}, 
                                 class: format_args!("text-sm font-bold transition-colors {}", if is_guide { "text-teal-600 dark:text-teal-400" } else { "text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:text-teal-400" }),
                                 "Panduan" 
+                            }
+                            Link { 
+                                to: Route::Shop {}, 
+                                class: format_args!("text-sm font-bold transition-colors {}", if is_shop { "text-teal-600 dark:text-teal-400" } else { "text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:text-teal-400" }),
+                                "Toko" 
                             }
                             div { class: "px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1", 
                                 span { "🔥" }
@@ -145,6 +151,12 @@ pub fn Navbar() -> Element {
                     class: tab_class(is_guide),
                     span { class: "text-xl", "📖" }
                     span { "Panduan" }
+                }
+                Link {
+                    to: Route::Shop {},
+                    class: tab_class(is_shop),
+                    span { class: "text-xl", "🛒" }
+                    span { "Toko" }
                 }
                 button {
                     class: "flex flex-col items-center gap-0.5 text-slate-400 hover:text-rose-600 dark:text-rose-400 transition-all py-1.5 rounded-2xl flex-1 text-xs font-semibold cursor-pointer",

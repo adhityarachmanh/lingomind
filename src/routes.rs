@@ -20,6 +20,7 @@ use crate::views::placement_test::PlacementTest;
 use crate::views::exam::Exam;
 use crate::views::admin::login::AdminLogin;
 use crate::views::admin::dashboard::AdminDashboard;
+use crate::views::shop::Shop;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -71,6 +72,8 @@ pub enum Route {
     PlacementTest {},
     #[route("/exam/:level")]
     Exam { level: String },
+    #[route("/shop")]
+    Shop {},
 
     #[end_layout]
     #[route("/admin/login")]

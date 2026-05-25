@@ -85,7 +85,6 @@ pub fn Dashboard() -> Element {
     let mut is_modal_open = use_signal(|| false);
     let mut search_query = use_signal(String::new);
     let mut active_tab = use_signal(|| "All".to_string());
-    let mut buy_status = use_signal(String::new);
     let mut offline_download_status = use_signal(String::new);
     let mut show_tour = use_signal(|| false);
 
@@ -228,26 +227,7 @@ pub fn Dashboard() -> Element {
     });
     let active_battles = battles_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
 
-    let email_for_buy = user.email.clone();
-    let buy_freeze = move |_| {
-        let u = email_for_buy.clone();
-        spawn(async move {
-            match crate::services::shop::buy_streak_freeze_server(u).await {
-                Ok(msg) => buy_status.set(msg),
-                Err(e) => {
-                    let mut err_str = e.to_string();
-                    if err_str.starts_with("error running server function: ") {
-                        err_str = err_str.replace("error running server function: ", "");
-                    }
-                    if err_str.ends_with(" (details: None)") {
-                        err_str = err_str.replace(" (details: None)", "");
-                    }
-                    buy_status.set(err_str);
-                }
-            }
-            engagement_resource.restart();
-        });
-    };
+
 
     let selected_lang_for_dl = selected_language();
     let email_for_dl = user.email.clone();
@@ -344,15 +324,12 @@ pub fn Dashboard() -> Element {
                             div { class: "flex gap-2 items-center",
                                 div { class: "px-3 py-1 bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-900/50 shadow-sm", "🪙 {es.coins} Koin" }
                                 div { class: "px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-200 shadow-sm", "❄️ {es.streak_freezes} Freeze" }
-                                button {
-                                    class: "px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer",
-                                    onclick: buy_freeze,
-                                    "Beli Freeze (50 Koin)"
+                                Link {
+                                    to: Route::Shop {},
+                                    class: "px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors cursor-pointer flex items-center gap-1",
+                                    "Buka Toko 🛒"
                                 }
                             }
-                        }
-                        if !buy_status().is_empty() {
-                            p { class: "text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-3", "{buy_status()}" }
                         }
                         div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
                             div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Current Streak" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{es.current_streak} hari" } }

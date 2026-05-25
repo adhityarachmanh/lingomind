@@ -399,7 +399,7 @@ pub async fn get_users_admin(email: String) -> Result<Vec<crate::models::admin::
     let rows = sqlx::query(
         "SELECT u.email, u.full_name, u.role, u.is_verified, u.score, 
                 COALESCE(e.coins, 0) as coins, 
-                COALESCE(e.streak_days, 0) as streak_days 
+                COALESCE(e.current_streak, 0) as streak_days 
          FROM users u 
          LEFT JOIN user_engagement_stats e ON u.email = e.email 
          ORDER BY u.email"

@@ -13,3 +13,4 @@ pub mod leaderboard;
 pub mod badge;
 pub mod social;
 pub mod admin;
+pub mod shop;

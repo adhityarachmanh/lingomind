@@ -17,6 +17,7 @@ pub async fn get_leaderboard_server(limit: i32) -> Result<Vec<LeaderboardEntry>,
                    COALESCE(e.total_quiz_completed, 0) AS total_quiz_completed
             FROM users u
             LEFT JOIN user_engagement_stats e ON u.email = e.email
+            WHERE u.role != 'admin'
             ORDER BY u.score DESC
             LIMIT $1"#
     )
