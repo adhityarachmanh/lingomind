@@ -42,3 +42,15 @@ impl UserProfile {
         }
     }
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct PublicProfile {
+    pub email: String,
+    pub full_name: String,
+    pub score: i32,
+    pub current_streak: i32,
+    pub longest_streak: i32,
+    pub active_frame: Option<String>,
+    pub joined_date: String,
+    pub badges: Vec<crate::models::badge::Badge>,
+}

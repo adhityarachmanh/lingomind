@@ -84,7 +84,11 @@ pub fn Navbar() -> Element {
                                 span { "🔥" }
                                 span { "{user.score} pts" }
                             }
-                            div { class: "max-w-[180px] truncate text-sm font-bold text-slate-700/30 dark:text-slate-300", "{user.full_name}" }
+                            Link {
+                                to: Route::Profile { email: user.email.clone() },
+                                class: "max-w-[180px] truncate text-sm font-bold text-slate-700/80 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors",
+                                "{user.full_name}"
+                            }
                             button {
                                 class: "p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors shadow-sm cursor-pointer text-sm",
                                 onclick: toggle_theme,

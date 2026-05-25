@@ -280,7 +280,11 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center",
                                         div { class: format!("w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400" } else { "bg-gradient-to-br from-slate-100 to-slate-200" }), "🥈" }
-                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        Link {
+                                            to: Route::Profile { email: entry.email.clone() },
+                                            class: "hover:underline",
+                                            p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-16 sm:w-20 h-16 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-2xl font-black text-slate-400", "2" } }
                                     }
@@ -294,7 +298,11 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center -mt-4",
                                         div { class: format!("w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl {}", if is_me { "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400" } else { "bg-gradient-to-br from-amber-100 to-yellow-200" }), "🥇" }
-                                        p { class: "text-sm sm:text-base font-black text-slate-800 dark:text-slate-200 mt-2 text-center max-w-[100px] truncate", "{entry.full_name}" }
+                                        Link {
+                                            to: Route::Profile { email: entry.email.clone() },
+                                            class: "hover:underline",
+                                            p { class: "text-sm sm:text-base font-black text-slate-800 dark:text-slate-200 mt-2 text-center max-w-[100px] truncate", "{entry.full_name}" }
+                                        }
                                         p { class: "text-sm font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-3xl font-black text-amber-600 dark:text-amber-400", "1" } }
                                     }
@@ -308,7 +316,11 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: "flex flex-col items-center",
                                         div { class: format!("w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg {}", if is_me { "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400" } else { "bg-gradient-to-br from-orange-50 to-orange-100" }), "🥉" }
-                                        p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        Link {
+                                            to: Route::Profile { email: entry.email.clone() },
+                                            class: "hover:underline",
+                                            p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                        }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-14 sm:w-18 h-12 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-xl font-black text-orange-400", "3" } }
                                     }
@@ -331,7 +343,11 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                         div { class: "w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-xs font-black text-slate-500 dark:text-slate-400 shrink-0", "{entry.rank}" }
                                         div { class: "flex-1 min-w-0",
                                             p { class: format!("text-sm font-bold truncate {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }),
-                                                "{entry.full_name}"
+                                                Link {
+                                                    to: Route::Profile { email: entry.email.clone() },
+                                                    class: "hover:underline",
+                                                    "{entry.full_name}"
+                                                }
                                                 if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
                                             }
                                         }

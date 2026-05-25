@@ -246,6 +246,18 @@ pub fn Roadmap() -> Element {
                                     p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Praktik berbicara langsung dengan AI" }
                                 }
                             }
+                            button {
+                                class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
+                                onclick: {
+                                    let t = topic.clone();
+                                    move |_| { navigator.push(Route::Story { goal: t.clone() }); }
+                                },
+                                div { class: "text-2xl", "🎧" }
+                                div { class: "text-left",
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Mode Story" }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Cerita interaktif & mendengarkan" }
+                                }
+                            }
                         }
                     }
                 }

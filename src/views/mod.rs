@@ -24,3 +24,5 @@ pub mod guide;
 pub mod placement_test;
 pub mod exam;
 pub mod shop;
+pub mod profile;
+pub mod story;

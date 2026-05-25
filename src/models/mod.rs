@@ -14,3 +14,4 @@ pub mod badge;
 pub mod social;
 pub mod admin;
 pub mod shop;
+pub mod story;

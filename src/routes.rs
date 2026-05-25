@@ -21,6 +21,8 @@ use crate::views::exam::Exam;
 use crate::views::admin::login::AdminLogin;
 use crate::views::admin::dashboard::AdminDashboard;
 use crate::views::shop::Shop;
+use crate::views::profile::Profile;
+use crate::views::story::Story;
 
 #[derive(Debug, Clone, Routable, PartialEq)]
 #[rustfmt::skip]
@@ -74,6 +76,10 @@ pub enum Route {
     Exam { level: String },
     #[route("/shop")]
     Shop {},
+    #[route("/profile/:email")]
+    Profile { email: String },
+    #[route("/story/:goal")]
+    Story { goal: String },
 
     #[end_layout]
     #[route("/admin/login")]
