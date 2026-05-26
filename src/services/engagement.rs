@@ -19,16 +19,26 @@ pub async fn update_engagement_after_quiz_server(email: String, points_earned: i
         }
 
         sqlx::query(
-            "INSERT INTO user_engagement_stats (email, current_streak, longest_streak, total_quiz_completed, total_points_earned, last_active_date, coins, streak_freezes)
-             VALUES ($1, 1, 1, 1, $2, CURRENT_DATE, $3, 0)
+            "INSERT INTO user_engagement_stats (email, current_streak, longest_streak, total_quiz_completed, total_points_earned, last_active_date, coins, streak_freezes, previous_streak, exam_retake_tickets)
+             VALUES ($1, 1, 1, 1, $2, CURRENT_DATE, $3, 0, 0, 0)
              ON CONFLICT (email) DO UPDATE
              SET total_quiz_completed = user_engagement_stats.total_quiz_completed + 1,
-                 total_points_earned = user_engagement_stats.total_points_earned + EXCLUDED.total_points_earned,
+                 total_points_earned = user_engagement_stats.total_points_earned + CASE WHEN user_engagement_stats.double_xp_until >= CURRENT_TIMESTAMP THEN EXCLUDED.total_points_earned * 2 ELSE EXCLUDED.total_points_earned END,
                  coins = user_engagement_stats.coins + $3,
+                 previous_streak = CASE
+                     WHEN user_engagement_stats.last_active_date >= CURRENT_DATE THEN user_engagement_stats.previous_streak
+                     WHEN user_engagement_stats.last_active_date = CURRENT_DATE - INTERVAL '1 day' THEN user_engagement_stats.previous_streak
+                     WHEN user_engagement_stats.streak_freezes >= (CURRENT_DATE - user_engagement_stats.last_active_date - 1) THEN user_engagement_stats.previous_streak
+                     WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 1 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '3 days' THEN user_engagement_stats.previous_streak
+                     WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 7 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '2 days' THEN user_engagement_stats.previous_streak
+                     ELSE user_engagement_stats.current_streak
+                 END,
                  current_streak = CASE
                      WHEN user_engagement_stats.last_active_date >= CURRENT_DATE THEN user_engagement_stats.current_streak
                      WHEN user_engagement_stats.last_active_date = CURRENT_DATE - INTERVAL '1 day' THEN user_engagement_stats.current_streak + 1
                      WHEN user_engagement_stats.streak_freezes >= (CURRENT_DATE - user_engagement_stats.last_active_date - 1) THEN user_engagement_stats.current_streak + 1
+                     WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 1 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '3 days' THEN user_engagement_stats.current_streak + 1
+                     WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 7 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '2 days' THEN user_engagement_stats.current_streak + 1
                      ELSE 1
                  END,
                  streak_freezes = CASE
@@ -41,6 +51,8 @@ pub async fn update_engagement_after_quiz_server(email: String, points_earned: i
                          WHEN user_engagement_stats.last_active_date >= CURRENT_DATE THEN user_engagement_stats.current_streak
                          WHEN user_engagement_stats.last_active_date = CURRENT_DATE - INTERVAL '1 day' THEN user_engagement_stats.current_streak + 1
                          WHEN user_engagement_stats.streak_freezes >= (CURRENT_DATE - user_engagement_stats.last_active_date - 1) THEN user_engagement_stats.current_streak + 1
+                         WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 1 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '3 days' THEN user_engagement_stats.current_streak + 1
+                         WHEN COALESCE(user_engagement_stats.has_weekend_amulet, FALSE) AND EXTRACT(ISODOW FROM CURRENT_DATE) = 7 AND user_engagement_stats.last_active_date >= CURRENT_DATE - INTERVAL '2 days' THEN user_engagement_stats.current_streak + 1
                          ELSE 1
                      END
                  ),
@@ -68,7 +80,7 @@ pub async fn get_engagement_stats_server(email: String) -> Result<UserEngagement
     #[cfg(not(target_arch = "wasm32"))]
     use sqlx::Row;
     let pool = super::db::get_pool();
-    let row_opt = sqlx::query("SELECT current_streak, longest_streak, total_quiz_completed, total_points_earned, coins, streak_freezes FROM user_engagement_stats WHERE email = $1 LIMIT 1")
+    let row_opt = sqlx::query("SELECT current_streak, longest_streak, total_quiz_completed, total_points_earned, coins, streak_freezes, previous_streak, double_xp_until, exam_retake_tickets FROM user_engagement_stats WHERE email = $1 LIMIT 1")
         .bind(email)
         .fetch_optional(pool)
         .await
@@ -81,8 +93,11 @@ pub async fn get_engagement_stats_server(email: String) -> Result<UserEngagement
             total_points_earned: row.get("total_points_earned"),
             coins: row.get("coins"),
             streak_freezes: row.get("streak_freezes"),
+            previous_streak: row.get("previous_streak"),
+            double_xp_until: row.get("double_xp_until"),
+            exam_retake_tickets: row.get("exam_retake_tickets"),
         })
     } else {
-        Ok(UserEngagementStats { current_streak: 0, longest_streak: 0, total_quiz_completed: 0, total_points_earned: 0, coins: 0, streak_freezes: 0 })
+        Ok(UserEngagementStats { current_streak: 0, longest_streak: 0, total_quiz_completed: 0, total_points_earned: 0, coins: 0, streak_freezes: 0, previous_streak: 0, double_xp_until: None, exam_retake_tickets: 0 })
     }
 }

@@ -8,4 +8,7 @@ pub struct UserEngagementStats {
     pub total_points_earned: i32,
     pub coins: i32,
     pub streak_freezes: i32,
+    pub previous_streak: i32,
+    pub double_xp_until: Option<chrono::DateTime<chrono::Utc>>,
+    pub exam_retake_tickets: i32,
 }

@@ -51,6 +51,8 @@ pub struct PublicProfile {
     pub current_streak: i32,
     pub longest_streak: i32,
     pub active_frame: Option<String>,
+    pub active_title: Option<String>,
+    pub active_name_color: Option<String>,
     pub joined_date: String,
     pub badges: Vec<crate::models::badge::Badge>,
 }

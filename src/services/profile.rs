@@ -25,19 +25,21 @@ pub async fn get_public_profile_server(email: String) -> Result<PublicProfile, S
         let score: i32 = user.get("score");
 
         // Dapatkan data engagement
-        let stats_row = sqlx::query("SELECT current_streak, longest_streak, active_frame FROM user_engagement_stats WHERE email = $1")
+        let stats_row = sqlx::query("SELECT current_streak, longest_streak, active_frame, active_title, active_name_color FROM user_engagement_stats WHERE email = $1")
             .bind(&email)
             .fetch_optional(pool)
             .await
             .map_err(|e| ServerFnError::new(format!("Gagal fetch engagement: {}", e)))?;
 
-        let (current_streak, longest_streak, active_frame) = match stats_row {
+        let (current_streak, longest_streak, active_frame, active_title, active_name_color) = match stats_row {
             Some(row) => (
                 row.get("current_streak"),
                 row.get("longest_streak"),
-                row.try_get::<String, _>("active_frame").ok() // bisa null
+                row.try_get::<String, _>("active_frame").ok(),
+                row.try_get::<String, _>("active_title").ok(),
+                row.try_get::<String, _>("active_name_color").ok()
             ),
-            None => (0, 0, None),
+            None => (0, 0, None, None, None),
         };
 
         // Dapatkan badges
@@ -72,6 +74,8 @@ pub async fn get_public_profile_server(email: String) -> Result<PublicProfile, S
             current_streak,
             longest_streak,
             active_frame,
+            active_title,
+            active_name_color,
             joined_date: "Member".to_string(), // Kita tidak ada created_at, biarkan statis
             badges,
         })
@@ -85,6 +89,8 @@ pub async fn get_public_profile_server(email: String) -> Result<PublicProfile, S
             current_streak: 0,
             longest_streak: 0,
             active_frame: None,
+            active_title: None,
+            active_name_color: None,
             joined_date: "".to_string(),
             badges: vec![],
         })
@@ -106,6 +112,34 @@ pub async fn get_user_frames_server(email: String) -> Result<Vec<String>, Server
 }
 
 #[server]
+pub async fn get_user_titles_server(email: String) -> Result<Vec<String>, ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use sqlx::Row;
+        let pool = crate::services::db::get_pool();
+        let rows = sqlx::query("SELECT item_value FROM user_inventory WHERE email = $1 AND item_type LIKE 'title_%'")
+            .bind(&email).fetch_all(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(rows.into_iter().map(|r| r.get("item_value")).collect())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(vec![]) }
+}
+
+#[server]
+pub async fn get_user_colors_server(email: String) -> Result<Vec<String>, ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        use sqlx::Row;
+        let pool = crate::services::db::get_pool();
+        let rows = sqlx::query("SELECT item_value FROM user_inventory WHERE email = $1 AND item_type LIKE 'name_color_%'")
+            .bind(&email).fetch_all(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(rows.into_iter().map(|r| r.get("item_value")).collect())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(vec![]) }
+}
+
+#[server]
 pub async fn equip_frame_server(email: String, frame: String) -> Result<(), ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
     {
@@ -113,6 +147,34 @@ pub async fn equip_frame_server(email: String, frame: String) -> Result<(), Serv
         let frame_opt = if frame.is_empty() { None } else { Some(frame) };
         sqlx::query("UPDATE user_engagement_stats SET active_frame = $1 WHERE email = $2")
             .bind(frame_opt).bind(&email).execute(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(()) }
+}
+
+#[server]
+pub async fn equip_title_server(email: String, title: String) -> Result<(), ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let pool = crate::services::db::get_pool();
+        let title_opt = if title.is_empty() { None } else { Some(title) };
+        sqlx::query("UPDATE user_engagement_stats SET active_title = $1 WHERE email = $2")
+            .bind(title_opt).bind(&email).execute(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+        Ok(())
+    }
+    #[cfg(target_arch = "wasm32")]
+    { Ok(()) }
+}
+
+#[server]
+pub async fn equip_color_server(email: String, color: String) -> Result<(), ServerFnError> {
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        let pool = crate::services::db::get_pool();
+        let color_opt = if color.is_empty() { None } else { Some(color) };
+        sqlx::query("UPDATE user_engagement_stats SET active_name_color = $1 WHERE email = $2")
+            .bind(color_opt).bind(&email).execute(pool).await.map_err(|e| ServerFnError::new(e.to_string()))?;
         Ok(())
     }
     #[cfg(target_arch = "wasm32")]

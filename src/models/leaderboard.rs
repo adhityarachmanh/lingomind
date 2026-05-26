@@ -10,4 +10,6 @@ pub struct LeaderboardEntry {
     pub current_streak: i32,
     pub total_quiz_completed: i32,
     pub active_frame: Option<String>,
+    pub active_title: Option<String>,
+    pub active_name_color: Option<String>,
 }

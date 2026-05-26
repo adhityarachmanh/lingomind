@@ -267,11 +267,25 @@ pub fn Exam(level: String) -> Element {
     let lvl = level.clone();
     
     let mut is_retrying = use_signal(|| false);
+    let mut should_load_exam = use_signal(|| false);
 
+    let lang_for_cooldown = lang.clone();
+    let email_for_cooldown = user.email.clone();
+    let mut cooldown_resource = use_resource(move || {
+        let e = email_for_cooldown.clone();
+        let l = lang_for_cooldown.clone();
+        async move { crate::services::curriculum::check_exam_cooldown_server(e, l).await }
+    });
+
+    let lang_for_exam = lang.clone();
     let mut exam_resource = use_resource(move || {
-        let l = lang.clone();
+        let l = lang_for_exam.clone();
         let lv = lvl.clone();
-        async move { 
+        let should = should_load_exam();
+        async move {
+            if !should {
+                return Err(ServerFnError::new("SKIP"));
+            }
             let res = generate_exam_server(l, lv).await;
             is_retrying.set(false);
             res
@@ -288,7 +302,90 @@ pub fn Exam(level: String) -> Element {
     
     let navigator = use_navigator();
 
+    if !should_load_exam() {
+        let Some(cooldown_res) = cooldown_resource.value()() else {
+            return rsx! {
+                div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
+                    div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-teal-500 mb-6" }
+                    p { class: "text-teal-700 dark:text-teal-500 font-bold text-lg animate-pulse", "Mengecek status ujian..." }
+                }
+            };
+        };
+        
+        match cooldown_res {
+            Ok((on_cooldown, cooldown_msg, tickets)) => {
+                if on_cooldown {
+                    return rsx! {
+                        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
+                            div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
+                                h2 { class: "text-6xl mb-4", "⏳" }
+                                h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-2", "Ujian Terkunci" }
+                                p { class: "text-slate-600 dark:text-slate-400 mb-4 text-sm", "Anda baru saja gagal dalam ujian ini. Silakan istirahat dan pelajari kembali materi." }
+                                div { class: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold p-3 rounded-xl mb-6",
+                                    "Bisa diulang dalam: {cooldown_msg}"
+                                }
+                                if tickets > 0 {
+                                    div { class: "mb-4",
+                                        p { class: "text-sm text-slate-500 mb-2", "Anda memiliki {tickets} Tiket Ujian Ulang 🎫" }
+                                        button {
+                                            class: "w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-500/30",
+                                            onclick: move |_| {
+                                                let e = user.email.clone();
+                                                let l = lang.clone();
+                                                is_retrying.set(true); // repurpose loading flag
+                                                spawn(async move {
+                                                    let _ = crate::services::curriculum::consume_retake_ticket_server(e, l).await;
+                                                    cooldown_resource.restart();
+                                                    is_retrying.set(false);
+                                                });
+                                            },
+                                            disabled: is_retrying(),
+                                            if is_retrying() { "Memproses..." } else { "Gunakan 1 Tiket" }
+                                        }
+                                    }
+                                } else {
+                                    div { class: "mb-4",
+                                        p { class: "text-sm text-slate-500 mb-2", "Tidak punya Tiket Ujian Ulang." }
+                                        Link {
+                                            to: Route::Shop {},
+                                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition shadow-md shadow-amber-500/30",
+                                            "Beli Tiket di Toko 🏪"
+                                        }
+                                    }
+                                }
+                                Link { to: Route::Roadmap {}, class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition mt-2", "Kembali ke Roadmap" }
+                            }
+                        }
+                    };
+                } else {
+                    return rsx! {
+                        div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
+                            div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-teal-200 dark:border-teal-900/30 max-w-md text-center",
+                                h2 { class: "text-6xl mb-4 animate-bounce", "📝" }
+                                h3 { class: "text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4", "Siap Ujian?" }
+                                p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Ujian ini akan menguji pemahaman Anda di level {level}. Jika gagal, Anda harus menunggu 24 jam untuk mengulang." }
+                                button {
+                                    class: "w-full bg-teal-500 text-white font-bold py-3 rounded-xl hover:bg-teal-600 transition shadow-md shadow-teal-500/30 text-lg mb-3 cursor-pointer",
+                                    onclick: move |_| should_load_exam.set(true),
+                                    "Mulai Ujian 🚀"
+                                }
+                                Link { to: Route::Roadmap {}, class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition", "Kembali" }
+                            }
+                        }
+                    };
+                }
+            },
+            Err(e) => {
+                return rsx! { div { "Error checking cooldown: {e}" } };
+            }
+        }
+    }
+
     let Some(exam_result) = exam_resource.value()() else {
+        let err_str = exam_resource.value()().and_then(|r| r.err()).map(|e| e.to_string());
+        if err_str.as_deref() == Some("SKIP") {
+            return rsx! { div {} };
+        }
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }

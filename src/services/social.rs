@@ -16,7 +16,9 @@ pub async fn search_users_server(query: String, current_user_email: String) -> R
                    (SELECT COUNT(*) FROM followers WHERE follower_email = $1 AND followed_email = u.email) > 0 as is_following,
                    COALESCE(ue.current_streak, 0) as current_streak,
                    COALESCE(ue.total_quiz_completed, 0) as total_quiz_completed,
-                   ue.active_frame
+                   ue.active_frame,
+                   ue.active_title,
+                   ue.active_name_color
             FROM users u
             LEFT JOIN user_engagement_stats ue ON u.email = ue.email
             WHERE u.email != $1 AND (LOWER(u.full_name) LIKE $2 OR LOWER(u.email) LIKE $2)
@@ -41,6 +43,8 @@ pub async fn search_users_server(query: String, current_user_email: String) -> R
                 current_streak: row.get("current_streak"),
                 total_quiz_completed: row.get("total_quiz_completed"),
                 active_frame: row.try_get::<String, _>("active_frame").ok(),
+                active_title: row.try_get::<String, _>("active_title").ok(),
+                active_name_color: row.try_get::<String, _>("active_name_color").ok(),
             });
         }
         
@@ -92,7 +96,9 @@ pub async fn get_following_leaderboard_server(email: String) -> Result<Vec<Socia
             SELECT u.email, u.full_name, u.score,
                    COALESCE(ue.current_streak, 0) as current_streak,
                    COALESCE(ue.total_quiz_completed, 0) as total_quiz_completed,
-                   ue.active_frame
+                   ue.active_frame,
+                   ue.active_title,
+                   ue.active_name_color
             FROM users u
             INNER JOIN followers f ON u.email = f.followed_email AND f.follower_email = $1
             LEFT JOIN user_engagement_stats ue ON u.email = ue.email
@@ -100,7 +106,9 @@ pub async fn get_following_leaderboard_server(email: String) -> Result<Vec<Socia
             SELECT u.email, u.full_name, u.score,
                    COALESCE(ue.current_streak, 0) as current_streak,
                    COALESCE(ue.total_quiz_completed, 0) as total_quiz_completed,
-                   ue.active_frame
+                   ue.active_frame,
+                   ue.active_title,
+                   ue.active_name_color
             FROM users u
             LEFT JOIN user_engagement_stats ue ON u.email = ue.email
             WHERE u.email = $1
@@ -123,6 +131,8 @@ pub async fn get_following_leaderboard_server(email: String) -> Result<Vec<Socia
                 current_streak: row.get("current_streak"),
                 total_quiz_completed: row.get("total_quiz_completed"),
                 active_frame: row.try_get::<String, _>("active_frame").ok(),
+                active_title: row.try_get::<String, _>("active_title").ok(),
+                active_name_color: row.try_get::<String, _>("active_name_color").ok(),
             });
         }
         

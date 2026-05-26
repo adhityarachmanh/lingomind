@@ -11,6 +11,8 @@ pub struct SocialUser {
     pub current_streak: i32,
     pub total_quiz_completed: i32,
     pub active_frame: Option<String>,
+    pub active_title: Option<String>,
+    pub active_name_color: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

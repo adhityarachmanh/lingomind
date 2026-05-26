@@ -40,3 +40,5 @@ pub async fn init_db() -> Result<(), String> { Ok(()) }
 // Trigger migration 20260526020000
 
 // Trigger migration 20260526023000
+
+// Trigger migration 20260526053000

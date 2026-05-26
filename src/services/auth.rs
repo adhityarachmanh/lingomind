@@ -257,7 +257,7 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     .map_err(|e| ServerFnError::new(e.to_string()))?;
 
     let update_row = sqlx::query(
-        "UPDATE users SET score = score + $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
+        "UPDATE users SET score = score + COALESCE((SELECT CASE WHEN double_xp_until >= CURRENT_TIMESTAMP THEN $1 * 2 ELSE $1 END FROM user_engagement_stats WHERE email = $2), $1) WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
     )
     .bind(score_delta)
     .bind(&email)
@@ -580,14 +580,16 @@ pub async fn resend_verification_email_server(email: String) -> Result<String, S
 pub async fn submit_exam_result(email: String, language: String, passed: bool, score_gained: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
 
-    let row = sqlx::query("SELECT score FROM users WHERE email = $1")
+    let row = sqlx::query("SELECT u.score, COALESCE((CASE WHEN e.double_xp_until >= CURRENT_TIMESTAMP THEN 2 ELSE 1 END), 1) as multiplier FROM users u LEFT JOIN user_engagement_stats e ON u.email = e.email WHERE u.email = $1")
         .bind(&email)
         .fetch_one(pool)
         .await
         .map_err(|e| ServerFnError::new(format!("Gagal mengambil data user: {}", e)))?;
 
     let mut final_score = row.get::<i32, _>("score");
-    final_score += score_gained;
+    let multiplier: i32 = row.get("multiplier");
+    let actual_score_gained = score_gained * multiplier;
+    final_score += actual_score_gained;
 
     let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
         .bind(&email)
@@ -620,7 +622,7 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
     .bind(&language)
     .bind("exam")
     .bind("Level Exam")
-    .bind(score_gained)
+    .bind(actual_score_gained)
     .bind(passed)
     .bind(&base_level)
     .bind(topic_idx as i32)
@@ -645,9 +647,13 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
         }
     }
 
-    let _ = sqlx::query(
-        "INSERT INTO user_language_progress (email, language_id, base_level, topic_idx) VALUES ($1, $2, $3, $4) ON CONFLICT (email, language_id) DO UPDATE SET base_level = EXCLUDED.base_level, topic_idx = EXCLUDED.topic_idx, updated_at = NOW()"
-    )
+    let query_str = if !passed {
+        "INSERT INTO user_language_progress (email, language_id, base_level, topic_idx, exam_cooldown_until) VALUES ($1, $2, $3, $4, NOW() + INTERVAL '24 hours') ON CONFLICT (email, language_id) DO UPDATE SET base_level = EXCLUDED.base_level, topic_idx = EXCLUDED.topic_idx, exam_cooldown_until = EXCLUDED.exam_cooldown_until, updated_at = NOW()"
+    } else {
+        "INSERT INTO user_language_progress (email, language_id, base_level, topic_idx, exam_cooldown_until) VALUES ($1, $2, $3, $4, NULL) ON CONFLICT (email, language_id) DO UPDATE SET base_level = EXCLUDED.base_level, topic_idx = EXCLUDED.topic_idx, exam_cooldown_until = NULL, updated_at = NOW()"
+    };
+
+    let _ = sqlx::query(query_str)
     .bind(&email)
     .bind(&language)
     .bind(&base_level)

@@ -31,7 +31,7 @@ pub fn Leaderboard() -> Element {
     let current_user_name = user_opt.as_ref().map(|u| u.full_name.clone()).unwrap_or_default();
 
     let global_resource = use_resource(move || async move {
-        get_leaderboard_server(50).await
+        get_leaderboard_server(10).await
     });
 
     let current_email1 = current_email.clone();
@@ -132,6 +132,8 @@ pub fn Leaderboard() -> Element {
                                 current_streak: e.current_streak,
                                 total_quiz_completed: e.total_quiz_completed,
                                 active_frame: e.active_frame.clone(),
+                                active_title: e.active_title.clone(),
+                                active_name_color: e.active_name_color.clone(),
                             }).collect();
                             rsx! { LeaderboardList { entries: mapped, current_name: current_user_name.clone(), is_global: true, on_challenge: handle_challenge } }
                         }
@@ -277,6 +279,23 @@ fn get_frame_class(active_frame: Option<&str>, base_classes: &str, is_me: bool, 
         format!("{} {}", base_classes, if is_me { me_bg } else { default_bg })
     }
 }
+pub fn get_name_color_class(color: Option<&str>) -> &'static str {
+    match color {
+        Some("gold") => "bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] font-black",
+        Some("crimson") => "text-rose-600 drop-shadow-[0_0_8px_rgba(225,29,72,0.8)] font-black",
+        Some("neon_blue") => "text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)] font-black",
+        _ => "text-slate-700 dark:text-slate-300",
+    }
+}
+
+pub fn render_title_badge(title: Option<&str>) -> Element {
+    match title {
+        Some("polyglot") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-full", "🎓 Polyglot" } },
+        Some("sultan") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-700 rounded-full", "👑 Sultan" } },
+        Some("legend") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full", "🌟 Legend" } },
+        _ => rsx! { span {} }
+    }
+}
 
 // Komponen Pembantu untuk menampilkan list leaderboard (Global / Teman)
 #[component]
@@ -299,8 +318,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                         div { class: get_frame_class(entry.active_frame.as_deref(), "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg", is_me, "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700", "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400"), "🥈" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
-                                            class: "hover:underline",
-                                            p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                            class: "hover:underline flex items-center justify-center flex-wrap max-w-[110px]",
+                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-16 sm:w-20 h-16 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-2xl font-black text-slate-400", "2" } }
@@ -317,8 +337,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                         div { class: get_frame_class(entry.active_frame.as_deref(), "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl", is_me, "bg-gradient-to-br from-amber-100 to-yellow-200 text-amber-800", "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400"), "🥇" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
-                                            class: "hover:underline",
-                                            p { class: "text-sm sm:text-base font-black text-slate-800 dark:text-slate-200 mt-2 text-center max-w-[100px] truncate", "{entry.full_name}" }
+                                            class: "hover:underline flex items-center justify-center flex-wrap max-w-[130px]",
+                                            p { class: "text-sm sm:text-base mt-2 text-center font-black line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-sm font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-3xl font-black text-amber-600 dark:text-amber-400", "1" } }
@@ -335,8 +356,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                         div { class: get_frame_class(entry.active_frame.as_deref(), "w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg", is_me, "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-800", "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400"), "🥉" }
                                         Link {
                                             to: Route::Profile { email: entry.email.clone() },
-                                            class: "hover:underline",
-                                            p { class: "text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 mt-2 text-center max-w-[80px] truncate", "{entry.full_name}" }
+                                            class: "hover:underline flex items-center justify-center flex-wrap max-w-[100px]",
+                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
                                         div { class: "w-14 sm:w-18 h-12 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-xl font-black text-orange-400", "3" } }
@@ -358,15 +380,14 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 rsx! {
                                     div { class: format!("flex items-center gap-4 px-6 py-3.5 transition-colors {}", if is_me { "bg-amber-50/30 dark:bg-amber-900/30 border-l-4 border-amber-400" } else { "hover:bg-slate-50 dark:bg-slate-950" }),
                                         div { class: get_frame_class(entry.active_frame.as_deref(), "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0", is_me, "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"), "{entry.rank}" }
-                                        div { class: "flex-1 min-w-0",
-                                            p { class: format!("text-sm font-bold truncate {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }),
-                                                Link {
-                                                    to: Route::Profile { email: entry.email.clone() },
-                                                    class: "hover:underline",
-                                                    "{entry.full_name}"
-                                                }
-                                                if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
+                                        div { class: "flex-1 min-w-0 flex items-center flex-wrap",
+                                            Link {
+                                                to: Route::Profile { email: entry.email.clone() },
+                                                class: "hover:underline",
+                                                p { class: format!("text-sm font-bold truncate {} {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }, get_name_color_class(entry.active_name_color.as_deref())), "{entry.full_name}" }
                                             }
+                                            {render_title_badge(entry.active_title.as_deref())}
+                                            if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
                                         }
                                         div { class: "flex items-center gap-2 shrink-0",
                                             if !is_me && is_global == false {

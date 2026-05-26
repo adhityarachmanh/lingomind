@@ -64,10 +64,12 @@ pub fn Shop() -> Element {
                     }
                 }
 
-                // Grid Items
-                div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
-                    for item in items {
-                        div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
+                // Grid Items - Utilitas
+                div {
+                    h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-100 mb-4 flex items-center gap-2", "🚑 Utilitas & Penyelamat Nyawa" }
+                    div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+                        for item in items.iter().filter(|i| !i.effect_type.starts_with("profile_frame_") && !i.effect_type.starts_with("title_") && !i.effect_type.starts_with("name_color_")) {
+                            div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
                             div { class: "flex items-start gap-4 mb-4",
                                 div { class: "w-16 h-16 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-100 dark:border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform",
                                     "{item.icon_name.clone().unwrap_or_else(|| \"📦\".to_string())}"
@@ -113,6 +115,67 @@ pub fn Shop() -> Element {
                                                 });
                                             },
                                             if is_loading() { "Memproses..." } else if item.is_owned { "Dimiliki" } else if can_afford { "Beli" } else { "Koin Kurang" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                }
+                
+                // Grid Items - Kosmetik
+                div {
+                    h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-100 mb-4 mt-8 flex items-center gap-2", "🏆 Status & Gengsi (Kosmetik)" }
+                    div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+                        for item in items.iter().filter(|i| i.effect_type.starts_with("profile_frame_") || i.effect_type.starts_with("title_") || i.effect_type.starts_with("name_color_")) {
+                            div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
+                                div { class: "flex items-start gap-4 mb-4",
+                                    div { class: "w-16 h-16 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-100 dark:border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform",
+                                        "{item.icon_name.clone().unwrap_or_else(|| \"📦\".to_string())}"
+                                    }
+                                    div { class: "flex-1",
+                                        h3 { class: "font-bold text-lg text-slate-800 dark:text-slate-100", "{item.name}" }
+                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 line-clamp-2", "{item.description.clone().unwrap_or_default()}" }
+                                    }
+                                }
+                                div { class: "mt-auto pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between",
+                                    div { class: "flex items-center gap-1.5",
+                                        span { class: "text-lg", "🪙" }
+                                        span { class: "font-black text-lg text-amber-600 dark:text-amber-500", "{item.cost}" }
+                                    }
+                                    {
+                                        let email_for_buy = user.email.clone();
+                                        let item_id = item.id;
+                                        let can_afford = coins >= item.cost;
+                                        rsx! {
+                                            button {
+                                                class: if item.is_owned {
+                                                    "px-5 py-2.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 font-bold rounded-xl text-sm cursor-not-allowed"
+                                                } else if can_afford {
+                                                    "px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-sm shadow-indigo-500/30 disabled:opacity-50"
+                                                } else {
+                                                    "px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold rounded-xl text-sm cursor-not-allowed"
+                                                },
+                                                disabled: item.is_owned || !can_afford || is_loading(),
+                                                onclick: move |_| {
+                                                    let u = email_for_buy.clone();
+                                                    buy_status.set(String::new());
+                                                    is_loading.set(true);
+                                                    spawn(async move {
+                                                        match buy_shop_item_server(u, item_id).await {
+                                                            Ok(msg) => buy_status.set(msg),
+                                                            Err(e) => {
+                                                                let err = e.to_string().replace("error running server function: ", "");
+                                                                buy_status.set(err);
+                                                            }
+                                                        }
+                                                        engagement_resource.restart();
+                                                        is_loading.set(false);
+                                                    });
+                                                },
+                                                if is_loading() { "Memproses..." } else if item.is_owned { "Dimiliki" } else if can_afford { "Beli" } else { "Koin Kurang" }
+                                            }
                                         }
                                     }
                                 }
