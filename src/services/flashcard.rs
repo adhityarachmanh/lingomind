@@ -116,7 +116,7 @@ pub async fn review_flashcard_server(card_id: i32, quality: i32) -> Result<(), S
     use sqlx::Row;
 
     let pool = super::db::get_pool();
-    let row = sqlx::query("SELECT ease_factor, interval_days, repetition FROM flashcards WHERE id = $1")
+    let row = sqlx::query("SELECT email, ease_factor, interval_days, repetition FROM flashcards WHERE id = $1")
         .bind(card_id)
         .fetch_optional(pool)
         .await
@@ -126,6 +126,7 @@ pub async fn review_flashcard_server(card_id: i32, quality: i32) -> Result<(), S
     let ef: f64 = row.get("ease_factor");
     let interval_days: i32 = row.get("interval_days");
     let repetition: i32 = row.get("repetition");
+    let email: String = row.get("email");
 
     let (new_ef, new_interval, new_repetition) = sm2_next(ef, interval_days, repetition, quality);
 
@@ -139,6 +140,8 @@ pub async fn review_flashcard_server(card_id: i32, quality: i32) -> Result<(), S
     .execute(pool)
     .await
     .map_err(|e| ServerFnError::new(format!("Gagal update review flashcard: {e}")))?;
+
+    let _ = crate::services::mission::increment_mission_progress_server(email, "flashcard".to_string()).await;
 
     Ok(())
 }

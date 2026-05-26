@@ -271,6 +271,8 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
         .await
         .map_err(|e| ServerFnError::new(e.to_string()))?;
 
+    let _ = crate::services::mission::increment_mission_progress_server(email.clone(), "quiz".to_string()).await;
+
     let mut final_level_map = std::collections::HashMap::new();
     for l_row in levels_rows {
         let lang_id: String = l_row.get("language_id");
@@ -579,6 +581,8 @@ pub async fn resend_verification_email_server(email: String) -> Result<String, S
 #[server]
 pub async fn submit_exam_result(email: String, language: String, passed: bool, score_gained: i32) -> Result<UserProfile, ServerFnError> {
     let pool = super::db::get_pool();
+
+    let _ = crate::services::mission::increment_mission_progress_server(email.clone(), "quiz".to_string()).await;
 
     let row = sqlx::query("SELECT u.score, COALESCE((CASE WHEN e.double_xp_until >= CURRENT_TIMESTAMP THEN 2 ELSE 1 END), 1) as multiplier FROM users u LEFT JOIN user_engagement_stats e ON u.email = e.email WHERE u.email = $1")
         .bind(&email)

@@ -422,7 +422,16 @@ pub fn Lesson(goal: String) -> Element {
                                         "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-indigo-500/20 cursor-pointer"
                                     },
                                     disabled: is_loading_next_lesson,
-                                    onclick: move |_| lesson_part.set(lesson_part() + 1),
+                                    onclick: {
+                                        let e = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
+                                        move |_| {
+                                            lesson_part.set(lesson_part() + 1);
+                                            let email_for_spawn = e.clone();
+                                            spawn(async move {
+                                                let _ = crate::services::mission::increment_mission_progress_server(email_for_spawn, "lesson".to_string()).await;
+                                            });
+                                        }
+                                    },
                                     if is_loading_next_lesson { "Memuat..." } else { "Lesson Selanjutnya" }
                                 }
                                 Link {
@@ -449,7 +458,16 @@ pub fn Lesson(goal: String) -> Element {
                             "flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer"
                         },
                         disabled: is_loading_next_lesson,
-                        onclick: move |_| lesson_part.set(lesson_part() + 1),
+                        onclick: {
+                            let e = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
+                            move |_| {
+                                lesson_part.set(lesson_part() + 1);
+                                let email_for_spawn = e.clone();
+                                spawn(async move {
+                                    let _ = crate::services::mission::increment_mission_progress_server(email_for_spawn, "lesson".to_string()).await;
+                                });
+                            }
+                        },
                         if is_loading_next_lesson { "Memuat..." } else { "Lanjut Belajar" }
                     }
                     Link {

@@ -531,10 +531,17 @@ pub fn WeaknessPractice(goal: String) -> Element {
                     } else {
                         button {
                             class: "w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-2xl text-base transition-colors shadow-lg hover:shadow-xl cursor-pointer",
-                            onclick: move |_| {
-                                stop_speech();
-                                play_sfx(SFX_WINNER);
-                                finished.set(true);
+                            onclick: {
+                                let email_for_finish = user.email.clone();
+                                move |_| {
+                                    stop_speech();
+                                    play_sfx(SFX_WINNER);
+                                    finished.set(true);
+                                    let e = email_for_finish.clone();
+                                    spawn(async move {
+                                        let _ = crate::services::mission::increment_mission_progress_server(e, "weakness".to_string()).await;
+                                    });
+                                }
                             },
                             "Selesai"
                         }

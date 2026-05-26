@@ -3,7 +3,7 @@ use crate::models::constants::LanguageCourse;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
 use crate::services::flashcard::get_due_flashcard_count_server;
-use crate::services::mission::get_daily_mission_server;
+use crate::services::mission::{get_daily_mission_server, claim_mission_reward_server};
 use crate::services::weakness::{get_top_weaknesses_server, get_weakness_analytics_server, get_skill_progress_7d_server};
 use crate::services::engagement::get_engagement_stats_server;
 use crate::services::auth::update_preferred_language_server;
@@ -363,10 +363,37 @@ pub fn Dashboard() -> Element {
                     div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm",
                         p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2", span { class: "text-teal-500", "🏆" } "Daily Mission (10-15 menit)" }
                         div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Lesson" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.lesson_target}x" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Quiz" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.quiz_target}x" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Weakness" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.weakness_target}x" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Flashcard" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.flashcard_target}x" } }
+                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Lesson" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.lesson_progress}/{m.lesson_target}" } }
+                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Quiz" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.quiz_progress}/{m.quiz_target}" } }
+                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Weakness" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.weakness_progress}/{m.weakness_target}" } }
+                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Flashcard" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.flashcard_progress}/{m.flashcard_target}" } }
+                        }
+                        if m.is_completed && !m.reward_claimed {
+                            button {
+                                class: "mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2",
+                                onclick: {
+                                    let e = user.email.clone();
+                                    move |_| {
+                                        let e_clone = e.clone();
+                                        spawn(async move {
+                                            if let Ok(msg) = claim_mission_reward_server(e_clone).await {
+                                                // Should ideally show a toast and refresh the page or resource
+                                                #[cfg(target_arch = "wasm32")]
+                                                if let Some(window) = web_sys::window() {
+                                                    let _ = window.alert_with_message(&msg);
+                                                    let _ = window.location().reload();
+                                                }
+                                            }
+                                        });
+                                    }
+                                },
+                                "🎁 Klaim Hadiah 50 Koin!"
+                            }
+                        } else if m.is_completed && m.reward_claimed {
+                            div {
+                                class: "mt-4 w-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-2 px-4 rounded-xl text-center flex items-center justify-center gap-2",
+                                "✅ Hadiah misi sudah diklaim hari ini."
+                            }
                         }
                     }
                 }
