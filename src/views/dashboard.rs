@@ -911,12 +911,15 @@ pub fn Dashboard() -> Element {
                         div { class: "bg-white dark:bg-slate-900 rounded-3xl p-8 max-w-md w-full shadow-2xl relative text-center border-4 border-teal-500 transform transition-all",
                             div { class: "absolute -top-6 left-1/2 -translate-x-1/2 w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center text-2xl shadow-lg border-4 border-white", "👋" }
                             h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mt-6 mb-2", "Selamat Datang di LingoMind!" }
-                            p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm font-medium leading-relaxed", 
-                                "Kami siap membantu Anda menguasai bahasa baru:"
-                                br {} br {}
-                                "1. " span { class: "font-bold text-teal-600 dark:text-teal-400", "Roleplay Voice Chat" } ": Berlatih bicara langsung dengan AI." br {}
-                                "2. " span { class: "font-bold text-teal-600 dark:text-teal-400", "Mode Offline" } ": Download materi di bagian bawah dashboard." br {}
-                                "3. " span { class: "font-bold text-teal-600 dark:text-teal-400", "Quiz Battles" } ": Kumpulkan koin dan tantang temanmu!"
+                            div { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm font-medium leading-relaxed", 
+                                p { "Kami siap membantu Anda menguasai bahasa baru dengan fitur-fitur terbaru kami:" }
+                                br {}
+                                div { class: "text-left pl-2 sm:pl-4 space-y-3 mt-4",
+                                    p { "1. " span { class: "font-bold text-teal-600 dark:text-teal-400", "Roleplay Voice Chat & Speech Scoring" } ": Berlatih bicara dengan AI dan dapatkan penilaian akurasi per kata." }
+                                    p { "2. " span { class: "font-bold text-amber-600 dark:text-amber-400", "Beranda Sosial" } ": Pantau pencapaian temanmu dan berikan reaksi dukungan." }
+                                    p { "3. " span { class: "font-bold text-rose-600 dark:text-rose-400", "Sistem Nyawa (Hearts)" } ": Jawab kuis dengan hati-hati! Jika nyawa habis, kamu harus istirahat atau menggunakan koin." }
+                                    p { "4. " span { class: "font-bold text-indigo-600 dark:text-indigo-400", "Peliharaan Virtual (Pet)" } ": Adopsi, beri makan, dan naikkan level hewan peliharaan dari poin belajarmu." }
+                                }
                             }
                             button {
                                 class: "w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer",

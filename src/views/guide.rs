@@ -33,9 +33,9 @@ pub fn Guide() -> Element {
                         div { class: "absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10",
                             div { class: "w-12 h-12 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🎙️" }
-                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "2. Voice Chat & Roleplay" }
+                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "2. Voice Chat & Speech Scoring" }
                             p { class: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed",
-                                "Berlatih bicara langsung dengan AI! Gunakan simulasi Roleplay (seperti di Cafe atau Bandara) untuk melatih kemampuan percakapan dunia nyata menggunakan suara."
+                                "Berlatih bicara langsung dengan AI! Gunakan simulasi Roleplay (seperti di Cafe atau Bandara) untuk melatih kemampuan percakapan dunia nyata. Selain itu, fitur Speech Scoring akan menilai akurasi pengucapan Anda kata per kata dan mewarnainya sesuai kualitas pelafalan."
                             }
                         }
                     }
@@ -81,20 +81,44 @@ pub fn Guide() -> Element {
                         div { class: "absolute top-0 right-0 w-32 h-32 bg-fuchsia-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10",
                             div { class: "w-12 h-12 bg-fuchsia-100 text-fuchsia-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "⚔️" }
-                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "6. Mode Sosial & Quiz Battles" }
+                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "6. Mode Sosial & Beranda Feed" }
                             p { class: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed",
-                                "Follow teman Anda dari Leaderboard dan tantang mereka dalam duel kuis (Quiz Battles). Tentukan topik kuis, kerjakan soal yang sama, dan menangkan hadiah tambahan!"
+                                "Follow teman Anda dan pantau pencapaian mereka melalui Beranda Sosial! Berikan Like/Kudos, dan jika Anda merasa percaya diri, tantang mereka dalam duel kuis (Quiz Battles) untuk mendapatkan hadiah tambahan."
                             }
                         }
                     }
                     
-                    // Card 7: Mode Offline
+                    // Card 7: Sistem Nyawa (Hearts)
+                    div { class: "bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow relative overflow-hidden group",
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
+                        div { class: "relative z-10",
+                            div { class: "w-12 h-12 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "❤️" }
+                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "7. Sistem Nyawa (Hearts)" }
+                            p { class: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed",
+                                "Berhati-hatilah saat menjawab Kuis atau Ujian! Anda dibekali 5 Nyawa. Jika salah menjawab, Nyawa akan berkurang. Jika habis, Anda harus istirahat sampai nyawa pulih, atau menggunakan Koin untuk membelinya kembali."
+                            }
+                        }
+                    }
+
+                    // Card 8: Peliharaan Virtual (Pets)
+                    div { class: "bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow relative overflow-hidden group",
+                        div { class: "absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full blur-3xl -mr-10 -mt-10 transition-transform group-hover:scale-110" }
+                        div { class: "relative z-10",
+                            div { class: "w-12 h-12 bg-indigo-100 text-indigo-600 rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-sm", "🐾" }
+                            h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-3", "8. Peliharaan Virtual (Pets)" }
+                            p { class: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed",
+                                "Adopsi Peliharaan Virtual dan rawat mereka dengan terus belajar! Beri makan mereka agar naik level. Hewan peliharaan yang levelnya tinggi dapat dipamerkan di profil dan leaderboards."
+                            }
+                        }
+                    }
+
+                    // Card 9: Mode Offline
                     div { class: "md:col-span-2 bg-gradient-to-br from-slate-900 to-slate-800 p-6 sm:p-10 rounded-3xl shadow-lg relative overflow-hidden group",
                         div { class: "absolute top-0 right-0 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -mr-20 -mt-20 transition-transform group-hover:scale-110" }
                         div { class: "relative z-10 flex flex-col sm:flex-row gap-6 items-center",
                             div { class: "w-16 h-16 shrink-0 bg-white/10 dark:bg-slate-900/10 backdrop-blur text-teal-400 rounded-2xl flex items-center justify-center text-3xl shadow-sm border border-white/10", "📱" }
                             div { class: "text-center sm:text-left",
-                                h2 { class: "text-2xl font-bold text-white mb-2", "7. PWA & Mode Offline" }
+                                h2 { class: "text-2xl font-bold text-white mb-2", "9. PWA & Mode Offline" }
                                 p { class: "text-slate-300 text-sm sm:text-base leading-relaxed max-w-2xl",
                                     "Instal aplikasi LingoMind langsung ke Homescreen. Anda juga dapat mengunduh materi (Lesson & Flashcard) dari Dashboard agar bisa tetap belajar tanpa koneksi internet!"
                                 }
