@@ -15,3 +15,6 @@ pub mod social;
 pub mod admin;
 pub mod shop;
 pub mod story;
+pub mod league;
+pub mod pet;
+pub mod pronunciation;

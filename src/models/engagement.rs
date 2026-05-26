@@ -11,4 +11,6 @@ pub struct UserEngagementStats {
     pub previous_streak: i32,
     pub double_xp_until: Option<chrono::DateTime<chrono::Utc>>,
     pub exam_retake_tickets: i32,
+    pub hearts: i32,
+    pub last_heart_refill: Option<chrono::DateTime<chrono::Utc>>,
 }

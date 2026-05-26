@@ -8,9 +8,10 @@ use crate::services::gemini::generate_quiz_server;
 use crate::services::gemini::resolve_tts_lang_code;
 use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::update_user_score;
-use crate::services::engagement::update_engagement_after_quiz_server;
+use crate::services::engagement::{update_engagement_after_quiz_server, get_engagement_stats_server, deduct_heart_server};
 use crate::services::flashcard::add_flashcards_server;
 use crate::services::weakness::{log_weakness_server, log_skill_progress_server};
+use crate::services::mission::increment_correct_answers_server;
 use crate::routes::Route;
 const SFX_CORRECT: Asset = asset!("/assets/correct.mp3");
 const SFX_WRONG: Asset = asset!("/assets/wrong.mp3");
@@ -273,6 +274,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let mut current_question_idx = use_signal(|| 0);
     let mut selected_option = use_signal(|| None::<String>);
     let mut score_gained = use_signal(|| 0);
+    let mut correct_answers_count = use_signal(|| 0);
     let quiz_finished = use_signal(|| false);
     let mut show_explanation = use_signal(|| false);
     let mut listen_speed = use_signal(|| 0.95_f32);
@@ -281,9 +283,25 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let session_for_resource = session_state;
 
     let mut is_retrying = use_signal(|| false);
+    let mut hearts_depleted = use_signal(|| false);
 
     let goal_for_resource = goal.clone();
     let goal_for_submit = goal.clone();
+
+    let email_for_stats = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
+    let mut stats_resource = use_resource(move || {
+        let email = email_for_stats.clone();
+        async move { get_engagement_stats_server(email).await }
+    });
+    
+    // Check hearts right away if available
+    use_effect(move || {
+        if let Some(Ok(stats)) = stats_resource.value()() {
+            if stats.hearts <= 0 {
+                hearts_depleted.set(true);
+            }
+        }
+    });
 
     let mut quiz_resource = use_resource(move || {
         let lang = selected_lang_for_resource();
@@ -318,6 +336,19 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" }
                 p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Mencoba ulang menghubungi AI..." }
+            }
+        };
+    }
+    
+    if hearts_depleted() {
+        return rsx! {
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
+                div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-rose-200 dark:border-rose-900/30 max-w-md text-center",
+                    span { class: "text-5xl block mb-4", "💔" }
+                    h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2", "Nyawa Kamu Habis!" }
+                    p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Kamu butuh minimal 1 Nyawa untuk mengikuti kuis ini. Silakan kembali ke Beranda untuk mengisi ulang nyawa kamu." }
+                    Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md", "Kembali ke Beranda" }
+                }
             }
         };
     }
@@ -598,6 +629,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 }
                                 if selected_option() == Some(correct_ans_check.clone()) {
                                     play_sfx(SFX_CORRECT);
+                                    correct_answers_count.set(correct_answers_count() + 1);
                                     let pts = curriculum.iter().find(|c| c.level == active_level).map(|c| c.base_reward_points).unwrap_or(10);
                                     score_gained.set(score_gained() + pts);
                                     if let Some(user) = user_opt.clone() {
@@ -619,6 +651,27 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                     );
                                     let lang = language.clone();
                                     let email2 = user.email.clone();
+                                    
+                                    // Deduct Heart
+                                    let email_for_heart = user.email.clone();
+                                    spawn(async move {
+                                        let _ = deduct_heart_server(email_for_heart).await;
+                                    });
+                                    
+                                    // Local state update
+                                    if let Some(Ok(mut stats)) = stats_resource.value()() {
+                                        stats.hearts -= 1;
+                                        if stats.hearts <= 0 {
+                                            hearts_depleted.set(true);
+                                        }
+                                        // Wait, we can't easily mutate resource value directly. We'll just rely on hearts_depleted state.
+                                        // Let's use a separate signal to trigger depletion if it was the last heart.
+                                        let current_hearts = stats.hearts;
+                                        if current_hearts <= 0 {
+                                            hearts_depleted.set(true);
+                                        }
+                                    }
+                                    
                                     spawn(async move {
                                         let _ = log_weakness_server(user.email, lang, topic, note).await;
                                     });
@@ -650,12 +703,14 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
                                 let language = language.clone();
                                 let score = score_gained();
+                                let total_correct = correct_answers_count();
                                 let battle = battle_id.clone();
                                 let mut session_state = session_state;
                                 let mut quiz_finished = quiz_finished;
                                 let played_topic = Some(goal_for_submit.clone());
                                 spawn(async move {
                                     if !email.is_empty() {
+                                        let _ = increment_correct_answers_server(email.clone(), total_correct).await;
                                         if let Ok(updated_profile) = update_user_score(email.clone(), language, score, played_topic).await {
                                             let _ = update_engagement_after_quiz_server(updated_profile.email.clone(), score).await;
                                             if let Some(bid) = battle {

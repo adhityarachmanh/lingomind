@@ -151,6 +151,12 @@ pub async fn submit_battle_score_server(battle_id: i32, email: String, score: i3
                     .execute(pool)
                     .await
                     .map_err(|e| ServerFnError::new(e.to_string()))?;
+
+                // Update Daily Mission PvP Wins
+                let _ = sqlx::query("INSERT INTO user_daily_missions (email, date) VALUES ($1, CURRENT_DATE) ON CONFLICT DO NOTHING")
+                    .bind(&w_email).execute(pool).await;
+                let _ = sqlx::query("UPDATE user_daily_missions SET pvp_wins_today = pvp_wins_today + 1 WHERE email = $1 AND date = CURRENT_DATE")
+                    .bind(&w_email).execute(pool).await;
                     
                 if w_email == email {
                     return Ok("Selamat! Anda menang dalam tantangan ini dan mendapat 50 Koin!".to_string());

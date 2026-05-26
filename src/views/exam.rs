@@ -6,6 +6,7 @@ use crate::services::gemini::generate_exam_server;
 use crate::services::gemini::resolve_tts_lang_code;
 use crate::services::gemini::sanitize_tts_text;
 use crate::services::auth::submit_exam_result;
+use crate::services::engagement::{get_engagement_stats_server, deduct_heart_server};
 use crate::routes::Route;
 
 const SFX_CORRECT: Asset = asset!("/assets/correct.mp3");
@@ -268,6 +269,21 @@ pub fn Exam(level: String) -> Element {
     
     let mut is_retrying = use_signal(|| false);
     let mut should_load_exam = use_signal(|| false);
+    let mut hearts_depleted = use_signal(|| false);
+    
+    let email_for_stats = user.email.clone();
+    let mut stats_resource = use_resource(move || {
+        let email = email_for_stats.clone();
+        async move { get_engagement_stats_server(email).await }
+    });
+    
+    use_effect(move || {
+        if let Some(Ok(stats)) = stats_resource.value()() {
+            if stats.hearts <= 0 {
+                hearts_depleted.set(true);
+            }
+        }
+    });
 
     let lang_for_cooldown = lang.clone();
     let email_for_cooldown = user.email.clone();
@@ -311,6 +327,19 @@ pub fn Exam(level: String) -> Element {
                 }
             };
         };
+        
+        if hearts_depleted() {
+            return rsx! {
+                div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
+                    div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-rose-200 dark:border-rose-900/30 max-w-md text-center",
+                        h2 { class: "text-6xl mb-4", "💔" }
+                        h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2", "Nyawa Kamu Habis!" }
+                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Kamu butuh minimal 1 Nyawa untuk mengikuti ujian ini." }
+                        Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md", "Isi Ulang di Beranda" }
+                    }
+                }
+            };
+        }
         
         match cooldown_res {
             Ok((on_cooldown, cooldown_msg, tickets)) => {
@@ -717,6 +746,20 @@ pub fn Exam(level: String) -> Element {
                                     correct_answers_count.set(correct_answers_count() + 1);
                                 } else {
                                     play_sfx(SFX_WRONG);
+                                    let email_for_heart = user.email.clone();
+                                    spawn(async move {
+                                        let _ = deduct_heart_server(email_for_heart).await;
+                                    });
+                                    if let Some(Ok(mut stats)) = stats_resource.value()() {
+                                        stats.hearts -= 1;
+                                        if stats.hearts <= 0 {
+                                            hearts_depleted.set(true);
+                                        }
+                                        let current_hearts = stats.hearts;
+                                        if current_hearts <= 0 {
+                                            hearts_depleted.set(true);
+                                        }
+                                    }
                                 }
                                 show_explanation.set(true);
                             },

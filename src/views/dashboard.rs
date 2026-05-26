@@ -11,6 +11,8 @@ use crate::services::badge::get_user_badges_server;
 use crate::services::flashcard::get_due_flashcards_server;
 use crate::services::gemini::generate_lesson_server;
 use crate::services::offline::{save_offline_lesson, save_offline_flashcards};
+use crate::services::pet::{get_active_pet_server, feed_pet_server, get_all_pets_server, set_active_pet_server};
+use crate::services::social::{get_social_feed_server, like_activity_server};
 
 fn format_date_id(date: &str) -> String {
     let parts: Vec<&str> = date.split('-').collect();
@@ -87,6 +89,9 @@ pub fn Dashboard() -> Element {
     let mut active_tab = use_signal(|| "All".to_string());
     let mut offline_download_status = use_signal(String::new);
     let mut show_tour = use_signal(|| false);
+    let mut pet_modal_open = use_signal(|| false);
+    let mut hearts_modal_open = use_signal(|| false);
+    let mut refill_status = use_signal(String::new);
 
     use_effect(move || {
         #[cfg(target_arch = "wasm32")]
@@ -228,7 +233,68 @@ pub fn Dashboard() -> Element {
     });
     let active_battles = battles_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
 
+    let email_for_pet = user.email.clone();
+    let mut pet_resource = use_resource(move || {
+        let e = email_for_pet.clone();
+        async move { get_active_pet_server(e).await }
+    });
+    let active_pet = pet_resource.value()().and_then(|r| r.ok()).flatten();
 
+    let email_for_feed = user.email.clone();
+    let mut feed_status = use_signal(String::new);
+    let feed_pet = move |pet_id: i32| {
+        let e = email_for_feed.clone();
+        let mut pr = pet_resource;
+        let mut er = engagement_resource;
+        spawn(async move {
+            match feed_pet_server(e, pet_id).await {
+                Ok(msg) => {
+                    feed_status.set(msg);
+                    pr.restart();
+                    er.restart();
+                },
+                Err(err) => {
+                    feed_status.set(err.to_string());
+                }
+            }
+        });
+    };
+    let email_for_all_pets = user.email.clone();
+    let mut all_pets_resource = use_resource(move || {
+        let e = email_for_all_pets.clone();
+        let is_open = pet_modal_open();
+        async move {
+            if is_open {
+                get_all_pets_server(e).await
+            } else {
+                Ok(vec![])
+            }
+        }
+    });
+
+    let email_for_set_pet = user.email.clone();
+    let set_active_pet = move |pet_id: i32| {
+        let e = email_for_set_pet.clone();
+        let mut pr = pet_resource;
+        let mut apr = all_pets_resource;
+        let mut pmo = pet_modal_open;
+        spawn(async move {
+            if let Ok(_) = set_active_pet_server(e, pet_id).await {
+                pr.restart();
+                apr.restart();
+                pmo.set(false);
+            }
+        });
+    };
+
+    let email_for_social = user.email.clone();
+    let mut social_feed_resource = use_resource(move || {
+        let e = email_for_social.clone();
+        async move { get_social_feed_server(e).await }
+    });
+    
+    let feed_items = social_feed_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
+    let email_for_like = user.email.clone();
 
     let selected_lang_for_dl = selected_language();
     let email_for_dl = user.email.clone();
@@ -318,11 +384,16 @@ pub fn Dashboard() -> Element {
                     }
                 }
 
-                if let Some(es) = engagement {
+                if let Some(ref es) = engagement {
                     div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-5 shadow-sm",
                         div { class: "flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-3",
                             p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2", span { class: "text-amber-500", "🔥" } "Streak & Pencapaian" }
                             div { class: "flex gap-2 items-center",
+                                button {
+                                    class: "px-3 py-1 bg-rose-50/30 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg text-xs font-bold border border-rose-200 dark:border-rose-900/50 shadow-sm cursor-pointer hover:bg-rose-100 transition-colors",
+                                    onclick: move |_| { refill_status.set(String::new()); hearts_modal_open.set(true); },
+                                    "❤️ {es.hearts}/5"
+                                }
                                 div { class: "px-3 py-1 bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-lg text-xs font-bold border border-amber-200 dark:border-amber-900/50 shadow-sm", "🪙 {es.coins} Koin" }
                                 div { class: "px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold border border-blue-200 shadow-sm", "❄️ {es.streak_freezes} Freeze" }
                                 Link {
@@ -361,38 +432,122 @@ pub fn Dashboard() -> Element {
 
                 if let Some(m) = mission {
                     div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm",
-                        p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-2", span { class: "text-teal-500", "🏆" } "Daily Mission (10-15 menit)" }
-                        div { class: "grid grid-cols-2 md:grid-cols-4 gap-3 text-xs",
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Lesson" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.lesson_progress}/{m.lesson_target}" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Quiz" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.quiz_progress}/{m.quiz_target}" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Weakness" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.weakness_progress}/{m.weakness_target}" } }
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-3", p { class: "text-slate-500 dark:text-slate-400 font-semibold mb-1", "Flashcard" } p { class: "text-base font-black text-slate-800 dark:text-slate-200", "{m.flashcard_progress}/{m.flashcard_target}" } }
-                        }
-                        if m.is_completed && !m.reward_claimed {
-                            button {
-                                class: "mt-4 w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-4 rounded-xl shadow-md transition-colors cursor-pointer flex items-center justify-center gap-2",
-                                onclick: {
-                                    let e = user.email.clone();
-                                    move |_| {
-                                        let e_clone = e.clone();
-                                        spawn(async move {
-                                            if let Ok(msg) = claim_mission_reward_server(e_clone).await {
-                                                // Should ideally show a toast and refresh the page or resource
-                                                #[cfg(target_arch = "wasm32")]
-                                                if let Some(window) = web_sys::window() {
-                                                    let _ = window.alert_with_message(&msg);
-                                                    let _ = window.location().reload();
-                                                }
+                        p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2", span { class: "text-amber-500", "📜" } "Quest Harian Bertingkat" }
+                        div { class: "grid grid-cols-1 sm:grid-cols-3 gap-4",
+                            
+                            // Tier 1: Peti Kayu
+                            div { class: format!("border {} rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden transition-all", if m.tier1_claimed { "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 opacity-70" } else { "border-amber-200 dark:border-amber-900 bg-gradient-to-b from-white to-amber-50 dark:from-slate-900 dark:to-amber-950/20" }),
+                                div { class: "text-4xl mb-2", "🪵" }
+                                h4 { class: "font-black text-amber-800 dark:text-amber-500 text-sm", "Peti Kayu" }
+                                p { class: "text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium min-h-[3rem]", "Selesaikan 1 Kuis Apapun." }
+                                
+                                // Progress Bar
+                                div { class: "w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-3 mb-2",
+                                    div { class: "bg-amber-500 h-2 rounded-full", width: "{((m.quiz_progress as f32 / 1.0) * 100.0).min(100.0)}%" }
+                                }
+                                p { class: "text-[10px] font-bold text-slate-500 mb-3", "{m.quiz_progress}/1 Selesai" }
+                                
+                                if m.tier1_claimed {
+                                    button { class: "w-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Diklaim" }
+                                } else if m.quiz_progress >= 1 {
+                                    button {
+                                        class: "w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-1.5 rounded-lg text-xs shadow-md animate-pulse cursor-pointer",
+                                        onclick: {
+                                            let e = user.email.clone();
+                                            move |_| {
+                                                let e_clone = e.clone();
+                                                spawn(async move {
+                                                    if let Ok(msg) = claim_mission_reward_server(e_clone, 1).await {
+                                                        #[cfg(target_arch = "wasm32")]
+                                                        if let Some(window) = web_sys::window() {
+                                                            let _ = window.alert_with_message(&msg);
+                                                            let _ = window.location().reload();
+                                                        }
+                                                    }
+                                                });
                                             }
-                                        });
+                                        },
+                                        "Klaim 20 Koin!"
                                     }
-                                },
-                                "🎁 Klaim Hadiah 50 Koin!"
+                                } else {
+                                    button { class: "w-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Terkunci" }
+                                }
                             }
-                        } else if m.is_completed && m.reward_claimed {
-                            div {
-                                class: "mt-4 w-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-2 px-4 rounded-xl text-center flex items-center justify-center gap-2",
-                                "✅ Hadiah misi sudah diklaim hari ini."
+                            
+                            // Tier 2: Peti Perak
+                            div { class: format!("border {} rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden transition-all", if m.tier2_claimed { "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 opacity-70" } else { "border-slate-300 dark:border-slate-600 bg-gradient-to-b from-white to-slate-100 dark:from-slate-900 dark:to-slate-800" }),
+                                div { class: "text-4xl mb-2 drop-shadow-md", "🥈" }
+                                h4 { class: "font-black text-slate-700 dark:text-slate-300 text-sm", "Peti Perak" }
+                                p { class: "text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium min-h-[3rem]", "Jawab 50 pertanyaan dengan benar hari ini." }
+                                
+                                div { class: "w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-3 mb-2",
+                                    div { class: "bg-slate-400 h-2 rounded-full", width: "{((m.correct_answers_today as f32 / 50.0) * 100.0).min(100.0)}%" }
+                                }
+                                p { class: "text-[10px] font-bold text-slate-500 mb-3", "{m.correct_answers_today}/50 Benar" }
+                                
+                                if m.tier2_claimed {
+                                    button { class: "w-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Diklaim" }
+                                } else if m.correct_answers_today >= 50 {
+                                    button {
+                                        class: "w-full bg-slate-700 hover:bg-slate-800 text-white font-bold py-1.5 rounded-lg text-xs shadow-md animate-pulse cursor-pointer",
+                                        onclick: {
+                                            let e = user.email.clone();
+                                            move |_| {
+                                                let e_clone = e.clone();
+                                                spawn(async move {
+                                                    if let Ok(msg) = claim_mission_reward_server(e_clone, 2).await {
+                                                        #[cfg(target_arch = "wasm32")]
+                                                        if let Some(window) = web_sys::window() {
+                                                            let _ = window.alert_with_message(&msg);
+                                                            let _ = window.location().reload();
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        },
+                                        "Klaim 50 Koin!"
+                                    }
+                                } else {
+                                    button { class: "w-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Terkunci" }
+                                }
+                            }
+                            
+                            // Tier 3: Peti Emas
+                            div { class: format!("border {} rounded-xl p-4 flex flex-col items-center text-center relative overflow-hidden transition-all", if m.tier3_claimed { "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 opacity-70" } else { "border-yellow-300 dark:border-yellow-700 bg-gradient-to-b from-white to-yellow-50 dark:from-slate-900 dark:to-yellow-900/20" }),
+                                div { class: "text-4xl mb-2 drop-shadow-xl", "🥇" }
+                                h4 { class: "font-black text-yellow-600 dark:text-yellow-500 text-sm", "Peti Emas" }
+                                p { class: "text-xs text-slate-600 dark:text-slate-400 mt-1 font-medium min-h-[3rem]", "Menangkan 3 PvP Battle hari ini." }
+                                
+                                div { class: "w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 mt-3 mb-2",
+                                    div { class: "bg-yellow-500 h-2 rounded-full shadow-[0_0_8px_rgba(234,179,8,0.5)]", width: "{((m.pvp_wins_today as f32 / 3.0) * 100.0).min(100.0)}%" }
+                                }
+                                p { class: "text-[10px] font-bold text-slate-500 mb-3", "{m.pvp_wins_today}/3 Menang" }
+                                
+                                if m.tier3_claimed {
+                                    button { class: "w-full bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Diklaim" }
+                                } else if m.pvp_wins_today >= 3 {
+                                    button {
+                                        class: "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-yellow-950 font-bold py-1.5 rounded-lg text-xs shadow-lg animate-bounce cursor-pointer",
+                                        onclick: {
+                                            let e = user.email.clone();
+                                            move |_| {
+                                                let e_clone = e.clone();
+                                                spawn(async move {
+                                                    if let Ok(msg) = claim_mission_reward_server(e_clone, 3).await {
+                                                        #[cfg(target_arch = "wasm32")]
+                                                        if let Some(window) = web_sys::window() {
+                                                            let _ = window.alert_with_message(&msg);
+                                                            let _ = window.location().reload();
+                                                        }
+                                                    }
+                                                });
+                                            }
+                                        },
+                                        "Klaim 100 Koin + Bonus!"
+                                    }
+                                } else {
+                                    button { class: "w-full bg-slate-100 dark:bg-slate-800 text-slate-400 font-bold py-1.5 rounded-lg text-xs cursor-not-allowed", disabled: true, "Terkunci" }
+                                }
                             }
                         }
                     }
@@ -428,6 +583,53 @@ pub fn Dashboard() -> Element {
 
                 div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2",
                     
+                    if let Some(pet) = active_pet.as_ref() {
+                        div { class: "bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-800 dark:to-slate-900 border border-amber-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col items-center sm:col-span-2 lg:col-span-3 text-center",
+                            h3 { class: "font-black text-xl text-amber-800 dark:text-amber-400 mb-4", "Peliharaan Saya" }
+                            
+                            // Avatar Pet (Floating effect)
+                            div { class: "w-32 h-32 bg-white/50 dark:bg-slate-800/50 rounded-full flex items-center justify-center text-6xl shadow-inner mb-2 animate-[bounce_3s_ease-in-out_infinite] cursor-pointer hover:scale-110 transition-transform drop-shadow-xl",
+                                "{pet.emoji}"
+                            }
+                            
+                            p { class: "font-bold text-lg text-slate-800 dark:text-slate-200", "{pet.label} (Lv. {pet.stage})" }
+                            
+                            // EXP Bar
+                            div { class: "w-full max-w-xs mt-3 bg-white/60 dark:bg-slate-950/60 rounded-full h-4 overflow-hidden shadow-inner border border-amber-200/50 dark:border-slate-700 relative",
+                                {
+                                    let max_exp = if pet.stage == 1 { 100 } else if pet.stage == 2 { 300 } else { 1000 };
+                                    let percentage = if pet.stage >= 4 { 100 } else { (pet.exp as f32 / max_exp as f32 * 100.0) as i32 };
+                                    let max_exp_str = if pet.stage >= 4 { "Max".to_string() } else { max_exp.to_string() };
+                                    rsx! {
+                                        div {
+                                            class: "h-full bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full transition-all duration-500",
+                                            style: "width: {percentage}%"
+                                        }
+                                        div { class: "absolute inset-0 flex items-center justify-center text-[9px] font-black text-slate-700/50", "{pet.exp}/{max_exp_str}" }
+                                    }
+                                }
+                            }
+                            
+                            button {
+                                class: "mt-4 bg-gradient-to-r from-orange-400 to-rose-400 hover:from-orange-500 hover:to-rose-500 text-white font-black py-3 px-8 rounded-full shadow-lg shadow-rose-500/30 transition-all hover:scale-105 active:scale-95 flex items-center gap-2",
+                                onclick: {
+                                    let id = pet.id;
+                                    move |_| feed_pet(id)
+                                },
+                                "🍎 Beri Makan (50 Koin)"
+                            }
+                            if !feed_status().is_empty() {
+                                p { class: "text-xs font-bold mt-2 text-rose-500 animate-pulse", "{feed_status}" }
+                            }
+
+                            button {
+                                class: "mt-3 text-xs font-bold text-amber-700 dark:text-amber-500 hover:text-amber-800 dark:hover:text-amber-400 bg-amber-100 dark:bg-slate-800 px-4 py-2 rounded-xl transition-colors",
+                                onclick: move |_| pet_modal_open.set(true),
+                                "🔄 Ganti Peliharaan"
+                            }
+                        }
+                    }
+
                     // Arena Pertarungan
                     div { class: "bg-gradient-to-br from-indigo-500 to-purple-600 border border-indigo-200 rounded-2xl p-5 hover:shadow-lg transition-all group sm:col-span-2 lg:col-span-3 text-white relative overflow-hidden",
                         div { class: "relative z-10",
@@ -486,7 +688,71 @@ pub fn Dashboard() -> Element {
                     Link { to: Route::WeaknessPractice { goal: goal.clone() }, class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-amber-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-amber-500 text-lg group-hover:text-amber-600 dark:text-amber-400 transition-colors", "Practice Weakness" } p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "Fokus latihan topik paling lemah." } }
                     Link { to: Route::WeaknessAnalytics {}, class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-fuchsia-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-fuchsia-500 text-lg group-hover:text-fuchsia-600 transition-colors", "Weakness Analytics" } p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "Lihat tren kelemahan detail." } }
                     Link { to: Route::FlashcardReview {}, class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-rose-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-rose-500 text-lg group-hover:text-rose-600 dark:text-rose-400 transition-colors", "Flashcard Review" } p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "Review {due_count} kartu jatuh tempo." } }
+                    Link { to: Route::PronunciationPractice {}, class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-teal-400 hover:shadow-md transition-all group", h3 { class: "font-bold text-teal-500 text-lg group-hover:text-teal-600 dark:text-teal-400 transition-colors", "Speech Scoring" } p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "Latih akurasi pronunciation." } }
                     Link { to: Route::Leaderboard {}, class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-yellow-400 hover:shadow-md transition-all group sm:col-span-2 lg:col-span-3", h3 { class: "font-bold text-yellow-500 text-lg group-hover:text-yellow-600 transition-colors", "🏆 Leaderboard" } p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "Lihat peringkat poin semua pengguna." } }
+                }
+            }
+            
+            // Timeline Feed
+            div { class: "mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm sm:col-span-2 lg:col-span-3",
+                div { class: "flex justify-between items-center mb-4",
+                    h3 { class: "font-black text-xl text-slate-800 dark:text-slate-200 flex items-center gap-2", span { class: "text-2xl", "📰" } "Beranda Aktivitas Teman" }
+                    button { class: "text-slate-400 hover:text-slate-600 dark:hover:text-slate-300", onclick: move |_| social_feed_resource.restart(), "🔄 Refresh" }
+                }
+                
+                if feed_items.is_empty() {
+                    div { class: "bg-slate-50 dark:bg-slate-950 rounded-xl p-6 text-center border border-slate-100 dark:border-slate-800",
+                        p { class: "text-slate-500 dark:text-slate-400 font-medium", "Belum ada aktivitas baru dari teman yang Anda ikuti." }
+                        Link { to: Route::Leaderboard {}, class: "text-indigo-500 hover:underline text-sm font-bold mt-2 inline-block", "Cari teman baru di Leaderboard" }
+                    }
+                } else {
+                    div { class: "space-y-4",
+                        for item in feed_items {
+                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-4 flex gap-4 transition-all hover:shadow-md",
+                                div { class: "w-12 h-12 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-2xl shadow-sm shrink-0 border border-slate-200 dark:border-slate-700",
+                                    "{item.emoji}"
+                                }
+                                div { class: "flex-1 min-w-0",
+                                    p { class: "font-bold text-slate-800 dark:text-slate-200", "{item.full_name}" }
+                                    p { class: "text-sm text-slate-600 dark:text-slate-300 mt-0.5", "{item.content}" }
+                                    p { class: "text-[10px] text-slate-400 mt-1", "{item.created_at}" }
+                                }
+                                div { class: "flex items-center shrink-0",
+                                    button {
+                                        class: format!("px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors {}", 
+                                            if item.has_liked { "bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400 cursor-default" } 
+                                            else { "bg-slate-200 text-slate-600 hover:bg-pink-50 hover:text-pink-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700" }
+                                        ),
+                                        disabled: item.has_liked,
+                                        onclick: {
+                                            let id = item.id;
+                                            let e_like = email_for_like.clone();
+                                            let mut sfr = social_feed_resource;
+                                            move |_| {
+                                                if !item.has_liked {
+                                                    let e = e_like.clone();
+                                                    spawn(async move {
+                                                        if let Ok(_) = like_activity_server(id, e).await {
+                                                            sfr.restart();
+                                                        }
+                                                    });
+                                                }
+                                            }
+                                        },
+                                        if item.has_liked {
+                                            span { "🎉 {item.likes_count}" }
+                                        } else {
+                                            if item.likes_count > 0 {
+                                                span { "Kasih Selamat 🎉 {item.likes_count}" }
+                                            } else {
+                                                span { "Kasih Selamat 🎉" }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -656,6 +922,147 @@ pub fn Dashboard() -> Element {
                                 class: "w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-3.5 rounded-xl transition-all active:scale-95 shadow-md cursor-pointer",
                                 onclick: complete_tour,
                                 "Mulai Belajar Sekarang 🚀"
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Pet Collection Modal
+            if pet_modal_open() {
+                div { class: "fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4",
+                    div { class: "bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-8 w-full max-w-2xl shadow-2xl relative max-h-[80vh] flex flex-col",
+                        
+                        button {
+                            class: "absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors cursor-pointer",
+                            onclick: move |_| pet_modal_open.set(false),
+                            "✕"
+                        }
+                        
+                        h3 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-6 text-center flex items-center justify-center gap-2", span { class: "text-3xl", "🐾" } "Koleksi Peliharaan" }
+                        
+                        div { class: "flex-1 overflow-y-auto pr-2",
+                            match all_pets_resource.value()() {
+                                None => rsx! { div { class: "text-center py-10 text-slate-500", "Memuat koleksi..." } },
+                                Some(Err(e)) => rsx! { div { class: "text-center py-10 text-rose-500", "{e}" } },
+                                Some(Ok(pets)) => {
+                                    if pets.is_empty() {
+                                        rsx! {
+                                            div { class: "text-center py-10 text-slate-500", "Anda belum memiliki peliharaan. Beli telur di Toko!" }
+                                        }
+                                    } else {
+                                        rsx! {
+                                            div { class: "grid grid-cols-2 sm:grid-cols-3 gap-4",
+                                                for pet in pets {
+                                                    {
+                                                        let is_current = active_pet.as_ref().map(|p| p.id) == Some(pet.id);
+                                                        let p_id = pet.id;
+                                                        rsx! {
+                                                            div { class: format!("border-2 rounded-2xl p-4 flex flex-col items-center text-center transition-all {}", if is_current { "border-amber-400 bg-amber-50 dark:bg-amber-900/20" } else { "border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 hover:border-amber-300" }),
+                                                                div { class: "text-5xl mb-3 drop-shadow-md", "{pet.emoji}" }
+                                                                p { class: "font-bold text-sm text-slate-800 dark:text-slate-200 line-clamp-1", "{pet.label}" }
+                                                                p { class: "text-xs font-bold text-slate-500 mb-4", "Lv. {pet.stage} | {pet.exp} EXP" }
+                                                                
+                                                                if is_current {
+                                                                    span { class: "text-xs font-black text-amber-600 bg-amber-200 px-3 py-1.5 rounded-lg", "Sedang Dipakai" }
+                                                                } else {
+                                                                    button {
+                                                                        class: "text-xs font-bold text-white bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 px-4 py-2 rounded-lg transition-colors cursor-pointer w-full",
+                                                                        onclick: {
+                                                                            let email_copy = user.email.clone();
+                                                                            let mut pr = pet_resource;
+                                                                            let mut apr = all_pets_resource;
+                                                                            let mut pmo = pet_modal_open;
+                                                                            move |_| {
+                                                                                let e = email_copy.clone();
+                                                                                spawn(async move {
+                                                                                    if let Ok(_) = set_active_pet_server(e, p_id).await {
+                                                                                        pr.restart();
+                                                                                        apr.restart();
+                                                                                        pmo.set(false);
+                                                                                    }
+                                                                                });
+                                                                            }
+                                                                        },
+                                                                        "Jadikan Utama"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Modal Hearts Refill
+        if hearts_modal_open() {
+            div { class: "fixed inset-0 z-50 flex items-center justify-center p-4",
+                div { class: "absolute inset-0 bg-slate-900/40 backdrop-blur-sm", onclick: move |_| hearts_modal_open.set(false) }
+                div { class: "bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl max-w-sm w-full relative z-10",
+                    div { class: "flex justify-between items-center mb-4",
+                        h2 { class: "text-lg font-black text-slate-800 dark:text-slate-200 flex items-center gap-2", "❤️ Isi Ulang Nyawa" }
+                        button { class: "text-slate-400 hover:text-slate-600", onclick: move |_| hearts_modal_open.set(false), "✕" }
+                    }
+                    if let Some(ref es) = engagement {
+                        if es.hearts >= 5 {
+                            p { class: "text-slate-600 dark:text-slate-400 text-sm mb-4 text-center", "Nyawa kamu sudah penuh! Teruslah belajar!" }
+                            button {
+                                class: "w-full py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold",
+                                onclick: move |_| hearts_modal_open.set(false),
+                                "Tutup"
+                            }
+                        } else {
+                            p { class: "text-slate-600 dark:text-slate-400 text-sm mb-4 text-center", "Nyawa kamu saat ini {es.hearts}/5. Kamu butuh nyawa untuk mengerjakan Kuis dan Ujian." }
+                            
+                            if !refill_status().is_empty() {
+                                p { class: "text-sm text-center mb-3 font-medium text-rose-500", "{refill_status}" }
+                            }
+                            
+                            div { class: "flex flex-col gap-3",
+                                {
+                                    let email_for_coin_refill = user.email.clone();
+                                    rsx! {
+                                        button {
+                                            class: "w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
+                                            onclick: move |_| {
+                                                let e = email_for_coin_refill.clone();
+                                                spawn(async move {
+                                                    match crate::services::engagement::refill_hearts_with_coins_server(e).await {
+                                                        Ok(_) => {
+                                                            hearts_modal_open.set(false);
+                                                        },
+                                                        Err(err) => refill_status.set(err.to_string()),
+                                                    }
+                                                });
+                                            },
+                                            "🪙 Beli Full Nyawa (300 Koin)"
+                                        }
+                                    }
+                                }
+                                {
+                                    let email_for_ad_refill = user.email.clone();
+                                    rsx! {
+                                        button {
+                                            class: "w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
+                                            onclick: move |_| {
+                                                let e = email_for_ad_refill.clone();
+                                                spawn(async move {
+                                                    let _ = crate::services::engagement::refill_hearts_with_ad_server(e).await;
+                                                    hearts_modal_open.set(false);
+                                                });
+                                            },
+                                            "📺 Tonton Iklan (Coming Soon)"
+                                        }
+                                    }
+                                }
                             }
                         }
                     }

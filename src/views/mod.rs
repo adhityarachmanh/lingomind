@@ -9,6 +9,7 @@ pub mod chat;
 pub mod voice_chat;
 
 pub mod flashcard_review;
+pub mod pronunciation_practice;
 
 pub mod weakness_practice;
 

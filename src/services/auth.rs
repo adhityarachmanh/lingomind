@@ -256,14 +256,39 @@ pub async fn update_user_score(email: String, language: String, score_delta: i32
     .await
     .map_err(|e| ServerFnError::new(e.to_string()))?;
 
-    let update_row = sqlx::query(
-        "UPDATE users SET score = score + COALESCE((SELECT CASE WHEN double_xp_until >= CURRENT_TIMESTAMP THEN $1 * 2 ELSE $1 END FROM user_engagement_stats WHERE email = $2), $1) WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
+    let actual_score_delta: i32 = sqlx::query_scalar(
+        "SELECT COALESCE((SELECT CASE WHEN double_xp_until >= CURRENT_TIMESTAMP THEN $1 * 2 ELSE $1 END FROM user_engagement_stats WHERE email = $2), $1)"
     )
     .bind(score_delta)
     .bind(&email)
     .fetch_one(pool)
     .await
+    .unwrap_or(score_delta);
+
+    // Update global score
+    let update_row = sqlx::query(
+        "UPDATE users SET score = score + $1 WHERE email = $2 RETURNING full_name, email, preferred_language, score, role"
+    )
+    .bind(actual_score_delta)
+    .bind(&email)
+    .fetch_one(pool)
+    .await
     .map_err(|e| ServerFnError::new(format!("Gagal memperbarui data user: {}", e)))?;
+
+    // Update league score (if they are in a league for the current week)
+    let _ = sqlx::query(
+        r#"
+        UPDATE user_league_members
+        SET league_score = league_score + $1
+        WHERE email = $2 AND group_id IN (
+            SELECT id FROM league_groups WHERE week_start_date = date_trunc('week', CURRENT_DATE)
+        )
+        "#
+    )
+    .bind(actual_score_delta)
+    .bind(&email)
+    .execute(pool)
+    .await;
 
     let levels_rows = sqlx::query("SELECT language_id, base_level, topic_idx FROM user_language_progress WHERE email = $1")
         .bind(&email)
@@ -647,7 +672,14 @@ pub async fn submit_exam_result(email: String, language: String, passed: bool, s
     if passed && (topic_idx as usize) >= topics_in_level {
         topic_idx = 0;
         if current_level_pos + 1 < topics_res.len() {
+            let old_level = base_level.clone();
             base_level = topics_res[current_level_pos + 1].level.clone();
+            
+            let _ = crate::services::social::log_activity_server(
+                email.clone(), 
+                "level_up".to_string(), 
+                format!("Berhasil naik ke Level {} di bahasa {}!", base_level, language)
+            ).await;
         }
     }
 

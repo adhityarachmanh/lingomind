@@ -2,7 +2,8 @@
 use dioxus::prelude::*;
 use crate::models::user::UserProfile;
 use crate::models::social::SocialUser;
-use crate::services::leaderboard::get_leaderboard_server;
+use crate::models::league::LeagueMember;
+use crate::services::leaderboard::{get_leaderboard_server, get_weekly_league_server};
 use crate::services::social::{get_following_leaderboard_server, search_users_server, toggle_follow_server};
 use crate::services::battle::create_battle_server;
 use crate::routes::Route;
@@ -12,7 +13,7 @@ pub fn Leaderboard() -> Element {
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
     let (user_opt, is_ready) = session_state();
 
-    let mut active_tab = use_signal(|| "global".to_string()); // "global", "teman", "cari"
+    let mut active_tab = use_signal(|| "liga".to_string()); // "liga", "global", "teman", "cari"
     let mut search_query = use_signal(String::new);
     let mut challenge_modal_open = use_signal(|| false);
     let mut target_email = use_signal(String::new);
@@ -29,6 +30,12 @@ pub fn Leaderboard() -> Element {
 
     let current_email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
     let current_user_name = user_opt.as_ref().map(|u| u.full_name.clone()).unwrap_or_default();
+
+    let current_email_for_league = current_email.clone();
+    let league_resource = use_resource(move || {
+        let e = current_email_for_league.clone();
+        async move { get_weekly_league_server(e).await }
+    });
 
     let global_resource = use_resource(move || async move {
         get_leaderboard_server(10).await
@@ -52,7 +59,6 @@ pub fn Leaderboard() -> Element {
             }
         }
     });
-
 
     let handle_challenge = move |e: String| {
         target_email.set(e);
@@ -99,26 +105,48 @@ pub fn Leaderboard() -> Element {
                 }
 
                 // Tabs
-                div { class: "flex bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-1",
+                div { class: "flex bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-1 overflow-x-auto",
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "global" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
+                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "liga" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        onclick: move |_| active_tab.set("liga".to_string()),
+                        "🛡️ Liga Mingguan"
+                    }
+                    button {
+                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "global" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
                         onclick: move |_| active_tab.set("global".to_string()),
                         "🌍 Global"
                     }
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "teman" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
+                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "teman" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
                         onclick: move |_| active_tab.set("teman".to_string()),
                         "👥 Teman"
                     }
                     button {
-                        class: format!("flex-1 py-3 text-sm font-bold rounded-xl transition-all {}", if active_tab() == "cari" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-950" }),
+                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "cari" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
                         onclick: move |_| active_tab.set("cari".to_string()),
                         "🔍 Cari"
                     }
                 }
 
                 // Content
-                if active_tab() == "global" {
+                if active_tab() == "liga" {
+                    match league_resource.value()() {
+                        None => rsx! { div { class: "text-center py-10", "Memuat data liga minggu ini..." } },
+                        Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
+                        Some(Ok(data)) => rsx! {
+                            div { class: "mb-6 text-center space-y-2",
+                                h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200", 
+                                    if data.division == "Bronze" { "🥉 Liga Perunggu" }
+                                    else if data.division == "Silver" { "🥈 Liga Perak" }
+                                    else if data.division == "Gold" { "🥇 Liga Emas" }
+                                    else { "💎 Liga Berlian" }
+                                }
+                                p { class: "text-sm font-bold text-slate-500", "Sisa {data.days_left} hari lagi minggu ini!" }
+                            }
+                            LeagueList { members: data.members, current_name: current_user_name.clone() }
+                        }
+                    }
+                } else if active_tab() == "global" {
                     match global_resource.value()() {
                         None => rsx! { div { class: "text-center py-10", "Memuat global leaderboard..." } },
                         Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
@@ -279,6 +307,7 @@ fn get_frame_class(active_frame: Option<&str>, base_classes: &str, is_me: bool, 
         format!("{} {}", base_classes, if is_me { me_bg } else { default_bg })
     }
 }
+
 pub fn get_name_color_class(color: Option<&str>) -> &'static str {
     match color {
         Some("gold") => "bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-yellow-600 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] font-black",
@@ -297,7 +326,62 @@ pub fn render_title_badge(title: Option<&str>) -> Element {
     }
 }
 
-// Komponen Pembantu untuk menampilkan list leaderboard (Global / Teman)
+#[component]
+fn LeagueList(members: Vec<LeagueMember>, current_name: String) -> Element {
+    rsx! {
+        div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden",
+            div { class: "divide-y divide-slate-100",
+                for member in members {
+                    {
+                        let is_me = member.full_name == current_name;
+                        let bg_class = if is_me {
+                            "bg-amber-50/50 dark:bg-amber-900/30 border-l-4 border-amber-400"
+                        } else if member.status_zone == "promosi" {
+                            "bg-emerald-50/20 dark:bg-emerald-900/10 hover:bg-emerald-50"
+                        } else if member.status_zone == "degradasi" {
+                            "bg-rose-50/20 dark:bg-rose-900/10 hover:bg-rose-50"
+                        } else {
+                            "hover:bg-slate-50 dark:hover:bg-slate-950"
+                        };
+
+                        let rank_color = if member.status_zone == "promosi" {
+                            "text-emerald-600 bg-emerald-100"
+                        } else if member.status_zone == "degradasi" {
+                            "text-rose-600 bg-rose-100"
+                        } else {
+                            "text-slate-500 bg-slate-100"
+                        };
+
+                        rsx! {
+                            div { class: "flex items-center gap-4 px-6 py-3.5 transition-colors {bg_class}",
+                                div { class: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 {rank_color}", "{member.rank}" }
+                                div { class: "flex-1 min-w-0 flex items-center flex-wrap",
+                                    Link {
+                                        to: Route::Profile { email: member.email.clone() },
+                                        class: "hover:underline",
+                                        p { class: format!("text-sm font-bold truncate {} {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }, get_name_color_class(member.active_name_color.as_deref())), "{member.full_name}" }
+                                    }
+                                    {render_title_badge(member.active_title.as_deref())}
+                                    if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
+                                    
+                                    if member.status_zone == "promosi" {
+                                        span { class: "ml-2 text-[10px] font-bold text-emerald-600 uppercase flex items-center", "⬆ Promosi" }
+                                    }
+                                    if member.status_zone == "degradasi" {
+                                        span { class: "ml-2 text-[10px] font-bold text-rose-600 uppercase flex items-center", "⬇ Degradasi" }
+                                    }
+                                }
+                                div { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right shrink-0", "{member.league_score} pts" }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 #[component]
 fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bool, on_challenge: EventHandler<String>) -> Element {
     let top3: Vec<_> = entries.iter().take(3).cloned().collect();

@@ -1,0 +1,2 @@
+ALTER TABLE user_engagement_stats ADD COLUMN IF NOT EXISTS hearts INT NOT NULL DEFAULT 5;
+ALTER TABLE user_engagement_stats ADD COLUMN IF NOT EXISTS last_heart_refill TIMESTAMP WITH TIME ZONE;

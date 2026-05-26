@@ -28,3 +28,16 @@ pub struct QuizBattle {
     pub challenged_score: Option<i32>,
     pub status: String,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct SocialFeedItem {
+    pub id: i32,
+    pub email: String,
+    pub full_name: String,
+    pub emoji: String, // Pet emoji or avatar placeholder
+    pub activity_type: String,
+    pub content: String,
+    pub likes_count: i32,
+    pub created_at: String,
+    pub has_liked: bool,
+}

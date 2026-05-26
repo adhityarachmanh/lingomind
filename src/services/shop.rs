@@ -220,6 +220,33 @@ pub async fn buy_shop_item_server(email: String, item_id: i32) -> Result<String,
                     return_message = "Mystery Box: JACKPOT! 🎉 Kamu dapat 100 koin!".to_string();
                 }
             },
+            eff if eff.starts_with("egg_") => {
+                let pet_type = eff.trim_start_matches("egg_");
+
+                // Cek apakah sudah punya pet jenis ini
+                let has_pet: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM user_pets WHERE email = $1 AND pet_type = $2")
+                    .bind(&email).bind(pet_type).fetch_one(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+
+                if has_pet.0 > 0 {
+                    return Err(ServerFnError::new("Anda sudah memiliki jenis peliharaan ini!"));
+                }
+
+                // Cek apakah sudah ada pet yang aktif
+                let active_count: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM user_pets WHERE email = $1 AND is_active = true")
+                    .bind(&email).fetch_one(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+                
+                let is_active = active_count.0 == 0; // Otomatis aktif jika ini pet pertama
+                
+                sqlx::query("INSERT INTO user_pets (email, pet_type, stage, exp, is_active) VALUES ($1, $2, 1, 0, $3)")
+                    .bind(&email).bind(pet_type).bind(is_active)
+                    .execute(&mut *tx).await.map_err(|e| ServerFnError::new(e.to_string()))?;
+                    
+                let _ = crate::services::social::log_activity_server(
+                    email.clone(), 
+                    "pet_hatched".to_string(), 
+                    format!("Baru saja menetaskan {}!", name)
+                ).await;
+            },
             _ => {
                 // Default fallback (no extra action needed for unknown types right now)
             }

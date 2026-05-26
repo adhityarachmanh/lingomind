@@ -6,6 +6,7 @@ pub mod tts;
 pub mod placement;
 pub mod exam;
 pub mod story;
+pub mod pronunciation;
 
 const DEFAULT_LITE_MODEL: &str = "gemini-2.5-flash-lite";
 
@@ -54,6 +55,7 @@ pub use tts::sanitize_tts_text;
 pub use tts::split_tts_segments;
 pub use exam::generate_exam_server;
 pub use story::generate_story_server;
+pub use pronunciation::{evaluate_pronunciation_server, generate_pronunciation_sentences_server};
 
 #[cfg(not(target_arch = "wasm32"))]
 pub async fn gemini_post_with_retry(

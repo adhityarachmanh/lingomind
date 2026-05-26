@@ -22,3 +22,4 @@ pub mod shop;
 pub mod curriculum;
 pub mod admin;
 pub mod profile;
+pub mod pet;

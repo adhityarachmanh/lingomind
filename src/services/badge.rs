@@ -44,12 +44,21 @@ pub async fn evaluate_and_award_badges_server(email: String) -> Result<(), Serve
                 }
 
                 if awarded {
-                    sqlx::query("INSERT INTO user_badges (email, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
+                    let result = sqlx::query("INSERT INTO user_badges (email, badge_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
                         .bind(&email)
                         .bind(badge_id)
                         .execute(pool)
                         .await
                         .map_err(|e| ServerFnError::new(format!("Gagal insert user badge: {e}")))?;
+                        
+                    if result.rows_affected() > 0 {
+                        let badge_name: String = row.get("name");
+                        let _ = crate::services::social::log_activity_server(
+                            email.clone(), 
+                            "badge_earned".to_string(), 
+                            format!("Mendapatkan lencana baru: {}!", badge_name)
+                        ).await;
+                    }
                 }
             }
         }
