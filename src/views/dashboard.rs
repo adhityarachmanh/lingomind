@@ -305,14 +305,14 @@ pub fn Dashboard() -> Element {
                             }
                         }
                     }
-                    div { class: "mt-4 bg-indigo-50/30 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-4 flex items-center justify-between shadow-sm",
+                    div { class: "mt-4 bg-indigo-50/30 dark:bg-indigo-900/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm",
                         div {
                             p { class: "text-sm font-bold text-indigo-800 dark:text-white", "Belum yakin dengan level Anda?" }
                             p { class: "text-xs text-indigo-600 dark:text-indigo-200 mt-1 font-medium", "Ikuti tes penempatan singkat (Placement Test) dengan AI." }
                         }
                         Link {
                             to: Route::PlacementTest {},
-                            class: "bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-xs shadow-sm transition-colors",
+                            class: "bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-6 rounded-xl text-sm shadow-sm transition-colors w-full sm:w-auto text-center shrink-0",
                             "Mulai Tes"
                         }
                     }
