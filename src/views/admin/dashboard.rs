@@ -58,27 +58,34 @@ pub fn AdminDashboard(tab: String) -> Element {
                             class: "w-8 h-8 rounded-lg object-cover shadow-sm border border-slate-200 dark:border-slate-700",
                         }
                         div {
-                            h1 { class: "text-lg font-extrabold text-indigo-700 dark:text-white tracking-tight", "LingoAdmin" }
-                            p { class: "text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest", "Enterprise" }
+                            h1 { class: "text-lg font-extrabold text-indigo-700 dark:text-white tracking-tight",
+                                "LingoAdmin"
+                            }
+                            p { class: "text-slate-500 dark:text-slate-400 text-[10px] uppercase font-bold tracking-widest",
+                                "Enterprise"
+                            }
                         }
                     }
                 }
                 div { class: "p-4 flex-1 space-y-1.5 overflow-y-auto",
                     for (tab_name, icon, tab_path) in tabs {
                         button {
-                            class: if tab == tab_path {
-                                "w-full text-left px-4 py-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-xl font-bold transition-colors flex items-center gap-3 border border-indigo-100 dark:border-indigo-500/20 shadow-sm"
-                            } else {
-                                "w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-slate-200 rounded-xl transition-colors flex items-center gap-3 font-medium"
+                            class: if tab == tab_path { "w-full text-left px-4 py-3 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 rounded-xl font-bold transition-colors flex items-center gap-3 border border-indigo-100 dark:border-indigo-500/20 shadow-sm" } else { "w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-slate-200 rounded-xl transition-colors flex items-center gap-3 font-medium" },
+                            onclick: move |_| {
+                                navigator
+                                    .push(Route::AdminDashboard {
+                                        tab: tab_path.to_string(),
+                                    });
                             },
-                            onclick: move |_| { navigator.push(Route::AdminDashboard { tab: tab_path.to_string() }); },
                             i { class: "{icon} w-5 text-center text-lg" }
                             "{tab_name}"
                         }
                     }
                 }
                 div { class: "p-4 border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/50 text-center",
-                    p { class: "text-xs text-slate-400 dark:text-slate-500 font-medium", "LingoMind v1.0.0" }
+                    p { class: "text-xs text-slate-400 dark:text-slate-500 font-medium",
+                        "LingoMind v1.0.0"
+                    }
                 }
             }
 
@@ -87,7 +94,9 @@ pub fn AdminDashboard(tab: String) -> Element {
                 // Fixed Navbar
                 div { class: "bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex justify-between items-center flex-shrink-0 z-10 shadow-sm transition-colors duration-300",
                     div { class: "flex items-center gap-4",
-                        h2 { class: "text-xl font-extrabold text-slate-800 dark:text-slate-100", "{active_tab_name}" }
+                        h2 { class: "text-xl font-extrabold text-slate-800 dark:text-slate-100",
+                            "{active_tab_name}"
+                        }
                     }
                     div { class: "relative",
                         button {
@@ -96,22 +105,22 @@ pub fn AdminDashboard(tab: String) -> Element {
                             div { class: "w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-700 flex items-center justify-center text-indigo-700 dark:text-indigo-300 font-bold shadow-inner",
                                 "A"
                             }
-                            span { class: "text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors", "{email}" }
-                            i { 
-                                class: if is_dropdown_open() {
-                                    "fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200 rotate-180"
-                                } else {
-                                    "fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200"
-                                }
+                            span { class: "text-sm font-semibold text-slate-700 dark:text-slate-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors",
+                                "{email}"
                             }
+                            i { class: if is_dropdown_open() { "fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200 rotate-180" } else { "fa-solid fa-chevron-down text-slate-400 text-xs transition-transform duration-200" } }
                         }
-                        
+
                         if is_dropdown_open() {
                             div { class: "absolute right-0 mt-3 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl py-2 z-50 origin-top-right transition-colors duration-300",
                                 // Dropdown Header
                                 div { class: "px-4 py-3 border-b border-slate-100 dark:border-slate-800",
-                                    p { class: "text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1", "Administrator" }
-                                    p { class: "text-sm font-semibold text-slate-700 dark:text-slate-200 truncate", "{email}" }
+                                    p { class: "text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1",
+                                        "Administrator"
+                                    }
+                                    p { class: "text-sm font-semibold text-slate-700 dark:text-slate-200 truncate",
+                                        "{email}"
+                                    }
                                 }
                                 // Dropdown Links
                                 div { class: "p-2",
@@ -135,17 +144,29 @@ pub fn AdminDashboard(tab: String) -> Element {
                         }
                     }
                 }
-                
+
                 // Scrollable Content Area
                 div { class: "flex-1 overflow-y-auto p-6 lg:p-10",
                     div { class: "max-w-7xl mx-auto",
                         match tab.as_str() {
-                            "konfigurasi" => rsx! { ConfigPanel { email: email.clone() } },
-                            "toko" => rsx! { ShopPanel { email: email.clone() } },
-                            "bahasa" => rsx! { LanguagePanel { email: email.clone() } },
-                            "kurikulum" => rsx! { CurriculumPanel { email: email.clone() } },
-                            "pengguna" => rsx! { UserPanel { email: email.clone() } },
-                            _ => rsx! { div { "Tab tidak ditemukan." } }
+                            "konfigurasi" => rsx! {
+                                ConfigPanel { email: email.clone() }
+                            },
+                            "toko" => rsx! {
+                                ShopPanel { email: email.clone() }
+                            },
+                            "bahasa" => rsx! {
+                                LanguagePanel { email: email.clone() }
+                            },
+                            "kurikulum" => rsx! {
+                                CurriculumPanel { email: email.clone() }
+                            },
+                            "pengguna" => rsx! {
+                                UserPanel { email: email.clone() }
+                            },
+                            _ => rsx! {
+                                div { "Tab tidak ditemukan." }
+                            },
                         }
                     }
                 }

@@ -1,6 +1,12 @@
 use dioxus::prelude::*;
 use crate::models::shop::ShopItem;
 
+#[cfg(feature = "server")]
+use tokio::sync::OnceCell;
+
+#[cfg(feature = "server")]
+static SHOP_CATALOG_CACHE: OnceCell<Vec<ShopItem>> = OnceCell::const_new();
+
 #[server]
 pub async fn get_shop_items_server(email: String) -> Result<Vec<ShopItem>, ServerFnError> {
     #[cfg(not(target_arch = "wasm32"))]
@@ -8,28 +14,47 @@ pub async fn get_shop_items_server(email: String) -> Result<Vec<ShopItem>, Serve
         use sqlx::Row;
         let pool = super::db::get_pool();
         
-        let rows = sqlx::query(
-            "SELECT s.id, s.name, s.description, s.cost, s.effect_type, s.icon_name,
-                    (SELECT COUNT(*) FROM user_inventory i WHERE i.email = $1 AND i.item_type = s.effect_type) > 0 as is_owned
-             FROM shop_items s ORDER BY s.cost ASC"
-        )
-        .bind(&email)
-        .fetch_all(pool)
-        .await
-        .map_err(|e| ServerFnError::new(format!("Gagal fetch shop items: {e}")))?;
+        let catalog = SHOP_CATALOG_CACHE.get_or_try_init(|| async {
+            let rows = sqlx::query(
+                "SELECT id, name, description, cost, effect_type, icon_name FROM shop_items ORDER BY cost ASC"
+            )
+            .fetch_all(pool)
+            .await
+            .map_err(|e| ServerFnError::new(format!("Gagal fetch shop items: {e}")))?;
 
-        let mut items = Vec::new();
-        for row in rows {
-            items.push(ShopItem {
-                id: row.get("id"),
-                name: row.get("name"),
-                description: row.get("description"),
-                cost: row.get("cost"),
-                effect_type: row.get("effect_type"),
-                icon_name: row.get("icon_name"),
-                is_owned: row.get("is_owned"),
-            });
+            let mut items = Vec::new();
+            for row in rows {
+                items.push(ShopItem {
+                    id: row.get("id"),
+                    name: row.get("name"),
+                    description: row.get("description"),
+                    cost: row.get("cost"),
+                    effect_type: row.get("effect_type"),
+                    icon_name: row.get("icon_name"),
+                    is_owned: false,
+                });
+            }
+            Ok::<Vec<ShopItem>, ServerFnError>(items)
+        }).await?;
+
+        let inventory_rows = sqlx::query("SELECT item_type FROM user_inventory WHERE email = $1")
+            .bind(&email)
+            .fetch_all(pool)
+            .await
+            .map_err(|e| ServerFnError::new(e.to_string()))?;
+            
+        let mut user_items = std::collections::HashSet::new();
+        for row in inventory_rows {
+            user_items.insert(row.get::<String, _>("item_type"));
         }
+
+        let mut items = catalog.clone();
+        for item in &mut items {
+            if user_items.contains(&item.effect_type) {
+                item.is_owned = true;
+            }
+        }
+
         Ok(items)
     }
     #[cfg(target_arch = "wasm32")]
@@ -260,4 +285,19 @@ pub async fn buy_shop_item_server(email: String, item_id: i32) -> Result<String,
     {
         Err(ServerFnError::new("Cannot execute on client"))
     }
+}
+
+#[server]
+pub async fn get_shop_summary_server(email: String) -> Result<crate::models::shop::ShopSummary, ServerFnError> {
+    use crate::services::engagement::get_engagement_stats_server;
+    
+    let (items_res, eng_res) = tokio::join!(
+        get_shop_items_server(email.clone()),
+        get_engagement_stats_server(email)
+    );
+    
+    Ok(crate::models::shop::ShopSummary {
+        items: items_res.unwrap_or_default(),
+        engagement: eng_res.ok(),
+    })
 }

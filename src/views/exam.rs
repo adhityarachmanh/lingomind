@@ -177,10 +177,16 @@ pub fn Exam(level: String) -> Element {
     let (user_opt, ready) = session_state();
 
     if !ready {
-        return rsx! { div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500" } } };
+        return rsx! {
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex items-center justify-center font-sans",
+                div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-amber-500" }
+            }
+        };
     }
     let Some(user) = user_opt.clone() else {
-        return rsx! { div { class: "p-6 text-slate-600 dark:text-slate-400 font-sans", "Silakan login dulu." } };
+        return rsx! {
+            div { class: "p-6 text-slate-600 dark:text-slate-400 font-sans", "Silakan login dulu." }
+        };
     };
 
     let language = selected_language();
@@ -200,9 +206,17 @@ pub fn Exam(level: String) -> Element {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center font-sans p-6",
                 div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg text-center max-w-md w-full border border-slate-200 dark:border-slate-800",
                     h2 { class: "text-5xl mb-4", "🔒" }
-                    h3 { class: "text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2", "Ujian Belum Terbuka" }
-                    p { class: "text-slate-600 dark:text-slate-400 mb-6", "Anda belum menyelesaikan semua topik di level {level} untuk mengambil ujian ini." }
-                    Link { to: Route::Roadmap {}, class: "block w-full bg-teal-500 text-white font-bold py-3 rounded-xl hover:bg-teal-600 transition", "Kembali ke Roadmap" }
+                    h3 { class: "text-2xl font-bold text-slate-800 dark:text-slate-200 mb-2",
+                        "Ujian Belum Terbuka"
+                    }
+                    p { class: "text-slate-600 dark:text-slate-400 mb-6",
+                        "Anda belum menyelesaikan semua topik di level {level} untuk mengambil ujian ini."
+                    }
+                    Link {
+                        to: Route::Roadmap {},
+                        class: "block w-full bg-teal-500 text-white font-bold py-3 rounded-xl hover:bg-teal-600 transition",
+                        "Kembali ke Roadmap"
+                    }
                 }
             }
         };
@@ -267,7 +281,9 @@ pub fn Exam(level: String) -> Element {
             return rsx! {
                 div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
                     div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-teal-500 mb-6" }
-                    p { class: "text-teal-700 dark:text-teal-500 font-bold text-lg animate-pulse", "Mengecek status ujian..." }
+                    p { class: "text-teal-700 dark:text-teal-500 font-bold text-lg animate-pulse",
+                        "Mengecek status ujian..."
+                    }
                 }
             };
         };
@@ -277,9 +293,17 @@ pub fn Exam(level: String) -> Element {
                 div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-rose-200 dark:border-rose-900/30 max-w-md text-center",
                         h2 { class: "text-6xl mb-4", "💔" }
-                        h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2", "Nyawa Kamu Habis!" }
-                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Kamu butuh minimal 1 Nyawa untuk mengikuti ujian ini." }
-                        Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md", "Isi Ulang di Beranda" }
+                        h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2",
+                            "Nyawa Kamu Habis!"
+                        }
+                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                            "Kamu butuh minimal 1 Nyawa untuk mengikuti ujian ini."
+                        }
+                        Link {
+                            to: Route::Dashboard {},
+                            class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md",
+                            "Isi Ulang di Beranda"
+                        }
                     }
                 }
             };
@@ -292,14 +316,20 @@ pub fn Exam(level: String) -> Element {
                         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
                             div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
                                 h2 { class: "text-6xl mb-4", "⏳" }
-                                h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-2", "Ujian Terkunci" }
-                                p { class: "text-slate-600 dark:text-slate-400 mb-4 text-sm", "Anda baru saja gagal dalam ujian ini. Silakan istirahat dan pelajari kembali materi." }
+                                h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-2",
+                                    "Ujian Terkunci"
+                                }
+                                p { class: "text-slate-600 dark:text-slate-400 mb-4 text-sm",
+                                    "Anda baru saja gagal dalam ujian ini. Silakan istirahat dan pelajari kembali materi."
+                                }
                                 div { class: "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold p-3 rounded-xl mb-6",
                                     "Bisa diulang dalam: {cooldown_msg}"
                                 }
                                 if tickets > 0 {
                                     div { class: "mb-4",
-                                        p { class: "text-sm text-slate-500 mb-2", "Anda memiliki {tickets} Tiket Ujian Ulang 🎫" }
+                                        p { class: "text-sm text-slate-500 mb-2",
+                                            "Anda memiliki {tickets} Tiket Ujian Ulang 🎫"
+                                        }
                                         button {
                                             class: "w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-md shadow-indigo-500/30",
                                             onclick: move |_| {
@@ -307,18 +337,25 @@ pub fn Exam(level: String) -> Element {
                                                 let l = lang.clone();
                                                 is_retrying.set(true); // repurpose loading flag
                                                 spawn(async move {
-                                                    let _ = crate::services::curriculum::consume_retake_ticket_server(e, l).await;
+                                                    let _ = crate::services::curriculum::consume_retake_ticket_server(e, l)
+                                                        .await;
                                                     cooldown_resource.restart();
                                                     is_retrying.set(false);
                                                 });
                                             },
                                             disabled: is_retrying(),
-                                            if is_retrying() { "Memproses..." } else { "Gunakan 1 Tiket" }
+                                            if is_retrying() {
+                                                "Memproses..."
+                                            } else {
+                                                "Gunakan 1 Tiket"
+                                            }
                                         }
                                     }
                                 } else {
                                     div { class: "mb-4",
-                                        p { class: "text-sm text-slate-500 mb-2", "Tidak punya Tiket Ujian Ulang." }
+                                        p { class: "text-sm text-slate-500 mb-2",
+                                            "Tidak punya Tiket Ujian Ulang."
+                                        }
                                         Link {
                                             to: Route::Shop {},
                                             class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition shadow-md shadow-amber-500/30",
@@ -326,7 +363,11 @@ pub fn Exam(level: String) -> Element {
                                         }
                                     }
                                 }
-                                Link { to: Route::Roadmap {}, class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition mt-2", "Kembali ke Roadmap" }
+                                Link {
+                                    to: Route::Roadmap {},
+                                    class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition mt-2",
+                                    "Kembali ke Roadmap"
+                                }
                             }
                         }
                     };
@@ -335,21 +376,31 @@ pub fn Exam(level: String) -> Element {
                         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center font-sans",
                             div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-teal-200 dark:border-teal-900/30 max-w-md text-center",
                                 h2 { class: "text-6xl mb-4 animate-bounce", "📝" }
-                                h3 { class: "text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4", "Siap Ujian?" }
-                                p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Ujian ini akan menguji pemahaman Anda di level {level}. Jika gagal, Anda harus menunggu 24 jam untuk mengulang." }
+                                h3 { class: "text-2xl font-bold text-slate-800 dark:text-slate-200 mb-4",
+                                    "Siap Ujian?"
+                                }
+                                p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                                    "Ujian ini akan menguji pemahaman Anda di level {level}. Jika gagal, Anda harus menunggu 24 jam untuk mengulang."
+                                }
                                 button {
                                     class: "w-full bg-teal-500 text-white font-bold py-3 rounded-xl hover:bg-teal-600 transition shadow-md shadow-teal-500/30 text-lg mb-3 cursor-pointer",
                                     onclick: move |_| should_load_exam.set(true),
                                     "Mulai Ujian 🚀"
                                 }
-                                Link { to: Route::Roadmap {}, class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition", "Kembali" }
+                                Link {
+                                    to: Route::Roadmap {},
+                                    class: "block w-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold py-3 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition",
+                                    "Kembali"
+                                }
                             }
                         }
                     };
                 }
             },
             Err(e) => {
-                return rsx! { div { "Error checking cooldown: {e}" } };
+                return rsx! {
+                    div { "Error checking cooldown: {e}" }
+                };
             }
         }
     }
@@ -357,13 +408,19 @@ pub fn Exam(level: String) -> Element {
     let Some(exam_result) = exam_resource.value()() else {
         let err_str = exam_resource.value()().and_then(|r| r.err()).map(|e| e.to_string());
         if err_str.as_deref() == Some("SKIP") {
-            return rsx! { div {} };
+            return rsx! {
+                div {}
+            };
         }
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }
-                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse", "Menyusun soal ujian tingkat lanjut..." }
-                p { class: "text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-md text-center", "Proses ini mungkin memakan waktu hingga 30 detik untuk memastikan kualitas soal ujian yang tinggi." }
+                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse",
+                    "Menyusun soal ujian tingkat lanjut..."
+                }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-md text-center",
+                    "Proses ini mungkin memakan waktu hingga 30 detik untuk memastikan kualitas soal ujian yang tinggi."
+                }
             }
         };
     };
@@ -372,8 +429,12 @@ pub fn Exam(level: String) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }
-                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse", "Mencoba ulang menghubungi AI..." }
-                p { class: "text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-md text-center", "Proses ini mungkin memakan waktu hingga 30 detik." }
+                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse",
+                    "Mencoba ulang menghubungi AI..."
+                }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mt-2 max-w-md text-center",
+                    "Proses ini mungkin memakan waktu hingga 30 detik."
+                }
             }
         };
     }
@@ -384,17 +445,25 @@ pub fn Exam(level: String) -> Element {
             return rsx! {
                 div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
-                        h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Ujian" }
-                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
-                        button { 
-                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                        h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4",
+                            "Gagal Memuat Ujian"
+                        }
+                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                            "{e}"
+                        }
+                        button {
+                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer",
                             onclick: move |_| {
                                 is_retrying.set(true);
                                 exam_resource.restart();
-                            }, 
-                            "Coba Lagi" 
+                            },
+                            "Coba Lagi"
                         }
-                        Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
+                        Link {
+                            to: Route::Roadmap {},
+                            class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition",
+                            "Kembali ke Roadmap"
+                        }
                     }
                 }
             };
@@ -413,38 +482,69 @@ pub fn Exam(level: String) -> Element {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center px-4 py-6 font-sans",
                 div { class: "bg-white dark:bg-slate-900 p-8 md:p-10 rounded-3xl border border-slate-200/50 dark:border-slate-800 text-center max-w-md w-full shadow-2xl relative overflow-hidden",
                     // Decorative background gradient
-                    div { class: format!("absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none {}", if passed { "bg-emerald-500" } else { "bg-rose-500" }) }
-                    div { class: format!("absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none {}", if passed { "bg-emerald-500" } else { "bg-rose-500" }) }
-                    
+                    div {
+                        class: format!(
+                            "absolute -top-24 -left-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none {}",
+                            if passed { "bg-emerald-500" } else { "bg-rose-500" },
+                        ),
+                    }
+                    div {
+                        class: format!(
+                            "absolute -bottom-24 -right-24 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none {}",
+                            if passed { "bg-emerald-500" } else { "bg-rose-500" },
+                        ),
+                    }
+
                     if passed {
                         h2 { class: "text-6xl mb-4 animate-bounce", "🎉" }
-                        h3 { class: "text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mb-2", "LULUS UJIAN!" }
-                        p { class: "text-slate-600 dark:text-slate-400 text-sm mb-6 font-medium", "Selamat! Anda telah menguasai materi level {level} dan siap untuk melangkah lebih jauh." }
+                        h3 { class: "text-3xl font-extrabold text-emerald-600 dark:text-emerald-400 mb-2",
+                            "LULUS UJIAN!"
+                        }
+                        p { class: "text-slate-600 dark:text-slate-400 text-sm mb-6 font-medium",
+                            "Selamat! Anda telah menguasai materi level {level} dan siap untuk melangkah lebih jauh."
+                        }
                     } else {
                         h2 { class: "text-6xl mb-4", "💪" }
-                        h3 { class: "text-3xl font-extrabold text-rose-600 dark:text-rose-400 mb-2", "BELUM LULUS" }
-                        p { class: "text-slate-600 dark:text-slate-400 text-sm mb-6 font-medium", "Jangan menyerah! Pelajari lagi bagian yang kurang dan coba kembali ujian ini nanti." }
+                        h3 { class: "text-3xl font-extrabold text-rose-600 dark:text-rose-400 mb-2",
+                            "BELUM LULUS"
+                        }
+                        p { class: "text-slate-600 dark:text-slate-400 text-sm mb-6 font-medium",
+                            "Jangan menyerah! Pelajari lagi bagian yang kurang dan coba kembali ujian ini nanti."
+                        }
                     }
 
                     div { class: "bg-slate-50 dark:bg-slate-950 p-6 rounded-2xl border border-slate-100 dark:border-slate-800 mb-8",
                         div { class: "flex items-center justify-between mb-2",
                             span { class: "text-slate-500 font-bold text-sm", "Skor Anda" }
-                            span { class: format!("font-black text-xl {}", if passed { "text-emerald-600" } else { "text-rose-600" }), "{correct} / {total}" }
+                            span {
+                                class: format!(
+                                    "font-black text-xl {}",
+                                    if passed { "text-emerald-600" } else { "text-rose-600" },
+                                ),
+                                "{correct} / {total}"
+                            }
                         }
                         div { class: "w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 mb-2",
                             div {
-                                class: format!("h-2.5 rounded-full {}", if passed { "bg-emerald-500" } else { "bg-rose-500" }),
-                                style: "width: {(correct as f32 / total as f32) * 100.0}%"
+                                class: format!(
+                                    "h-2.5 rounded-full {}",
+                                    if passed { "bg-emerald-500" } else { "bg-rose-500" },
+                                ),
+                                style: "width: {(correct as f32 / total as f32) * 100.0}%",
                             }
                         }
-                        p { class: "text-xs text-slate-400 font-medium text-left mt-2", "Batas kelulusan minimal {passing_score} benar (75%)." }
+                        p { class: "text-xs text-slate-400 font-medium text-left mt-2",
+                            "Batas kelulusan minimal {passing_score} benar (75%)."
+                        }
                     }
 
                     button {
                         class: "w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50",
                         disabled: submitting_result(),
                         onclick: move |_| {
-                            if submitting_result() { return; }
+                            if submitting_result() {
+                                return;
+                            }
                             submitting_result.set(true);
                             let email_val = user.email.clone();
                             let lang_val = language.clone();
@@ -452,10 +552,16 @@ pub fn Exam(level: String) -> Element {
                             let score_val = score_gained;
                             let nav = navigator.clone();
                             spawn(async move {
-                                if let Ok(updated_profile) = submit_exam_result(email_val, lang_val, passed_val, score_val).await {
+                                if let Ok(updated_profile) = submit_exam_result(
+                                        email_val,
+                                        lang_val,
+                                        passed_val,
+                                        score_val,
+                                    )
+                                    .await
+                                {
                                     session_state.set((Some(updated_profile), true));
                                 }
-                                // Navigate anyway
                                 nav.replace(Route::Roadmap {});
                             });
                         },
@@ -471,7 +577,9 @@ pub fn Exam(level: String) -> Element {
     }
 
     if exam_container.questions.is_empty() {
-        return rsx! { div { class: "p-8 text-rose-600 font-bold text-center", "Ujian kosong." } };
+        return rsx! {
+            div { class: "p-8 text-rose-600 font-bold text-center", "Ujian kosong." }
+        };
     }
 
     let current_q = exam_container.questions[current_question_idx()].clone();
@@ -498,7 +606,7 @@ pub fn Exam(level: String) -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
             div { class: "max-w-4xl w-full bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-800 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-2xl flex flex-col justify-between min-h-screen sm:min-h-0",
-                
+
                 div {
                     // Header progress bar timeline (Exam style - more serious)
                     div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-200/50 dark:border-slate-800 pb-4",
@@ -510,39 +618,36 @@ pub fn Exam(level: String) -> Element {
                         div { class: "flex-1 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden",
                             div {
                                 class: "h-full bg-amber-500 rounded-full transition-all duration-300",
-                                width: "{((current_question_idx() + 1) * 100 / total_questions).min(100)}%"
+                                width: "{((current_question_idx() + 1) * 100 / total_questions).min(100)}%",
                             }
                         }
-                        span { class: "text-sm font-black text-amber-600 dark:text-amber-500 shrink-0 uppercase tracking-widest", "EXAM: {current_question_idx() + 1}/{total_questions}" }
+                        span { class: "text-sm font-black text-amber-600 dark:text-amber-500 shrink-0 uppercase tracking-widest",
+                            "EXAM: {current_question_idx() + 1}/{total_questions}"
+                        }
                     }
 
                     // Level and status badges
                     div { class: "flex flex-wrap items-center gap-2 mb-6",
                         if is_listening_question {
-                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full", "Listening Section" }
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-3 py-1 rounded-full",
+                                "Listening Section"
+                            }
                         } else {
-                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full", "Reading & Grammar" }
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 px-3 py-1 rounded-full",
+                                "Reading & Grammar"
+                            }
                         }
-                        span { class: "text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-wider", "{language} - CEFR {level}" }
+                        span { class: "text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-full uppercase tracking-wider",
+                            "{language} - CEFR {level}"
+                        }
                     }
 
                     // Question lines
                     div { class: "flex flex-col gap-4 mb-8",
                         h2 { class: "text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-200 leading-loose space-y-3",
                             for line in question_lines {
-                                p {
-                                    class: if line.starts_with("A:")
-                                        || line.starts_with("B:")
-                                        || line.starts_with("C:")
-                                        || line.starts_with("D:")
-                                        || line.starts_with("E:")
-                                    {
-                                        "text-slate-700 dark:text-slate-300 font-bold mt-2"
-                                    } else if line.starts_with('\'') || line.starts_with('"') {
-                                        "text-amber-700 dark:text-amber-500 italic font-medium p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30"
-                                    } else {
-                                        "text-slate-800 dark:text-slate-200"
-                                    },
+                                p { class: if line.starts_with("A:") || line.starts_with("B:") || line.starts_with("C:")
+    || line.starts_with("D:") || line.starts_with("E:") { "text-slate-700 dark:text-slate-300 font-bold mt-2" } else if line.starts_with('\'') || line.starts_with('"') { "text-amber-700 dark:text-amber-500 italic font-medium p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30" } else { "text-slate-800 dark:text-slate-200" },
                                     "{line}"
                                 }
                             }
@@ -554,7 +659,12 @@ pub fn Exam(level: String) -> Element {
                         div { class: "flex items-center gap-3",
                             button {
                                 class: "w-10 h-10 rounded-full bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center text-sm font-bold transition-all shadow-md active:scale-95 cursor-pointer",
-                                onclick: move |_| speak_with_edge_or_fallback(edge_tts_voice.clone(), tts_lang_code.clone(), tts_question.clone(), listen_speed()),
+                                onclick: move |_| speak_with_edge_or_fallback(
+                                    edge_tts_voice.clone(),
+                                    tts_lang_code.clone(),
+                                    tts_question.clone(),
+                                    listen_speed(),
+                                ),
                                 "🔊"
                             }
                             button {
@@ -562,7 +672,13 @@ pub fn Exam(level: String) -> Element {
                                 onclick: move |_| stop_speech(),
                                 "⏹"
                             }
-                            span { class: "text-xs font-bold text-slate-500 dark:text-slate-400", if is_listening_question { "Dengarkan Audio" } else { "Putar Pengucapan" } }
+                            span { class: "text-xs font-bold text-slate-500 dark:text-slate-400",
+                                if is_listening_question {
+                                    "Dengarkan Audio"
+                                } else {
+                                    "Putar Pengucapan"
+                                }
+                            }
                         }
                         select {
                             class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs px-3 py-2 focus:outline-none focus:border-amber-500 cursor-pointer shadow-sm",
@@ -586,82 +702,90 @@ pub fn Exam(level: String) -> Element {
                     // Options Grid
                     div { class: "flex flex-col gap-4 mb-8",
                         {
-                            quiz_options.into_iter().enumerate().map(|(opt_idx, option)| {
-                                let option_for_select = option.clone();
-                                let option_for_listen = option.clone();
-                                let option_for_click = option.clone();
-                                let option_edge_tts_voice = edge_tts_voice.clone();
-                                let option_tts_lang_code = tts_lang_code.clone();
-                                let prefix = match opt_idx {
-                                    0 => "A",
-                                    1 => "B",
-                                    2 => "C",
-                                    3 => "D",
-                                    4 => "E",
-                                    _ => "?",
-                                };
-                                rsx! {
-                                    div {
-                                        key: "{option}",
-                                        class: format!(
-                                            "flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 text-sm sm:text-base leading-relaxed transition-all font-medium active:scale-[0.99] cursor-pointer shadow-sm {}",
-                                            if selected_option() == Some(option_for_select.clone()) {
-                                                if show_explanation() {
-                                                    if option_for_select == correct_ans_check {
-                                                        "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-900 dark:text-emerald-300 shadow-md ring-1 ring-emerald-500/20"
-                                                    } else {
-                                                        "bg-rose-50 dark:bg-rose-900/30 border-rose-500 text-rose-900 dark:text-rose-300 shadow-md ring-1 ring-rose-500/20"
-                                                    }
-                                                } else {
-                                                    "bg-amber-50 dark:bg-amber-900/30 border-amber-500 text-amber-900 dark:text-amber-300 shadow-md ring-1 ring-amber-500/20"
-                                                }
-                                            } else if show_explanation() && option_for_select == correct_ans_check {
-                                                "bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-400"
-                                            } else {
-                                                "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300"
-                                            }
-                                        ),
-                                        onclick: move |_| {
-                                            if !show_explanation() {
-                                                selected_option.set(Some(option_for_click.clone()));
-                                            }
-                                        },
-                                        div { class: "flex-1 flex items-center gap-4 pr-2",
-                                            div {
-                                                class: format!(
-                                                    "w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm {}",
-                                                    if selected_option() == Some(option_for_select.clone()) {
-                                                        if show_explanation() {
-                                                            if option_for_select == correct_ans_check {
-                                                                "bg-emerald-500 text-white"
-                                                            } else {
-                                                                "bg-rose-500 text-white"
-                                                            }
+                            quiz_options
+                                .into_iter()
+                                .enumerate()
+                                .map(|(opt_idx, option)| {
+                                    let option_for_select = option.clone();
+                                    let option_for_listen = option.clone();
+                                    let option_for_click = option.clone();
+                                    let option_edge_tts_voice = edge_tts_voice.clone();
+                                    let option_tts_lang_code = tts_lang_code.clone();
+                                    let prefix = match opt_idx {
+                                        0 => "A",
+                                        1 => "B",
+                                        2 => "C",
+                                        3 => "D",
+                                        4 => "E",
+                                        _ => "?",
+                                    };
+                                    rsx! {
+                                        div {
+                                            key: "{option}",
+                                            class: format!(
+                                                "flex items-center justify-between p-4 sm:p-5 rounded-2xl border-2 text-sm sm:text-base leading-relaxed transition-all font-medium active:scale-[0.99] cursor-pointer shadow-sm {}",
+                                                if selected_option() == Some(option_for_select.clone()) {
+                                                    if show_explanation() {
+                                                        if option_for_select == correct_ans_check {
+                                                            "bg-emerald-50 dark:bg-emerald-900/30 border-emerald-500 text-emerald-900 dark:text-emerald-300 shadow-md ring-1 ring-emerald-500/20"
                                                         } else {
-                                                            "bg-amber-500 text-white"
+                                                            "bg-rose-50 dark:bg-rose-900/30 border-rose-500 text-rose-900 dark:text-rose-300 shadow-md ring-1 ring-rose-500/20"
                                                         }
-                                                    } else if show_explanation() && option_for_select == correct_ans_check {
-                                                        "bg-emerald-400 text-white"
                                                     } else {
-                                                        "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                                                        "bg-amber-50 dark:bg-amber-900/30 border-amber-500 text-amber-900 dark:text-amber-300 shadow-md ring-1 ring-amber-500/20"
                                                     }
-                                                ),
-                                                "{prefix}"
-                                            }
-                                            span { class: "text-left", "{option}" }
-                                        }
-                                        button {
-                                            class: "w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:text-amber-600 dark:text-amber-400 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
-                                            disabled: show_explanation(),
-                                            onclick: move |e| {
-                                                e.stop_propagation();
-                                                speak_with_edge_or_fallback(option_edge_tts_voice.clone(), option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed());
+                                                } else if show_explanation() && option_for_select == correct_ans_check {
+                                                    "bg-emerald-50/50 dark:bg-emerald-900/20 border-emerald-500/50 text-emerald-800 dark:text-emerald-400"
+                                                } else {
+                                                    "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300"
+                                                }
+                                            ),
+                                            onclick: move |_| {
+                                                if !show_explanation() {
+                                                    selected_option.set(Some(option_for_click.clone()));
+                                                }
                                             },
-                                            "🔊"
+                                            div { class: "flex-1 flex items-center gap-4 pr-2",
+                                                div {
+                                                    class: format!(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm {}",
+                                                        if selected_option() == Some(option_for_select.clone()) {
+                                                            if show_explanation() {
+                                                                if option_for_select == correct_ans_check {
+                                                                    "bg-emerald-500 text-white"
+                                                                } else {
+                                                                    "bg-rose-500 text-white"
+                                                                }
+                                                            } else {
+                                                                "bg-amber-500 text-white"
+                                                            }
+                                                        } else if show_explanation() && option_for_select == correct_ans_check {
+                                                            "bg-emerald-400 text-white"
+                                                        } else {
+                                                            "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                                                        },
+                                                    ),
+                                                    "{prefix}"
+                                                }
+                                                span { class: "text-left", "{option}" }
+                                            }
+                                            button {
+                                                class: "w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:text-amber-600 dark:text-amber-400 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
+                                                disabled: show_explanation(),
+                                                onclick: move |e| {
+                                                    e.stop_propagation();
+                                                    speak_with_edge_or_fallback(
+                                                        option_edge_tts_voice.clone(),
+                                                        option_tts_lang_code.clone(),
+                                                        option_for_listen.clone(),
+                                                        listen_speed(),
+                                                    );
+                                                },
+                                                "🔊"
+                                            }
                                         }
                                     }
-                                }
-                            })
+                                })
                         }
                     }
 
@@ -669,11 +793,17 @@ pub fn Exam(level: String) -> Element {
                     if show_explanation() {
                         div { class: "bg-slate-50 dark:bg-slate-950 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 mb-8 text-sm shadow-inner",
                             if selected_option() == Some(correct_ans_check.clone()) {
-                                p { class: "text-emerald-600 font-extrabold mb-3 text-base flex items-center gap-2", "✓ Tepat Sekali" }
+                                p { class: "text-emerald-600 font-extrabold mb-3 text-base flex items-center gap-2",
+                                    "✓ Tepat Sekali"
+                                }
                             } else {
-                                p { class: "text-rose-600 dark:text-rose-400 font-extrabold mb-3 text-base flex items-center gap-2", "✗ Jawaban Salah" }
+                                p { class: "text-rose-600 dark:text-rose-400 font-extrabold mb-3 text-base flex items-center gap-2",
+                                    "✗ Jawaban Salah"
+                                }
                             }
-                            p { class: "text-slate-700 dark:text-slate-300 text-sm leading-loose font-medium", "{explanation_text}" }
+                            p { class: "text-slate-700 dark:text-slate-300 text-sm leading-loose font-medium",
+                                "{explanation_text}"
+                            }
                         }
                     }
                 }

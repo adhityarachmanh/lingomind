@@ -22,19 +22,21 @@ pub fn LanguagePanel(email: String) -> Element {
                     i { class: "fa-solid fa-language text-purple-600" }
                     "Katalog Bahasa"
                 }
-                button { 
+                button {
                     class: "bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm",
                     onclick: move |_| editing_lang.set(Some(None)),
                     i { class: "fa-solid fa-plus" }
                     "Tambah Bahasa"
                 }
             }
-            
+
             div { class: "overflow-x-auto",
                 table { class: "w-full text-left text-sm text-slate-700",
                     thead { class: "text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200",
                         tr {
-                            th { class: "px-4 py-3 rounded-tl-lg text-center w-20", "Bendera" }
+                            th { class: "px-4 py-3 rounded-tl-lg text-center w-20",
+                                "Bendera"
+                            }
                             th { class: "px-4 py-3", "Nama Bahasa" }
                             th { class: "px-4 py-3", "Kategori & TTS" }
                             th { class: "px-4 py-3", "Deskripsi" }
@@ -46,11 +48,17 @@ pub fn LanguagePanel(email: String) -> Element {
                             for lang in langs {
                                 LanguageRow {
                                     lang: lang.clone(),
-                                    on_edit: move |_| editing_lang.set(Some(Some(lang.clone())))
+                                    on_edit: move |_| editing_lang.set(Some(Some(lang.clone()))),
                                 }
                             }
                         } else {
-                            tr { td { colspan: "5", class: "px-4 py-8 text-center text-slate-500", "Memuat data..." } }
+                            tr {
+                                td {
+                                    colspan: "5",
+                                    class: "px-4 py-8 text-center text-slate-500",
+                                    "Memuat data..."
+                                }
+                            }
                         }
                     }
                 }
@@ -62,7 +70,7 @@ pub fn LanguagePanel(email: String) -> Element {
                     email: email.clone(),
                     lang: opt_lang,
                     on_close: move |_| editing_lang.set(None),
-                    on_save: move |_| languages.restart()
+                    on_save: move |_| languages.restart(),
                 }
             }
         }
@@ -81,24 +89,34 @@ fn LanguageRow(lang: LanguageAdmin, on_edit: EventHandler<()>) -> Element {
 
     rsx! {
         tr { class: "hover:bg-slate-50 transition-colors border-b border-slate-100",
-            td { class: "px-4 py-4 text-3xl text-center w-20 filter drop-shadow-sm", "{flag}" }
+            td { class: "px-4 py-4 text-3xl text-center w-20 filter drop-shadow-sm",
+                "{flag}"
+            }
             td { class: "px-4 py-4",
                 div {
-                    div { class: "font-bold text-slate-800 text-sm flex items-center gap-1.5", 
+                    div { class: "font-bold text-slate-800 text-sm flex items-center gap-1.5",
                         "{lang_name}"
-                        span { class: "text-xxs font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold", "{id}" }
+                        span { class: "text-xxs font-mono bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-wider font-semibold",
+                            "{id}"
+                        }
                     }
                     div { class: "text-xs text-slate-500 mt-0.5", "{native_name}" }
                 }
             }
             td { class: "px-4 py-4",
                 div {
-                    div { class: "text-xs font-semibold text-purple-600 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-lg w-fit", "{cat}" }
+                    div { class: "text-xs font-semibold text-purple-600 bg-purple-50 border border-purple-100 px-2 py-0.5 rounded-lg w-fit",
+                        "{cat}"
+                    }
                     div { class: "text-xxs font-mono text-slate-400 mt-1", "TTS: {tts_code}" }
                 }
             }
             td { class: "px-4 py-4",
-                div { class: "text-xs text-slate-500 max-w-sm truncate", title: "{desc}", "{desc}" }
+                div {
+                    class: "text-xs text-slate-500 max-w-sm truncate",
+                    title: "{desc}",
+                    "{desc}"
+                }
             }
             td { class: "px-4 py-4 text-right",
                 button {
@@ -181,109 +199,127 @@ fn LanguageModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1 overflow-y-auto max-h-[70vh]",
                     div { class: "grid grid-cols-3 gap-4",
                         div { class: "col-span-1 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Bendera" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Bendera"
+                            }
                             input {
                                 class: "w-full text-center text-xl bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-semibold",
                                 value: "{flag}",
                                 oninput: move |e| flag.set(e.value()),
-                                placeholder: "🌐"
+                                placeholder: "🌐",
                             }
                         }
-                        
+
                         div { class: "col-span-2 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Kode ID Bahasa" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Kode ID Bahasa"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-mono text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed",
                                 value: "{id}",
                                 oninput: move |e| id.set(e.value()),
                                 placeholder: "e.g. ja, ko, fr",
-                                disabled: is_edit
+                                disabled: is_edit,
                             }
                         }
                     }
 
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nama Bahasa" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Nama Bahasa"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-semibold",
                                 value: "{name}",
                                 oninput: move |e| name.set(e.value()),
-                                placeholder: "e.g. Jepang"
+                                placeholder: "e.g. Jepang",
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nama Asli" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Nama Asli"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-semibold",
                                 value: "{native_name}",
                                 oninput: move |e| native_name.set(e.value()),
-                                placeholder: "e.g. 日本語"
+                                placeholder: "e.g. 日本語",
                             }
                         }
                     }
 
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Kategori Wilayah" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Kategori Wilayah"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all",
                                 value: "{category}",
                                 oninput: move |e| category.set(e.value()),
-                                placeholder: "e.g. Asia, Eropa"
+                                placeholder: "e.g. Asia, Eropa",
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Kode TTS Voice" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Kode TTS Voice"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-mono",
                                 value: "{tts_lang_code}",
                                 oninput: move |e| tts_lang_code.set(e.value()),
-                                placeholder: "e.g. ja-JP, ko-KR"
+                                placeholder: "e.g. ja-JP, ko-KR",
                             }
                         }
                     }
 
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "CSS Kelas Tema" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "CSS Kelas Tema"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-mono",
                                 value: "{theme_class}",
                                 oninput: move |e| theme_class.set(e.value()),
-                                placeholder: "e.g. bg-indigo-500"
+                                placeholder: "e.g. bg-indigo-500",
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "CSS Kelas Tombol" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "CSS Kelas Tombol"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-xs focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all font-mono",
                                 value: "{button_class}",
                                 oninput: move |e| button_class.set(e.value()),
-                                placeholder: "e.g. bg-indigo-600"
+                                placeholder: "e.g. bg-indigo-600",
                             }
                         }
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Deskripsi Bahasa" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Deskripsi Bahasa"
+                        }
                         textarea {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-600 text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-100 transition-all min-h-[70px]",
                             value: "{description}",
                             oninput: move |e| description.set(e.value()),
-                            placeholder: "Deskripsi singkat tentang pembelajaran bahasa ini..."
+                            placeholder: "Deskripsi singkat tentang pembelajaran bahasa ini...",
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -296,7 +332,11 @@ fn LanguageModal(
                         onclick: save_action,
                         disabled: is_saving() || id().trim().is_empty() || name().trim().is_empty(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan"
+                        }
                     }
                 }
             }

@@ -63,11 +63,14 @@ pub fn Roadmap() -> Element {
                 // Header
                 div { class: "mb-10 text-center",
                     h1 { class: "text-3xl md:text-4xl font-black text-slate-800 dark:text-slate-200 tracking-tight mb-3",
-                        "Peta Kurikulum " span { class: "text-teal-600 dark:text-teal-400", "{language}" }
+                        "Peta Kurikulum "
+                        span { class: "text-teal-600 dark:text-teal-400", "{language}" }
                     }
                     p { class: "text-slate-500 dark:text-slate-400 font-medium max-w-xl mx-auto",
                         "Pilih topik pelajaran yang ingin Anda kuasai. Level Anda saat ini adalah "
-                        span { class: "font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-md", "{base_level}" }
+                        span { class: "font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-md",
+                            "{base_level}"
+                        }
                     }
                 }
 
@@ -85,7 +88,7 @@ pub fn Roadmap() -> Element {
                                         "bg-teal-500 border-white text-white shadow-md"
                                     } else {
                                         "bg-slate-200 dark:bg-slate-700 border-white text-slate-400"
-                                    }
+                                    },
                                 ),
                                 "{level_data.level}"
                             }
@@ -100,15 +103,21 @@ pub fn Roadmap() -> Element {
                                         "border-slate-200 dark:border-slate-700 shadow-md hover:shadow-lg hover:border-teal-200"
                                     } else {
                                         "border-slate-100 dark:border-slate-800 shadow-sm opacity-70 grayscale-[30%]"
-                                    }
+                                    },
                                 ),
                                 div { class: "flex items-center justify-between mb-4",
                                     div {
-                                        h3 { class: "text-xl font-bold text-slate-800 dark:text-slate-200", "{level_data.title}" }
-                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1", "{level_data.description}" }
+                                        h3 { class: "text-xl font-bold text-slate-800 dark:text-slate-200",
+                                            "{level_data.title}"
+                                        }
+                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1",
+                                            "{level_data.description}"
+                                        }
                                     }
                                     if is_current {
-                                        span { class: "hidden sm:inline-block px-3 py-1 bg-teal-100 text-teal-700 text-xs font-bold rounded-full uppercase tracking-wider", "Posisi Anda" }
+                                        span { class: "hidden sm:inline-block px-3 py-1 bg-teal-100 text-teal-700 text-xs font-bold rounded-full uppercase tracking-wider",
+                                            "Posisi Anda"
+                                        }
                                     } else if !is_unlocked {
                                         span { class: "text-slate-400 text-xl", "🔒" }
                                     } else {
@@ -129,7 +138,7 @@ pub fn Roadmap() -> Element {
                                                     "bg-slate-50 dark:bg-slate-950 border-slate-200/30 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-teal-50/30 dark:bg-teal-900/30 hover:border-teal-300 hover:text-teal-800 hover:shadow-sm"
                                                 } else {
                                                     "bg-slate-50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 cursor-not-allowed"
-                                                }
+                                                },
                                             ),
                                             onclick: {
                                                 let t = topic.to_string();
@@ -141,7 +150,9 @@ pub fn Roadmap() -> Element {
                                             },
                                             span { "{topic}" }
                                             if is_topic_unlocked {
-                                                span { class: "text-slate-300 group-hover:text-teal-500 transition-colors text-lg", "→" }
+                                                span { class: "text-slate-300 group-hover:text-teal-500 transition-colors text-lg",
+                                                    "→"
+                                                }
                                             } else {
                                                 span { class: "text-slate-400/50", "🔒" }
                                             }
@@ -153,14 +164,16 @@ pub fn Roadmap() -> Element {
                                 if is_unlocked {
                                     div { class: "mt-4",
                                         Link {
-                                            to: Route::Exam { level: level_data.level.to_string() },
+                                            to: Route::Exam {
+                                                level: level_data.level.to_string(),
+                                            },
                                             class: format!(
                                                 "block w-full text-center p-4 rounded-xl border-2 font-bold transition-all shadow-sm {}",
                                                 if is_exam_unlocked {
                                                     "bg-gradient-to-r from-amber-500 to-amber-600 border-amber-600 text-white hover:shadow-lg hover:from-amber-600 hover:to-amber-700 hover:-translate-y-0.5"
                                                 } else {
                                                     "bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 opacity-70 pointer-events-none"
-                                                }
+                                                },
                                             ),
                                             if is_exam_unlocked {
                                                 "🎓 Ujian Kenaikan Tingkat"
@@ -179,8 +192,11 @@ pub fn Roadmap() -> Element {
             // Modal Pemilihan Aksi Topik
             if let Some(topic) = selected_topic() {
                 div { class: "fixed inset-0 z-50 flex items-center justify-center px-4",
-                    div { class: "absolute inset-0 bg-slate-900/40 backdrop-blur-sm", onclick: move |_| selected_topic.set(None) }
-                    
+                    div {
+                        class: "absolute inset-0 bg-slate-900/40 backdrop-blur-sm",
+                        onclick: move |_| selected_topic.set(None),
+                    }
+
                     div { class: "relative bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md shadow-2xl p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200",
                         button {
                             class: "absolute top-4 right-4 h-8 w-8 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full flex items-center justify-center transition-colors font-bold",
@@ -189,9 +205,16 @@ pub fn Roadmap() -> Element {
                         }
 
                         div { class: "mb-6",
-                            div { class: "w-12 h-12 bg-teal-100 text-teal-600 dark:text-teal-400 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm", "🎯" }
-                            h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-1", "Mulai Topik" }
-                            p { class: "text-slate-500 dark:text-slate-400 font-medium text-sm", "Pilih metode pembelajaran untuk topik: " span { class: "text-teal-700 font-bold", "\"{topic}\"" } }
+                            div { class: "w-12 h-12 bg-teal-100 text-teal-600 dark:text-teal-400 rounded-2xl flex items-center justify-center text-2xl mb-4 shadow-sm",
+                                "🎯"
+                            }
+                            h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-1",
+                                "Mulai Topik"
+                            }
+                            p { class: "text-slate-500 dark:text-slate-400 font-medium text-sm",
+                                "Pilih metode pembelajaran untuk topik: "
+                                span { class: "text-teal-700 font-bold", "\"{topic}\"" }
+                            }
                         }
 
                         div { class: "space-y-3",
@@ -199,38 +222,63 @@ pub fn Roadmap() -> Element {
                                 class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::Lesson { goal: t.clone() }); }
+                                    move |_| {
+                                        navigator.push(Route::Lesson { goal: t.clone() });
+                                    }
                                 },
                                 div { class: "text-2xl", "📚" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Pelajari Materi" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Baca penjelasan teori & contoh" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800",
+                                        "Pelajari Materi"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium",
+                                        "Baca penjelasan teori & contoh"
+                                    }
                                 }
                             }
-                            
+
                             button {
                                 class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::Quiz { goal: t.clone(), battle_id: None }); }
+                                    move |_| {
+                                        navigator
+                                            .push(Route::Quiz {
+                                                goal: t.clone(),
+                                                battle_id: None,
+                                            });
+                                    }
                                 },
                                 div { class: "text-2xl", "📝" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Latihan Kuis" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Uji pengetahuan dengan soal interaktif" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800",
+                                        "Latihan Kuis"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium",
+                                        "Uji pengetahuan dengan soal interaktif"
+                                    }
                                 }
                             }
 
-                             button {
+                            button {
                                 class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::ChatRoleplay { goal: t.clone() }); }
+                                    move |_| {
+                                        navigator
+                                            .push(Route::ChatRoleplay {
+                                                goal: t.clone(),
+                                            });
+                                    }
                                 },
                                 div { class: "text-2xl", "💬" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Chat Percakapan" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Simulasi chat interaktif berbasis teks dengan AI" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800",
+                                        "Chat Percakapan"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium",
+                                        "Simulasi chat interaktif berbasis teks dengan AI"
+                                    }
                                 }
                             }
 
@@ -238,24 +286,39 @@ pub fn Roadmap() -> Element {
                                 class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::VoiceChat { goal: t.clone() }); }
+                                    move |_| {
+                                        navigator
+                                            .push(Route::VoiceChat {
+                                                goal: t.clone(),
+                                            });
+                                    }
                                 },
                                 div { class: "text-2xl", "🎙️" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Roleplay Suara" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Praktik berbicara langsung dengan AI" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800",
+                                        "Roleplay Suara"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium",
+                                        "Praktik berbicara langsung dengan AI"
+                                    }
                                 }
                             }
                             button {
                                 class: "w-full p-4 rounded-2xl border border-slate-200/30 dark:border-slate-700 hover:border-teal-400 bg-white dark:bg-slate-900 hover:bg-teal-50/30 dark:bg-teal-900/30 flex items-center gap-4 transition-all group shadow-sm hover:shadow-md",
                                 onclick: {
                                     let t = topic.clone();
-                                    move |_| { navigator.push(Route::Story { goal: t.clone() }); }
+                                    move |_| {
+                                        navigator.push(Route::Story { goal: t.clone() });
+                                    }
                                 },
                                 div { class: "text-2xl", "🎧" }
                                 div { class: "text-left",
-                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800", "Mode Story" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium", "Cerita interaktif & mendengarkan" }
+                                    h4 { class: "font-bold text-slate-800 dark:text-slate-200 group-hover:text-teal-800",
+                                        "Mode Story"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium",
+                                        "Cerita interaktif & mendengarkan"
+                                    }
                                 }
                             }
                         }

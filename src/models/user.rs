@@ -56,3 +56,11 @@ pub struct PublicProfile {
     pub joined_date: String,
     pub badges: Vec<crate::models::badge::Badge>,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct ProfileSummary {
+    pub profile: PublicProfile,
+    pub frames: Vec<String>,
+    pub titles: Vec<String>,
+    pub colors: Vec<String>,
+}

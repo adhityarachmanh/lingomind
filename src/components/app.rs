@@ -162,7 +162,10 @@ pub fn App() -> Element {
     rsx! {
         document::Meta { name: "theme-color", content: "#14b8a6" }
         document::Meta { name: "apple-mobile-web-app-capable", content: "yes" }
-        document::Meta { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" }
+        document::Meta {
+            name: "apple-mobile-web-app-status-bar-style",
+            content: "black-translucent",
+        }
         document::Link { rel: "manifest", href: "/manifest.json" }
         document::Link { rel: "apple-touch-icon", href: "/assets/icon.svg" }
         document::Link { rel: "icon", href: FAVICON }
@@ -195,7 +198,7 @@ pub fn App() -> Element {
                     img {
                         src: FAVICON,
                         alt: "LingoMind Logo",
-                        class: "w-28 h-28 sm:w-36 sm:h-36 object-contain relative z-10 animate-bounce"
+                        class: "w-28 h-28 sm:w-36 sm:h-36 object-contain relative z-10 animate-bounce",
                     }
                 }
                 h2 { class: "text-2xl sm:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-emerald-400 mb-6 drop-shadow-sm",
@@ -204,7 +207,9 @@ pub fn App() -> Element {
                 div { class: "flex flex-col items-center gap-4",
                     div { class: "flex items-center gap-3",
                         i { class: "fa-solid fa-circle-notch fa-spin text-teal-500 text-xl" }
-                        span { class: "text-slate-600 dark:text-slate-300 font-medium tracking-wide", "Memuat Aplikasi..." }
+                        span { class: "text-slate-600 dark:text-slate-300 font-medium tracking-wide",
+                            "Memuat Aplikasi..."
+                        }
                     }
                     div { class: "w-64 h-2 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner",
                         div { class: "h-full bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full animate-[pulse_1.5s_ease-in-out_infinite] w-[60%]" }

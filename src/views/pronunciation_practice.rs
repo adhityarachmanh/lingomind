@@ -194,27 +194,38 @@ pub fn PronunciationPractice() -> Element {
 
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 font-sans p-4 md:p-8 flex flex-col items-center pt-24",
-            div { class: "max-w-2xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden",
-                
+            div {
+                class: "max-w-2xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-xl relative overflow-hidden",
+
                 // Header
                 div { class: "text-center mb-8",
-                    span { class: "text-xs font-bold bg-teal-50 text-teal-600 border border-teal-100 px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm", "Speech Scoring" }
-                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mt-4", "Pronunciation Practice" }
-                    p { class: "text-slate-500 dark:text-slate-400 mt-2 font-medium", "Latih pengucapan {language} Anda" }
+                    span { class: "text-xs font-bold bg-teal-50 text-teal-600 border border-teal-100 px-4 py-1.5 rounded-full uppercase tracking-wider shadow-sm",
+                        "Speech Scoring"
+                    }
+                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mt-4",
+                        "Pronunciation Practice"
+                    }
+                    p { class: "text-slate-500 dark:text-slate-400 mt-2 font-medium",
+                        "Latih pengucapan {language} Anda"
+                    }
                 }
 
                 if is_loading() {
                     div { class: "flex flex-col items-center justify-center py-12",
                         div { class: "animate-spin rounded-full h-12 w-12 border-b-2 border-teal-500 mb-4" }
-                        p { class: "text-slate-500 font-medium animate-pulse", "Menyiapkan kalimat latihan..." }
+                        p { class: "text-slate-500 font-medium animate-pulse",
+                            "Menyiapkan kalimat latihan..."
+                        }
                     }
                 } else if !sentences().is_empty() {
                     div { class: "flex flex-col items-center w-full",
-                        
+
                         // Target Sentence Display
                         div { class: "w-full bg-slate-50 dark:bg-slate-800 border-2 border-slate-100 dark:border-slate-700 rounded-2xl p-6 text-center shadow-inner mb-8",
-                            p { class: "text-xs text-slate-400 uppercase tracking-widest font-black mb-3", "Ucapkan Kalimat Ini:" }
-                            
+                            p { class: "text-xs text-slate-400 uppercase tracking-widest font-black mb-3",
+                                "Ucapkan Kalimat Ini:"
+                            }
+
                             if let Some(eval) = evaluation() {
                                 // Tampilkan kata yang diwarnai
                                 div { class: "text-2xl md:text-3xl font-bold flex flex-wrap justify-center gap-2",
@@ -222,9 +233,11 @@ pub fn PronunciationPractice() -> Element {
                                         span {
                                             class: match w_res.status.as_str() {
                                                 "correct" => "text-emerald-500",
-                                                "incorrect" => "text-rose-500 underline decoration-rose-300 decoration-wavy underline-offset-4",
+                                                "incorrect" => {
+                                                    "text-rose-500 underline decoration-rose-300 decoration-wavy underline-offset-4"
+                                                }
                                                 "missing" => "text-slate-400 line-through",
-                                                _ => "text-slate-700 dark:text-slate-200"
+                                                _ => "text-slate-700 dark:text-slate-200",
                                             },
                                             "{w_res.word}"
                                         }
@@ -248,13 +261,17 @@ pub fn PronunciationPractice() -> Element {
                                     "bg-amber-400 text-white animate-spin"
                                 } else {
                                     "bg-teal-500 hover:bg-teal-600 text-white hover:scale-105 shadow-teal-500/30"
-                                }
+                                },
                             ),
                             onclick: handle_mic_click,
                             disabled: is_listening() || is_evaluating(),
-                            if is_evaluating() { "⏳" } else { "🎙️" }
+                            if is_evaluating() {
+                                "⏳"
+                            } else {
+                                "🎙️"
+                            }
                         }
-                        
+
                         p { class: "mt-4 text-sm font-bold text-slate-500",
                             if is_listening() {
                                 "Sedang mendengarkan..."
@@ -279,29 +296,39 @@ pub fn PronunciationPractice() -> Element {
                                 div { class: "relative w-20 h-20 mb-4 flex items-center justify-center",
                                     svg { class: "w-full h-full transform -rotate-90",
                                         circle {
-                                            cx: "40", cy: "40", r: "36",
+                                            cx: "40",
+                                            cy: "40",
+                                            r: "36",
                                             stroke: "currentColor",
                                             stroke_width: "8",
                                             fill: "transparent",
-                                            class: "text-slate-100 dark:text-slate-800"
+                                            class: "text-slate-100 dark:text-slate-800",
                                         }
                                         circle {
-                                            cx: "40", cy: "40", r: "36",
+                                            cx: "40",
+                                            cy: "40",
+                                            r: "36",
                                             stroke: "currentColor",
                                             stroke_width: "8",
                                             fill: "transparent",
                                             stroke_dasharray: "{eval.score as f64 * 2.26} 226", // 2*PI*36 ~ 226
-                                            class: if eval.score >= 80 { "text-emerald-500" } else if eval.score >= 50 { "text-amber-500" } else { "text-rose-500" }
+                                            class: if eval.score >= 80 { "text-emerald-500" } else if eval.score >= 50 { "text-amber-500" } else { "text-rose-500" },
                                         }
                                     }
-                                    span { class: "absolute text-xl font-black text-slate-700 dark:text-slate-200", "{eval.score}" }
+                                    span { class: "absolute text-xl font-black text-slate-700 dark:text-slate-200",
+                                        "{eval.score}"
+                                    }
                                 }
-                                
-                                p { class: "text-slate-600 dark:text-slate-400 text-sm font-medium text-center italic mb-4", "\"{transcript}\"" }
-                                
+
+                                p { class: "text-slate-600 dark:text-slate-400 text-sm font-medium text-center italic mb-4",
+                                    "\"{transcript}\""
+                                }
+
                                 div { class: "bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/50 p-4 rounded-xl w-full flex gap-3",
                                     span { "💡" }
-                                    p { class: "text-sm text-blue-800 dark:text-blue-300 font-medium", "{eval.feedback}" }
+                                    p { class: "text-sm text-blue-800 dark:text-blue-300 font-medium",
+                                        "{eval.feedback}"
+                                    }
                                 }
                             }
                         }

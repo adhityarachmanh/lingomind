@@ -22,19 +22,21 @@ pub fn ShopPanel(email: String) -> Element {
                     i { class: "fa-solid fa-store text-emerald-600" }
                     "Katalog Toko"
                 }
-                button { 
+                button {
                     class: "bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm",
                     onclick: move |_| editing_item.set(Some(None)),
                     i { class: "fa-solid fa-plus" }
                     "Tambah Item"
                 }
             }
-            
+
             div { class: "overflow-x-auto",
                 table { class: "w-full text-left text-sm text-slate-700",
                     thead { class: "text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200",
                         tr {
-                            th { class: "px-4 py-3 rounded-tl-lg text-center w-20", "Ikon" }
+                            th { class: "px-4 py-3 rounded-tl-lg text-center w-20",
+                                "Ikon"
+                            }
                             th { class: "px-4 py-3", "Nama & Deskripsi" }
                             th { class: "px-4 py-3", "Efek" }
                             th { class: "px-4 py-3", "Harga" }
@@ -46,11 +48,17 @@ pub fn ShopPanel(email: String) -> Element {
                             for item in items {
                                 ShopItemRow {
                                     item: item.clone(),
-                                    on_edit: move |_| editing_item.set(Some(Some(item.clone())))
+                                    on_edit: move |_| editing_item.set(Some(Some(item.clone()))),
                                 }
                             }
                         } else {
-                            tr { td { colspan: "5", class: "px-4 py-8 text-center text-slate-500", "Memuat data..." } }
+                            tr {
+                                td {
+                                    colspan: "5",
+                                    class: "px-4 py-8 text-center text-slate-500",
+                                    "Memuat data..."
+                                }
+                            }
                         }
                     }
                 }
@@ -62,7 +70,7 @@ pub fn ShopPanel(email: String) -> Element {
                     email: email.clone(),
                     item: opt_item,
                     on_close: move |_| editing_item.set(None),
-                    on_save: move |_| shop_items.restart()
+                    on_save: move |_| shop_items.restart(),
                 }
             }
         }
@@ -94,7 +102,7 @@ fn ShopItemRow(item: ShopItemAdmin, on_edit: EventHandler<()>) -> Element {
                 }
             }
             td { class: "px-4 py-4",
-                span { class: "text-amber-500 font-bold flex items-center gap-1 text-sm bg-amber-50 border border-amber-100/50 px-2.5 py-1 rounded-lg w-fit", 
+                span { class: "text-amber-500 font-bold flex items-center gap-1 text-sm bg-amber-50 border border-amber-100/50 px-2.5 py-1 rounded-lg w-fit",
                     "{item_price} "
                     i { class: "fa-solid fa-coins text-xs" }
                 }
@@ -186,24 +194,28 @@ fn ShopItemModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1 overflow-y-auto max-h-[70vh]",
                     div { class: "grid grid-cols-3 gap-4",
                         div { class: "col-span-1 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Ikon / Emoji" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Ikon / Emoji"
+                            }
                             input {
                                 class: "w-full text-center text-xl bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all font-semibold",
                                 value: "{icon_name}",
                                 oninput: move |e| icon_name.set(e.value()),
-                                placeholder: "🎁"
+                                placeholder: "🎁",
                             }
                         }
-                        
+
                         div { class: "col-span-2 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Harga (Koin)" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Harga (Koin)"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-amber-600 font-bold focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100 transition-all text-sm",
                                 value: "{cost}",
                                 oninput: move |e| cost.set(e.value()),
@@ -212,36 +224,42 @@ fn ShopItemModal(
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nama Item" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Nama Item"
+                        }
                         input {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all font-semibold",
                             value: "{name}",
                             oninput: move |e| name.set(e.value()),
-                            placeholder: "Nama Item Baru"
+                            placeholder: "Nama Item Baru",
                         }
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Tipe Efek (Effect Key)" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Tipe Efek (Effect Key)"
+                        }
                         input {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all font-mono",
                             value: "{effect_type}",
                             oninput: move |e| effect_type.set(e.value()),
-                            placeholder: "e.g. shield, streak_freeze, double_xp"
+                            placeholder: "e.g. shield, streak_freeze, double_xp",
                         }
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Deskripsi" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Deskripsi"
+                        }
                         textarea {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-600 text-sm focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all min-h-[80px]",
                             value: "{description}",
                             oninput: move |e| description.set(e.value()),
-                            placeholder: "Tulis penjelasan efek atau kegunaan item di sini..."
+                            placeholder: "Tulis penjelasan efek atau kegunaan item di sini...",
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -254,7 +272,11 @@ fn ShopItemModal(
                         onclick: save_action,
                         disabled: is_saving() || name().trim().is_empty(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan"
+                        }
                     }
                 }
             }

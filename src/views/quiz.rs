@@ -275,7 +275,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
-                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Gemini AI sedang merancang kuis kustom untuk Anda..." }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium",
+                    "Gemini AI sedang merancang kuis kustom untuk Anda..."
+                }
             }
         };
     };
@@ -284,7 +286,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500" }
-                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Mencoba ulang menghubungi AI..." }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium",
+                    "Mencoba ulang menghubungi AI..."
+                }
             }
         };
     }
@@ -294,9 +298,17 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
                 div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-rose-200 dark:border-rose-900/30 max-w-md text-center",
                     span { class: "text-5xl block mb-4", "💔" }
-                    h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2", "Nyawa Kamu Habis!" }
-                    p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Kamu butuh minimal 1 Nyawa untuk mengikuti kuis ini. Silakan kembali ke Beranda untuk mengisi ulang nyawa kamu." }
-                    Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md", "Kembali ke Beranda" }
+                    h3 { class: "text-2xl font-bold text-rose-600 dark:text-rose-500 mb-2",
+                        "Nyawa Kamu Habis!"
+                    }
+                    p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                        "Kamu butuh minimal 1 Nyawa untuk mengikuti kuis ini. Silakan kembali ke Beranda untuk mengisi ulang nyawa kamu."
+                    }
+                    Link {
+                        to: Route::Dashboard {},
+                        class: "block w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-colors shadow-md",
+                        "Kembali ke Beranda"
+                    }
                 }
             }
         };
@@ -308,17 +320,25 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             return rsx! {
                 div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
                     div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
-                        h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Kuis" }
-                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "{e}" }
-                        button { 
-                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                        h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4",
+                            "Gagal Memuat Kuis"
+                        }
+                        p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                            "{e}"
+                        }
+                        button {
+                            class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer",
                             onclick: move |_| {
                                 is_retrying.set(true);
                                 quiz_resource.restart();
-                            }, 
-                            "Coba Lagi" 
+                            },
+                            "Coba Lagi"
                         }
-                        Link { to: Route::Dashboard {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Beranda" }
+                        Link {
+                            to: Route::Dashboard {},
+                            class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition",
+                            "Kembali ke Beranda"
+                        }
                     }
                 }
             };
@@ -326,7 +346,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     };
 
     if quiz_container.questions.is_empty() {
-        return rsx! { div { class: "p-8 text-amber-600 dark:text-amber-400 font-bold text-center", "AI mengembalikan kuis kosong. Coba muat ulang halaman." } };
+        return rsx! {
+            div { class: "p-8 text-amber-600 dark:text-amber-400 font-bold text-center",
+                "AI mengembalikan kuis kosong. Coba muat ulang halaman."
+            }
+        };
     }
 
     if quiz_finished() {
@@ -335,8 +359,12 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex flex-col justify-center items-center px-4 py-6 sm:p-8 font-sans",
                 div { class: "bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-3xl border border-slate-200/30 dark:border-slate-700 text-center max-w-md w-full shadow-xl",
                     h2 { class: "text-5xl mb-4", "🎉" }
-                    h3 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Kuis Selesai!" }
-                    p { class: "text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium", "Skor Anda berhasil dikirim ke database Neon." }
+                    h3 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2",
+                        "Kuis Selesai!"
+                    }
+                    p { class: "text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium",
+                        "Skor Anda berhasil dikirim ke database Neon."
+                    }
                     if score_gained() > 0 {
                         document::Script {
                             "if (typeof confetti === 'function') {{
@@ -345,16 +373,26 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         }
                     }
                     div { class: "bg-teal-50/30 dark:bg-teal-900/30 p-6 rounded-2xl border border-teal-100/50 dark:border-teal-900/50 mb-8",
-                        p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2", "Tambahan Skor" }
+                        p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2",
+                            "Tambahan Skor"
+                        }
                         p { class: "text-4xl font-black text-teal-700", "+{score_gained} Poin" }
                     }
                     {
-                        let required_score = curriculum.iter().find(|c| c.level == active_level).map(|c| c.base_reward_points).unwrap_or(10) * 5;
+                        let required_score = curriculum
+                            .iter()
+                            .find(|c| c.level == active_level)
+                            .map(|c| c.base_reward_points)
+                            .unwrap_or(10) * 5;
                         if score_gained() >= required_score {
                             rsx! {
                                 div { class: "bg-emerald-50 dark:bg-emerald-900/30 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800 mb-8",
-                                    p { class: "text-emerald-700 dark:text-emerald-400 font-bold text-sm", "🌟 Luar Biasa! Nilai Sempurna!" }
-                                    p { class: "text-emerald-600 dark:text-emerald-500 text-xs mt-1", "Anda telah menguasai materi ini. Tahap selanjutnya telah terbuka!" }
+                                    p { class: "text-emerald-700 dark:text-emerald-400 font-bold text-sm",
+                                        "🌟 Luar Biasa! Nilai Sempurna!"
+                                    }
+                                    p { class: "text-emerald-600 dark:text-emerald-500 text-xs mt-1",
+                                        "Anda telah menguasai materi ini. Tahap selanjutnya telah terbuka!"
+                                    }
                                 }
                             }
                         } else {
@@ -362,14 +400,22 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 div { class: "bg-amber-50 dark:bg-amber-900/30 p-4 rounded-xl border border-amber-200 dark:border-amber-800 mb-8 text-left flex items-start gap-3",
                                     span { class: "text-2xl", "🔒" }
                                     div {
-                                        p { class: "text-amber-800 dark:text-amber-400 font-bold text-sm", "Topik Berikutnya Masih Terkunci" }
-                                        p { class: "text-amber-700 dark:text-amber-500 text-xs mt-1", "Sistem LingoMind mensyaratkan Anda untuk mendapatkan nilai sempurna (semua benar) untuk membuktikan penguasaan materi. Anda butuh {required_score} Poin. Ayo coba lagi!" }
+                                        p { class: "text-amber-800 dark:text-amber-400 font-bold text-sm",
+                                            "Topik Berikutnya Masih Terkunci"
+                                        }
+                                        p { class: "text-amber-700 dark:text-amber-500 text-xs mt-1",
+                                            "Sistem LingoMind mensyaratkan Anda untuk mendapatkan nilai sempurna (semua benar) untuk membuktikan penguasaan materi. Anda butuh {required_score} Poin. Ayo coba lagi!"
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    Link { to: Route::Roadmap {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Roadmap" }
+                    Link {
+                        to: Route::Roadmap {},
+                        class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md",
+                        "Kembali ke Roadmap"
+                    }
                 }
             }
         };
@@ -399,7 +445,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     rsx! {
         div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-4 py-0 sm:py-8 flex items-stretch sm:items-center justify-center font-sans pb-24 sm:pb-8",
             div { class: "max-w-3xl w-full bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col justify-between min-h-screen sm:min-h-0",
-                
+
                 div {
                     // Header progress bar timeline (Duolingo style)
                     div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100/50 dark:border-slate-800 pb-4",
@@ -411,17 +457,23 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         div { class: "flex-1 h-3.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden border border-slate-200/50 dark:border-slate-700/50 p-[2px]",
                             div {
                                 class: "h-full bg-gradient-to-r from-teal-400 to-teal-500 rounded-full transition-all duration-300 shadow-sm",
-                                width: "{((current_question_idx() + 1) * 100 / quiz_container.questions.len()).min(100)}%"
+                                width: "{((current_question_idx() + 1) * 100 / quiz_container.questions.len()).min(100)}%",
                             }
                         }
-                        span { class: "text-xs font-bold text-slate-500 dark:text-slate-400 font-mono shrink-0", "{current_question_idx() + 1}/{quiz_container.questions.len()}" }
+                        span { class: "text-xs font-bold text-slate-500 dark:text-slate-400 font-mono shrink-0",
+                            "{current_question_idx() + 1}/{quiz_container.questions.len()}"
+                        }
                     }
 
                     // Level and status badges
                     div { class: "flex flex-wrap items-center gap-2 mb-4",
-                        span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50", "Latihan {language} ({active_level})" }
+                        span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50",
+                            "Latihan {language} ({active_level})"
+                        }
                         if is_listening_question {
-                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-2.5 py-1 rounded-full", "Listening Test" }
+                            span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-2.5 py-1 rounded-full",
+                                "Listening Test"
+                            }
                         }
                     }
 
@@ -429,19 +481,8 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                     div { class: "flex flex-col gap-4 mb-6",
                         h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed space-y-2",
                             for line in question_lines {
-                                p {
-                                    class: if line.starts_with("A:")
-                                        || line.starts_with("B:")
-                                        || line.starts_with("C:")
-                                        || line.starts_with("D:")
-                                        || line.starts_with("E:")
-                                    {
-                                        "text-slate-700 dark:text-slate-300 font-bold"
-                                    } else if line.starts_with('\'') || line.starts_with('"') {
-                                        "text-amber-700 italic font-medium"
-                                    } else {
-                                        "text-slate-800 dark:text-slate-200"
-                                    },
+                                p { class: if line.starts_with("A:") || line.starts_with("B:") || line.starts_with("C:")
+    || line.starts_with("D:") || line.starts_with("E:") { "text-slate-700 dark:text-slate-300 font-bold" } else if line.starts_with('\'') || line.starts_with('"') { "text-amber-700 italic font-medium" } else { "text-slate-800 dark:text-slate-200" },
                                     "{line}"
                                 }
                             }
@@ -453,7 +494,12 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         div { class: "flex items-center gap-2",
                             button {
                                 class: "w-9 h-9 rounded-full bg-teal-500 hover:bg-teal-600 text-white flex items-center justify-center text-sm font-bold transition-all shadow-md shadow-teal-500/20 active:scale-95 cursor-pointer",
-                                onclick: move |_| speak_with_edge_or_fallback(edge_tts_voice.clone(), tts_lang_code.clone(), tts_question.clone(), listen_speed()),
+                                onclick: move |_| speak_with_edge_or_fallback(
+                                    edge_tts_voice.clone(),
+                                    tts_lang_code.clone(),
+                                    tts_question.clone(),
+                                    listen_speed(),
+                                ),
                                 "🔊"
                             }
                             button {
@@ -461,21 +507,27 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 onclick: move |_| stop_speech(),
                                 "⏹"
                             }
-                            span { class: "text-xs font-bold text-slate-500 dark:text-slate-400", if is_listening_question { "Dengarkan Soal" } else { "Pengucapan" } }
+                            span { class: "text-xs font-bold text-slate-500 dark:text-slate-400",
+                                if is_listening_question {
+                                    "Dengarkan Soal"
+                                } else {
+                                    "Pengucapan"
+                                }
+                            }
                         }
                         select {
                             class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-xl text-xs px-2 py-1.5 focus:outline-none focus:border-teal-500 cursor-pointer shadow-sm",
                             value: if listen_speed() < 0.9 { "slow" } else if listen_speed() > 1.0 { "fast" } else { "normal" },
-							onchange: move |e| {
-								let v = e.value();
-								if v == "slow" {
-									listen_speed.set(0.8);
-								} else if v == "fast" {
-									listen_speed.set(1.1);
-								} else {
-									listen_speed.set(0.95);
-								}
-							},
+                            onchange: move |e| {
+                                let v = e.value();
+                                if v == "slow" {
+                                    listen_speed.set(0.8);
+                                } else if v == "fast" {
+                                    listen_speed.set(1.1);
+                                } else {
+                                    listen_speed.set(0.95);
+                                }
+                            },
                             option { value: "slow", "🐢 Lambat" }
                             option { value: "normal", "🗣️ Normal" }
                             option { value: "fast", "⚡ Cepat" }
@@ -485,62 +537,70 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                     // Options Grid
                     div { class: "flex flex-col gap-3 mb-6",
                         {
-                            quiz_options.into_iter().enumerate().map(|(opt_idx, option)| {
-                                let option_for_select = option.clone();
-                                let option_for_listen = option.clone();
-                                let option_for_click = option.clone();
-                                let option_edge_tts_voice = edge_tts_voice.clone();
-                                let option_tts_lang_code = tts_lang_code.clone();
-                                let prefix = match opt_idx {
-                                    0 => "A",
-                                    1 => "B",
-                                    2 => "C",
-                                    3 => "D",
-                                    4 => "E",
-                                    _ => "?",
-                                };
-                                rsx! {
-                                    div {
-                                        key: "{option}",
-                                        class: format!(
-                                            "flex items-center justify-between p-4 rounded-2xl border-2 text-sm sm:text-base leading-relaxed transition-all font-bold active:scale-[0.99] cursor-pointer shadow-sm {}",
-                                            if selected_option() == Some(option_for_select.clone()) {
-                                                "bg-teal-50/30 dark:bg-teal-900/30/70 border-teal-500 text-teal-900 shadow-md ring-1 ring-teal-500/20"
-                                            } else {
-                                                "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300"
-                                            }
-                                        ),
-                                        onclick: move |_| {
-                                            if !show_explanation() {
-                                                selected_option.set(Some(option_for_click.clone()));
-                                            }
-                                        },
-                                        div { class: "flex-1 flex items-center gap-3.5 pr-2",
-                                            div {
-                                                class: format!(
-                                                    "w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm {}",
-                                                    if selected_option() == Some(option_for_select.clone()) {
-                                                        "bg-teal-500 text-white"
-                                                    } else {
-                                                        "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
-                                                    }
-                                                ),
-                                                "{prefix}"
-                                            }
-                                            span { class: "font-semibold text-left", "{option}" }
-                                        }
-                                        button {
-                                            class: "w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:text-teal-600 dark:text-teal-400 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
-                                            disabled: show_explanation(),
-                                            onclick: move |e| {
-                                                e.stop_propagation();
-                                                speak_with_edge_or_fallback(option_edge_tts_voice.clone(), option_tts_lang_code.clone(), option_for_listen.clone(), listen_speed());
+                            quiz_options
+                                .into_iter()
+                                .enumerate()
+                                .map(|(opt_idx, option)| {
+                                    let option_for_select = option.clone();
+                                    let option_for_listen = option.clone();
+                                    let option_for_click = option.clone();
+                                    let option_edge_tts_voice = edge_tts_voice.clone();
+                                    let option_tts_lang_code = tts_lang_code.clone();
+                                    let prefix = match opt_idx {
+                                        0 => "A",
+                                        1 => "B",
+                                        2 => "C",
+                                        3 => "D",
+                                        4 => "E",
+                                        _ => "?",
+                                    };
+                                    rsx! {
+                                        div {
+                                            key: "{option}",
+                                            class: format!(
+                                                "flex items-center justify-between p-4 rounded-2xl border-2 text-sm sm:text-base leading-relaxed transition-all font-bold active:scale-[0.99] cursor-pointer shadow-sm {}",
+                                                if selected_option() == Some(option_for_select.clone()) {
+                                                    "bg-teal-50/30 dark:bg-teal-900/30/70 border-teal-500 text-teal-900 shadow-md ring-1 ring-teal-500/20"
+                                                } else {
+                                                    "bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-300 hover:bg-slate-50 dark:bg-slate-950 text-slate-700 dark:text-slate-300"
+                                                },
+                                            ),
+                                            onclick: move |_| {
+                                                if !show_explanation() {
+                                                    selected_option.set(Some(option_for_click.clone()));
+                                                }
                                             },
-                                            "🔊"
+                                            div { class: "flex-1 flex items-center gap-3.5 pr-2",
+                                                div {
+                                                    class: format!(
+                                                        "w-8 h-8 rounded-full flex items-center justify-center font-extrabold text-xs shrink-0 shadow-sm {}",
+                                                        if selected_option() == Some(option_for_select.clone()) {
+                                                            "bg-teal-500 text-white"
+                                                        } else {
+                                                            "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                                                        },
+                                                    ),
+                                                    "{prefix}"
+                                                }
+                                                span { class: "font-semibold text-left", "{option}" }
+                                            }
+                                            button {
+                                                class: "w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-950 hover:bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center hover:text-teal-600 dark:text-teal-400 transition-colors shadow-sm active:scale-90 cursor-pointer shrink-0",
+                                                disabled: show_explanation(),
+                                                onclick: move |e| {
+                                                    e.stop_propagation();
+                                                    speak_with_edge_or_fallback(
+                                                        option_edge_tts_voice.clone(),
+                                                        option_tts_lang_code.clone(),
+                                                        option_for_listen.clone(),
+                                                        listen_speed(),
+                                                    );
+                                                },
+                                                "🔊"
+                                            }
                                         }
                                     }
-                                }
-                            })
+                                })
                         }
                     }
 
@@ -548,12 +608,23 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                     if show_explanation() {
                         div { class: "bg-slate-50 dark:bg-slate-950 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 mb-6 text-sm shadow-inner",
                             if selected_option() == Some(correct_ans.clone()) {
-                                p { class: "text-emerald-600 font-extrabold mb-2 text-base", "✓ Jawaban Benar!" }
+                                p { class: "text-emerald-600 font-extrabold mb-2 text-base",
+                                    "✓ Jawaban Benar!"
+                                }
                             } else {
-                                p { class: "text-rose-600 dark:text-rose-400 font-extrabold mb-2 text-base", "✗ Jawaban Salah!" }
-                                p { class: "text-slate-600 dark:text-slate-400 text-sm mb-3 font-medium", "Kunci Jawaban: ", span { class: "text-slate-900 dark:text-slate-50 font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700", "{correct_ans}" } }
+                                p { class: "text-rose-600 dark:text-rose-400 font-extrabold mb-2 text-base",
+                                    "✗ Jawaban Salah!"
+                                }
+                                p { class: "text-slate-600 dark:text-slate-400 text-sm mb-3 font-medium",
+                                    "Kunci Jawaban: "
+                                    span { class: "text-slate-900 dark:text-slate-50 font-bold bg-white dark:bg-slate-900 px-2 py-1 rounded border border-slate-200 dark:border-slate-700",
+                                        "{correct_ans}"
+                                    }
+                                }
                             }
-                            p { class: "text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium", "{explanation_text}" }
+                            p { class: "text-slate-700 dark:text-slate-300 text-sm leading-relaxed font-medium",
+                                "{explanation_text}"
+                            }
                         }
                     }
                 }
@@ -567,11 +638,17 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                             onclick: move |_| {
                                 stop_speech();
                                 if let Some(user) = user_opt.clone() {
-                                    let cards = vec![NewFlashcard {
-                                        language: language.clone(),
-                                        front_text: current_q.question.clone(),
-                                        back_text: format!("Jawaban benar: {} | Penjelasan: {}", correct_ans_check.clone(), explanation_text.clone()),
-                                    }];
+                                    let cards = vec![
+                                        NewFlashcard {
+                                            language: language.clone(),
+                                            front_text: current_q.question.clone(),
+                                            back_text: format!(
+                                                "Jawaban benar: {} | Penjelasan: {}",
+                                                correct_ans_check.clone(),
+                                                explanation_text.clone(),
+                                            ),
+                                        },
+                                    ];
                                     spawn(async move {
                                         let _ = add_flashcards_server(user.email, cards).await;
                                     });
@@ -579,48 +656,54 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 if selected_option() == Some(correct_ans_check.clone()) {
                                     play_sfx(SFX_CORRECT);
                                     correct_answers_count.set(correct_answers_count() + 1);
-                                    let pts = curriculum.iter().find(|c| c.level == active_level).map(|c| c.base_reward_points).unwrap_or(10);
+                                    let pts = curriculum
+                                        .iter()
+                                        .find(|c| c.level == active_level)
+                                        .map(|c| c.base_reward_points)
+                                        .unwrap_or(10); // Wait, we can't easily mutate resource value directly. We'll just rely on hearts_depleted state.
                                     score_gained.set(score_gained() + pts);
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();
-                                        let skill = classify_skill(&current_q.question, &explanation_text, &question_type_for_skill);
+                                        let skill = classify_skill(
+                                            &current_q.question,
+                                            &explanation_text,
+                                            &question_type_for_skill,
+                                        );
                                         spawn(async move {
-                                            let _ = log_skill_progress_server(user.email, lang, skill, true).await;
+                                            let _ = log_skill_progress_server(user.email, lang, skill, true)
+                                                .await;
                                         });
                                     }
                                 } else if let Some(user) = user_opt.clone() {
                                     play_sfx(SFX_WRONG);
                                     let topic = classify_weakness_topic(&explanation_text);
-                                    let skill = classify_skill(&current_q.question, &explanation_text, &question_type_for_skill);
+                                    let skill = classify_skill(
+                                        &current_q.question,
+                                        &explanation_text,
+                                        &question_type_for_skill,
+                                    );
                                     let note = format!(
                                         "Q: {} | Selected: {} | Correct: {}",
                                         current_q.question,
                                         selected_option().unwrap_or_default(),
-                                        correct_ans_check.clone()
+                                        correct_ans_check.clone(),
                                     );
                                     let lang = language.clone();
                                     let email2 = user.email.clone();
-                                    
-                                    // Deduct Heart
                                     let email_for_heart = user.email.clone();
                                     spawn(async move {
                                         let _ = deduct_heart_server(email_for_heart).await;
                                     });
-                                    
-                                    // Local state update
                                     if let Some(Ok(mut stats)) = stats_resource.value()() {
                                         stats.hearts -= 1;
                                         if stats.hearts <= 0 {
                                             hearts_depleted.set(true);
                                         }
-                                        // Wait, we can't easily mutate resource value directly. We'll just rely on hearts_depleted state.
-                                        // Let's use a separate signal to trigger depletion if it was the last heart.
                                         let current_hearts = stats.hearts;
                                         if current_hearts <= 0 {
                                             hearts_depleted.set(true);
                                         }
                                     }
-                                    
                                     spawn(async move {
                                         let _ = log_weakness_server(user.email, lang, topic, note).await;
                                     });
@@ -649,7 +732,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                             class: "w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-2xl text-base transition-colors shadow-lg hover:shadow-xl cursor-pointer disabled:opacity-50",
                             disabled: is_submitting(),
                             onclick: move |_| {
-                                if is_submitting() { return; }
+                                if is_submitting() {
+                                    return;
+                                }
                                 is_submitting.set(true);
                                 stop_speech();
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
@@ -662,11 +747,28 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                 let played_topic = Some(goal_for_submit.clone());
                                 spawn(async move {
                                     if !email.is_empty() {
-                                        let _ = increment_correct_answers_server(email.clone(), total_correct).await;
-                                        if let Ok(updated_profile) = update_user_score(email.clone(), language, score, played_topic).await {
-                                            let _ = update_engagement_after_quiz_server(updated_profile.email.clone(), score).await;
+                                        let _ = increment_correct_answers_server(email.clone(), total_correct)
+                                            .await;
+                                        if let Ok(updated_profile) = update_user_score(
+                                                email.clone(),
+                                                language,
+                                                score,
+                                                played_topic,
+                                            )
+                                            .await
+                                        {
+                                            let _ = update_engagement_after_quiz_server(
+                                                    updated_profile.email.clone(),
+                                                    score,
+                                                )
+                                                .await;
                                             if let Some(bid) = battle {
-                                                let _ = crate::services::battle::submit_battle_score_server(bid, email.clone(), score).await;
+                                                let _ = crate::services::battle::submit_battle_score_server(
+                                                        bid,
+                                                        email.clone(),
+                                                        score,
+                                                    )
+                                                    .await;
                                             }
                                             session_state.set((Some(updated_profile), true));
                                             quiz_finished.set(true);
@@ -678,7 +780,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                     }
                                 });
                             },
-                            if is_submitting() { "Menyimpan..." } else { "Selesai & Simpan Skor" }
+                            if is_submitting() {
+                                "Menyimpan..."
+                            } else {
+                                "Selesai & Simpan Skor"
+                            }
                         }
                     }
                 }

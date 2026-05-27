@@ -180,10 +180,21 @@ pub fn ChatRoleplay(goal: String) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 md:p-8 flex flex-col justify-center items-center font-sans",
                 div { class: "max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-xl text-center",
-                    span { class: "text-xs font-bold bg-teal-50/30 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border border-teal-100/50 dark:border-teal-900/50 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm", "Mode Roleplay - {language}" }
-                    p { class: "text-xs text-slate-500 dark:text-slate-400 mb-3 font-medium", "Global language: ", span { class: "text-teal-600 dark:text-teal-400 font-bold", "{selected_language}" } }
-                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mb-3", "Pilih Skenario Obrolan" }
-                    p { class: "text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto", "Pilih skenario siap pakai atau tambah skenario custom. Partner AI menyesuaikan tingkat {active_level}." }
+                    span { class: "text-xs font-bold bg-teal-50/30 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border border-teal-100/50 dark:border-teal-900/50 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm",
+                        "Mode Roleplay - {language}"
+                    }
+                    p { class: "text-xs text-slate-500 dark:text-slate-400 mb-3 font-medium",
+                        "Global language: "
+                        span { class: "text-teal-600 dark:text-teal-400 font-bold",
+                            "{selected_language}"
+                        }
+                    }
+                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mb-3",
+                        "Pilih Skenario Obrolan"
+                    }
+                    p { class: "text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto",
+                        "Pilih skenario siap pakai atau tambah skenario custom. Partner AI menyesuaikan tingkat {active_level}."
+                    }
 
                     div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
                         for (setting_key, title, desc) in preset_scenarios {
@@ -196,17 +207,27 @@ pub fn ChatRoleplay(goal: String) -> Element {
                                     move |_| click_setting(scenario_name.clone())
                                 },
                                 div {
-                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-teal-700 transition-colors text-base", "{title}" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed", "{desc}" }
+                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-teal-700 transition-colors text-base",
+                                        "{title}"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed",
+                                        "{desc}"
+                                    }
                                 }
-                                span { class: "text-slate-400 group-hover:text-teal-500 transition-colors mt-0.5", "->" }
+                                span { class: "text-slate-400 group-hover:text-teal-500 transition-colors mt-0.5",
+                                    "->"
+                                }
                             }
                         }
                     }
 
                     div { class: "mt-8 p-6 rounded-2xl border-2 border-slate-100/20 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-left shadow-inner",
-                        p { class: "text-sm font-extrabold text-teal-700 uppercase tracking-wider mb-2", "Tambah Skenario Sendiri" }
-                        p { class: "text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium", "Contoh: Interview Kerja, Imigrasi, Dokter Gigi, Presentasi Kampus" }
+                        p { class: "text-sm font-extrabold text-teal-700 uppercase tracking-wider mb-2",
+                            "Tambah Skenario Sendiri"
+                        }
+                        p { class: "text-xs text-slate-500 dark:text-slate-400 mb-4 font-medium",
+                            "Contoh: Interview Kerja, Imigrasi, Dokter Gigi, Presentasi Kampus"
+                        }
                         div { class: "flex flex-col sm:flex-row gap-3",
                             input {
                                 r#type: "text",
@@ -233,7 +254,9 @@ pub fn ChatRoleplay(goal: String) -> Element {
 
                     if !custom_scenarios.is_empty() {
                         div { class: "mt-6 text-left p-6 bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl shadow-sm",
-                            p { class: "text-sm font-bold text-slate-700 dark:text-slate-300 mb-3", "Skenario custom Anda:" }
+                            p { class: "text-sm font-bold text-slate-700 dark:text-slate-300 mb-3",
+                                "Skenario custom Anda:"
+                            }
                             div { class: "flex flex-wrap gap-2.5",
                                 for scenario in custom_scenarios {
                                     button {
@@ -253,11 +276,15 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     }
 
                     if is_loading() {
-                        div { class: "mt-6 text-sm font-bold text-teal-600 dark:text-teal-400 animate-pulse", "Menyiapkan sesi roleplay..." }
+                        div { class: "mt-6 text-sm font-bold text-teal-600 dark:text-teal-400 animate-pulse",
+                            "Menyiapkan sesi roleplay..."
+                        }
                     }
 
                     if let Some(err) = error_msg() {
-                        p { class: "text-xs text-rose-600 dark:text-rose-400 font-bold mt-6 bg-rose-50/30 dark:bg-rose-900/30 p-3 rounded-xl border border-rose-200 shadow-sm", "{err}" }
+                        p { class: "text-xs text-rose-600 dark:text-rose-400 font-bold mt-6 bg-rose-50/30 dark:bg-rose-900/30 p-3 rounded-xl border border-rose-200 shadow-sm",
+                            "{err}"
+                        }
                     }
                 }
             }
@@ -287,12 +314,22 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     div { class: "flex items-center gap-4",
                         div { class: "h-3.5 w-3.5 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" }
                         div {
-                            h3 { class: "text-base font-extrabold text-slate-800 dark:text-slate-200", "Simulasi Peran: {setting_title}" }
-                            p { class: "text-xs text-slate-500 dark:text-slate-400 font-bold tracking-wide mt-0.5", "{language} - {active_level}" }
-                            p { class: "text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-0.5", "Global language: {selected_language}" }
+                            h3 { class: "text-base font-extrabold text-slate-800 dark:text-slate-200",
+                                "Simulasi Peran: {setting_title}"
+                            }
+                            p { class: "text-xs text-slate-500 dark:text-slate-400 font-bold tracking-wide mt-0.5",
+                                "{language} - {active_level}"
+                            }
+                            p { class: "text-[10px] text-teal-600 dark:text-teal-400 font-bold mt-0.5",
+                                "Global language: {selected_language}"
+                            }
                         }
                     }
-                    Link { to: Route::Dashboard {}, class: "text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-300 px-4 py-2 rounded-xl transition-all shadow-sm", "Keluar Sesi" }
+                    Link {
+                        to: Route::Dashboard {},
+                        class: "text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-white hover:bg-slate-800 bg-white dark:bg-slate-900 border border-slate-300 px-4 py-2 rounded-xl transition-all shadow-sm",
+                        "Keluar Sesi"
+                    }
                 }
 
                 div { class: "flex-1 p-6 overflow-y-auto space-y-6 bg-slate-50/50 dark:bg-slate-950/50",
@@ -305,11 +342,14 @@ pub fn ChatRoleplay(goal: String) -> Element {
                     for (msg, main_text, feedback_text) in mapped_messages {
                         div {
                             key: "{msg.id}",
-                            class: format!("flex w-full {}", if msg.sender == "user" { "justify-end" } else { "justify-start" }),
+                            class: format!(
+                                "flex w-full {}",
+                                if msg.sender == "user" { "justify-end" } else { "justify-start" },
+                            ),
                             div {
                                 class: format!(
                                     "max-w-[85%] sm:max-w-[80%] flex flex-col gap-2 {}",
-                                    if msg.sender == "user" { "items-end" } else { "items-start" }
+                                    if msg.sender == "user" { "items-end" } else { "items-start" },
                                 ),
                                 div {
                                     class: format!(
@@ -318,7 +358,7 @@ pub fn ChatRoleplay(goal: String) -> Element {
                                             "bg-teal-500 text-white font-medium rounded-tr-none"
                                         } else {
                                             "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200/30 dark:border-slate-700 font-medium rounded-tl-none shadow-md"
-                                        }
+                                        },
                                     ),
                                     "{main_text}"
                                 }
@@ -369,7 +409,9 @@ pub fn ChatRoleplay(goal: String) -> Element {
                         }
                     }
                     if let Some(err) = error_msg() {
-                        p { class: "text-xs text-rose-600 dark:text-rose-400 mt-3 text-center font-bold bg-rose-50/30 dark:bg-rose-900/30 p-2 rounded-lg border border-rose-100 dark:border-rose-900/50", "{err}" }
+                        p { class: "text-xs text-rose-600 dark:text-rose-400 mt-3 text-center font-bold bg-rose-50/30 dark:bg-rose-900/30 p-2 rounded-lg border border-rose-100 dark:border-rose-900/50",
+                            "{err}"
+                        }
                     }
                 }
             }

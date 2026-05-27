@@ -38,15 +38,19 @@ pub fn ForgotPassword() -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6 font-sans",
             div { class: "bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 dark:border-slate-700 text-center",
-                
+
                 img {
                     src: asset!("/assets/logo.png"),
                     alt: "LingoMind Logo",
                     class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800",
                 }
-                
-                h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Lupa Password" }
-                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium", "Masukkan email Anda untuk menerima tautan reset password." }
+
+                h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2",
+                    "Lupa Password"
+                }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium",
+                    "Masukkan email Anda untuk menerima tautan reset password."
+                }
 
                 if let Some((is_error, msg)) = status_message() {
                     div {
@@ -56,16 +60,24 @@ pub fn ForgotPassword() -> Element {
                                 "bg-rose-50/30 dark:bg-rose-900/30 border-rose-200 text-rose-600 dark:text-rose-400"
                             } else {
                                 "bg-emerald-50 border-emerald-200 text-emerald-600"
-                            }
+                            },
                         ),
-                        span { class: "shrink-0", if is_error { "⚠️" } else { "✅" } }
+                        span { class: "shrink-0",
+                            if is_error {
+                                "⚠️"
+                            } else {
+                                "✅"
+                            }
+                        }
                         span { "{msg}" }
                     }
                 }
 
                 // Input Email
                 div { class: "mb-6 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2",
+                        "Email"
+                    }
                     input {
                         r#type: "email",
                         class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
@@ -84,7 +96,7 @@ pub fn ForgotPassword() -> Element {
                             "bg-teal-100 text-teal-800 cursor-not-allowed opacity-80"
                         } else {
                             "bg-teal-500 hover:bg-teal-600 text-white hover:shadow-lg hover:shadow-teal-500/30"
-                        }
+                        },
                     ),
                     disabled: is_loading(),
                     onclick: handle_submit,

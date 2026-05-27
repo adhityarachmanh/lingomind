@@ -58,8 +58,7 @@ pub fn Navbar() -> Element {
                             alt: "LingoMind Logo",
                             class: "w-8 h-8 rounded-xl shadow-sm object-cover border border-slate-100 dark:border-slate-800",
                         }
-                        span {
-                            class: "text-xl font-black tracking-wider bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent",
+                        span { class: "text-xl font-black tracking-wider bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent",
                             "LingoMind"
                         }
                     }
@@ -67,44 +66,50 @@ pub fn Navbar() -> Element {
                     if let Some(user) = user_opt.as_ref() {
                         // Desktop Nav
                         div { class: "hidden sm:flex items-center gap-4",
-                            Link { 
-                                to: Route::Roadmap {}, 
+                            Link {
+                                to: Route::Roadmap {},
                                 class: tab_class_desktop(is_roadmap),
-                                "Kurikulum" 
+                                "Kurikulum"
                             }
-                            Link { 
-                                to: Route::Leaderboard {}, 
+                            Link {
+                                to: Route::Leaderboard {},
                                 class: tab_class_desktop(is_leaderboard),
-                                "Leaderboard" 
+                                "Leaderboard"
                             }
-                            Link { 
-                                to: Route::WeaknessAnalytics {}, 
+                            Link {
+                                to: Route::WeaknessAnalytics {},
                                 class: tab_class_desktop(is_analytics),
-                                "Analisis" 
+                                "Analisis"
                             }
-                            Link { 
-                                to: Route::Guide {}, 
+                            Link {
+                                to: Route::Guide {},
                                 class: tab_class_desktop(is_guide),
-                                "Panduan" 
+                                "Panduan"
                             }
-                            Link { 
-                                to: Route::Shop {}, 
+                            Link {
+                                to: Route::Shop {},
                                 class: tab_class_desktop(is_shop),
-                                "Toko" 
+                                "Toko"
                             }
-                            div { class: "px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1", 
+                            div { class: "px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1",
                                 span { "🔥" }
                                 span { "{user.score} pts" }
                             }
                             Link {
-                                to: Route::Profile { email: user.email.clone() },
+                                to: Route::Profile {
+                                    email: user.email.clone(),
+                                },
                                 class: "max-w-[180px] truncate text-sm font-bold text-slate-700/80 dark:text-slate-300 hover:text-teal-600 dark:hover:text-teal-400 transition-colors",
                                 "{user.full_name}"
                             }
                             button {
                                 class: "p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 transition-colors shadow-sm cursor-pointer text-sm",
                                 onclick: toggle_theme,
-                                if is_dark_mode() { "☀️\u{FE0F}" } else { "🌙\u{FE0F}" }
+                                if is_dark_mode() {
+                                    "☀️\u{FE0F}"
+                                } else {
+                                    "🌙\u{FE0F}"
+                                }
                             }
                             button {
                                 r#type: "button",
@@ -123,8 +128,16 @@ pub fn Navbar() -> Element {
                         }
                     } else {
                         div { class: "flex items-center gap-3 text-sm",
-                            Link { to: Route::Login {}, class: "text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:text-teal-400 transition-colors font-bold", "Sign In" }
-                            Link { to: Route::Register {}, class: "bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl transition-all font-black shadow-md shadow-teal-600/10", "Get Started" }
+                            Link {
+                                to: Route::Login {},
+                                class: "text-slate-600 dark:text-slate-400 hover:text-teal-600 dark:text-teal-400 transition-colors font-bold",
+                                "Sign In"
+                            }
+                            Link {
+                                to: Route::Register {},
+                                class: "bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-xl transition-all font-black shadow-md shadow-teal-600/10",
+                                "Get Started"
+                            }
                         }
                     }
                 }
@@ -135,21 +148,22 @@ pub fn Navbar() -> Element {
         if is_drawer_open() && user_opt.is_some() {
             div { class: "sm:hidden fixed inset-0 z-50 overflow-hidden",
                 // Dark Backdrop
-                div { 
+                div {
                     class: "absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity opacity-100",
-                    onclick: move |_| is_drawer_open.set(false)
+                    onclick: move |_| is_drawer_open.set(false),
                 }
-                
+
                 // Drawer Panel
-                div { 
-                    class: "absolute inset-y-0 right-0 w-72 bg-white dark:bg-slate-900 shadow-2xl flex flex-col transform transition-transform translate-x-0 duration-300 ease-in-out border-l border-slate-200 dark:border-slate-800",
-                    
+                div { class: "absolute inset-y-0 right-0 w-72 bg-white dark:bg-slate-900 shadow-2xl flex flex-col transform transition-transform translate-x-0 duration-300 ease-in-out border-l border-slate-200 dark:border-slate-800",
+
                     // User Header in Drawer
                     div { class: "p-5 border-b border-slate-100 dark:border-slate-800",
                         div { class: "flex justify-between items-start mb-4",
                             if let Some(user) = user_opt.as_ref() {
                                 div { class: "flex flex-col gap-1.5",
-                                    span { class: "font-black text-lg text-slate-800 dark:text-slate-200 truncate", "{user.full_name}" }
+                                    span { class: "font-black text-lg text-slate-800 dark:text-slate-200 truncate",
+                                        "{user.full_name}"
+                                    }
                                     div { class: "inline-flex px-3 py-1 rounded-full border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 self-start shadow-sm items-center gap-1",
                                         span { "🔥" }
                                         span { "{user.score} pts" }
@@ -163,7 +177,7 @@ pub fn Navbar() -> Element {
                             }
                         }
                     }
-                    
+
                     // Links
                     div { class: "flex-1 overflow-y-auto py-4 px-3 space-y-1",
                         Link {
@@ -208,10 +222,12 @@ pub fn Navbar() -> Element {
                             span { class: "text-xl w-6 text-center", "🛒" }
                             span { "Toko" }
                         }
-                        
+
                         if let Some(user) = user_opt.as_ref() {
                             Link {
-                                to: Route::Profile { email: user.email.clone() },
+                                to: Route::Profile {
+                                    email: user.email.clone(),
+                                },
                                 onclick: move |_| is_drawer_open.set(false),
                                 class: drawer_link_class(false),
                                 span { class: "text-xl w-6 text-center", "👤" }
@@ -219,13 +235,17 @@ pub fn Navbar() -> Element {
                             }
                         }
                     }
-                    
+
                     // Footer Actions
                     div { class: "p-4 border-t border-slate-100 dark:border-slate-800 space-y-3 bg-slate-50/50 dark:bg-slate-900/50",
                         button {
                             class: "w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm",
                             onclick: toggle_theme,
-                            if is_dark_mode() { "☀️ Mode Terang" } else { "🌙 Mode Gelap" }
+                            if is_dark_mode() {
+                                "☀️ Mode Terang"
+                            } else {
+                                "🌙 Mode Gelap"
+                            }
                         }
                         button {
                             class: "w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 font-bold hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors",
@@ -238,8 +258,6 @@ pub fn Navbar() -> Element {
             }
         }
 
-        main { class: "pt-16 pb-6 min-h-screen bg-slate-50 dark:bg-slate-950",
-            Outlet::<Route> {}
-        }
+        main { class: "pt-16 pb-6 min-h-screen bg-slate-50 dark:bg-slate-950", Outlet::<Route> {} }
     }
 }

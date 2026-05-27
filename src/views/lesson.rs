@@ -203,7 +203,9 @@ pub fn Lesson(goal: String) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
-                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium", "Menyusun materi belajar khusus untuk Anda..." }
+                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium",
+                    "Menyusun materi belajar khusus untuk Anda..."
+                }
             }
         };
     };
@@ -212,7 +214,9 @@ pub fn Lesson(goal: String) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col items-center justify-center font-sans p-6",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-amber-500 mb-6" }
-                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse", "Mencoba ulang menghubungi AI..." }
+                p { class: "text-amber-700 dark:text-amber-500 font-bold text-lg animate-pulse",
+                    "Mencoba ulang menghubungi AI..."
+                }
             }
         };
     }
@@ -226,17 +230,25 @@ pub fn Lesson(goal: String) -> Element {
                 return rsx! {
                     div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 p-6 flex flex-col items-center justify-center",
                         div { class: "bg-white dark:bg-slate-900 p-8 rounded-3xl shadow-lg border border-red-200 dark:border-red-900/30 max-w-md text-center",
-                            h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4", "Gagal Memuat Materi" }
-                            p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm", "Gagal memuat materi: {e} (Tidak ada cache offline)" }
-                            button { 
-                                class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer", 
+                            h3 { class: "text-2xl font-bold text-red-600 dark:text-red-500 mb-4",
+                                "Gagal Memuat Materi"
+                            }
+                            p { class: "text-slate-600 dark:text-slate-400 mb-6 text-sm",
+                                "Gagal memuat materi: {e} (Tidak ada cache offline)"
+                            }
+                            button {
+                                class: "block w-full bg-amber-500 text-white font-bold py-3 rounded-xl hover:bg-amber-600 transition mb-3 cursor-pointer",
                                 onclick: move |_| {
                                     is_retrying.set(true);
                                     lesson_resource.restart();
-                                }, 
-                                "Coba Lagi" 
+                                },
+                                "Coba Lagi"
                             }
-                            Link { to: Route::Roadmap {}, class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition", "Kembali ke Roadmap" }
+                            Link {
+                                to: Route::Roadmap {},
+                                class: "block w-full bg-slate-800 text-white font-bold py-3 rounded-xl hover:bg-slate-900 transition",
+                                "Kembali ke Roadmap"
+                            }
                         }
                     }
                 }
@@ -249,7 +261,7 @@ pub fn Lesson(goal: String) -> Element {
     rsx! {
         div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-6 py-0 sm:py-8 font-sans pb-24 sm:pb-8",
             div { class: "max-w-5xl w-full mx-auto bg-white dark:bg-slate-900 border-0 sm:border border-slate-200 dark:border-slate-700 rounded-none sm:rounded-3xl p-6 sm:p-10 shadow-none sm:shadow-lg flex flex-col min-h-screen sm:min-h-0",
-                
+
                 // Header (Duolingo style close button on mobile, clean details)
                 div { class: "flex items-center gap-4 mb-6 sm:mb-8 border-b border-slate-100 dark:border-slate-800 pb-4",
                     Link {
@@ -258,20 +270,32 @@ pub fn Lesson(goal: String) -> Element {
                         "✕"
                     }
                     div { class: "flex-1",
-                        h1 { class: "text-lg sm:text-2xl font-black text-slate-800 dark:text-slate-200 leading-tight", "{lesson_data.title}" }
+                        h1 { class: "text-lg sm:text-2xl font-black text-slate-800 dark:text-slate-200 leading-tight",
+                            "{lesson_data.title}"
+                        }
                     }
                 }
 
                 // Badges
                 div { class: "flex flex-wrap items-center gap-2 mb-6",
-                    span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50", "Materi {language} ({active_level})" }
-                    span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100 dark:border-indigo-900/50", "Goal: {goal}" }
-                    span { class: "text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50/30 dark:bg-orange-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100 dark:border-orange-900/50", "Bagian {lesson_part}" }
+                    span { class: "text-[10px] font-bold text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-teal-100/50 dark:border-teal-900/50",
+                        "Materi {language} ({active_level})"
+                    }
+                    span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-indigo-100 dark:border-indigo-900/50",
+                        "Goal: {goal}"
+                    }
+                    span { class: "text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50/30 dark:bg-orange-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-orange-100 dark:border-orange-900/50",
+                        "Bagian {lesson_part}"
+                    }
                     if is_offline {
-                        span { class: "text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-rose-100 dark:border-rose-900/50", "📵 Offline Mode" }
+                        span { class: "text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-rose-100 dark:border-rose-900/50",
+                            "📵 Offline Mode"
+                        }
                     }
                     if is_loading_next_lesson {
-                        span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100 dark:border-indigo-900/50", "Memuat..." }
+                        span { class: "text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-900/30 px-2.5 py-1 rounded-full animate-pulse border border-indigo-100 dark:border-indigo-900/50",
+                            "Memuat..."
+                        }
                     }
                 }
 
@@ -279,21 +303,33 @@ pub fn Lesson(goal: String) -> Element {
                     div { class: "lg:col-span-8 space-y-6",
                         if sections.is_empty() {
                             div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",
-                                h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4", "Penjelasan Materi" }
-                                p { class: "text-slate-600/30 dark:text-slate-400 leading-relaxed whitespace-pre-wrap", "{lesson_data.content}" }
+                                h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4",
+                                    "Penjelasan Materi"
+                                }
+                                p { class: "text-slate-600/30 dark:text-slate-400 leading-relaxed whitespace-pre-wrap",
+                                    "{lesson_data.content}"
+                                }
                             }
                         } else {
                             for (section_title, section_lines) in sections {
                                 div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow",
-                                    h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4", "{section_title}" }
+                                    h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4",
+                                        "{section_title}"
+                                    }
                                     div { class: "space-y-3",
                                         for line in section_lines {
-                                            if line.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false) && line.contains('.') {
-                                                p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 pt-2", "{line}" }
+                                            if line.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
+                                                && line.contains('.')
+                                            {
+                                                p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 pt-2",
+                                                    "{line}"
+                                                }
                                             } else {
                                                 div { class: "flex items-start gap-3",
                                                     span { class: "mt-2 w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" }
-                                                    p { class: "text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium", "{line}" }
+                                                    p { class: "text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium",
+                                                        "{line}"
+                                                    }
                                                 }
                                             }
                                         }
@@ -303,17 +339,23 @@ pub fn Lesson(goal: String) -> Element {
                         }
 
                         div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",
-                            h2 { class: "text-xl font-bold text-amber-600 dark:text-amber-400 mb-4", "Contoh Penggunaan" }
+                            h2 { class: "text-xl font-bold text-amber-600 dark:text-amber-400 mb-4",
+                                "Contoh Penggunaan"
+                            }
                             div { class: "space-y-4",
                                 for (idx, sentence) in lesson_data.example_sentences.iter().enumerate() {
                                     {
                                         let (target, meaning) = split_example(sentence);
                                         rsx! {
                                             div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-amber-300 transition-colors group",
-                                                p { class: "text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2", "Contoh {idx + 1}" }
+                                                p { class: "text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2",
+                                                    "Contoh {idx + 1}"
+                                                }
                                                 p { class: "text-base font-bold text-slate-800 dark:text-slate-200 pr-10", "{target}" }
                                                 if let Some(m) = meaning {
-                                                    p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-medium", "{m}" }
+                                                    p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1.5 font-medium",
+                                                        "{m}"
+                                                    }
                                                 }
                                                 button {
                                                     class: "absolute top-4 right-4 text-slate-400 hover:text-amber-500 hover:bg-amber-50/30 dark:bg-amber-900/30 transition-colors p-2 rounded-full",
@@ -335,12 +377,18 @@ pub fn Lesson(goal: String) -> Element {
 
                     div { class: "lg:col-span-4 space-y-6",
                         div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
-                            h2 { class: "text-xl font-bold text-rose-600 dark:text-rose-400 mb-4", "Kosa Kata Inti" }
+                            h2 { class: "text-xl font-bold text-rose-600 dark:text-rose-400 mb-4",
+                                "Kosa Kata Inti"
+                            }
                             div { class: "space-y-3",
                                 for vocab in lesson_data.vocabulary.iter() {
                                     div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-rose-300 transition-colors group",
-                                        p { class: "text-base font-bold text-slate-800 dark:text-slate-200 pr-10", "{vocab.word}" }
-                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium", "{vocab.meaning}" }
+                                        p { class: "text-base font-bold text-slate-800 dark:text-slate-200 pr-10",
+                                            "{vocab.word}"
+                                        }
+                                        p { class: "text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium",
+                                            "{vocab.meaning}"
+                                        }
                                         button {
                                             class: "absolute top-4 right-4 text-slate-400 hover:text-rose-500 hover:bg-rose-50/30 dark:bg-rose-900/30 transition-colors p-2 rounded-full",
                                             title: "Dengarkan",
@@ -357,14 +405,12 @@ pub fn Lesson(goal: String) -> Element {
                         }
 
                         div { class: "hidden sm:block bg-white dark:bg-slate-900 border border-slate-200/20 dark:border-slate-700 rounded-2xl p-6 shadow-sm",
-                            p { class: "text-sm font-medium text-slate-600 dark:text-slate-400 mb-5", "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi." }
+                            p { class: "text-sm font-medium text-slate-600 dark:text-slate-400 mb-5",
+                                "Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi."
+                            }
                             div { class: "space-y-3",
                                 button {
-                                    class: if is_loading_next_lesson {
-                                        "block w-full text-center bg-indigo-100 text-indigo-800 font-bold px-4 py-3 rounded-xl cursor-not-allowed shadow-sm"
-                                    } else {
-                                        "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-indigo-500/20 cursor-pointer"
-                                    },
+                                    class: if is_loading_next_lesson { "block w-full text-center bg-indigo-100 text-indigo-800 font-bold px-4 py-3 rounded-xl cursor-not-allowed shadow-sm" } else { "block w-full text-center bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-indigo-500/20 cursor-pointer" },
                                     disabled: is_loading_next_lesson,
                                     onclick: {
                                         let e = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
@@ -372,14 +418,25 @@ pub fn Lesson(goal: String) -> Element {
                                             lesson_part.set(lesson_part() + 1);
                                             let email_for_spawn = e.clone();
                                             spawn(async move {
-                                                let _ = crate::services::mission::increment_mission_progress_server(email_for_spawn, "lesson".to_string()).await;
+                                                let _ = crate::services::mission::increment_mission_progress_server(
+                                                        email_for_spawn,
+                                                        "lesson".to_string(),
+                                                    )
+                                                    .await;
                                             });
                                         }
                                     },
-                                    if is_loading_next_lesson { "Memuat..." } else { "Lesson Selanjutnya" }
+                                    if is_loading_next_lesson {
+                                        "Memuat..."
+                                    } else {
+                                        "Lesson Selanjutnya"
+                                    }
                                 }
                                 Link {
-                                    to: Route::Quiz { goal: goal.clone(), battle_id: None },
+                                    to: Route::Quiz {
+                                        goal: goal.clone(),
+                                        battle_id: None,
+                                    },
                                     class: "block w-full text-center bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-3 rounded-xl transition-colors shadow-md hover:shadow-lg hover:shadow-teal-500/20",
                                     "Mulai Quiz"
                                 }
@@ -396,11 +453,7 @@ pub fn Lesson(goal: String) -> Element {
                 // Sticky Bottom Action Container for Mobile
                 div { class: "fixed bottom-0 inset-x-0 p-4 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-t border-slate-200 dark:border-slate-700 z-40 safe-bottom flex gap-3 sm:hidden",
                     button {
-                        class: if is_loading_next_lesson {
-                            "flex-1 bg-indigo-100 text-indigo-800 font-bold px-4 py-3.5 rounded-2xl text-sm cursor-not-allowed text-center shadow-sm"
-                        } else {
-                            "flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer"
-                        },
+                        class: if is_loading_next_lesson { "flex-1 bg-indigo-100 text-indigo-800 font-bold px-4 py-3.5 rounded-2xl text-sm cursor-not-allowed text-center shadow-sm" } else { "flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer" },
                         disabled: is_loading_next_lesson,
                         onclick: {
                             let e = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
@@ -408,14 +461,25 @@ pub fn Lesson(goal: String) -> Element {
                                 lesson_part.set(lesson_part() + 1);
                                 let email_for_spawn = e.clone();
                                 spawn(async move {
-                                    let _ = crate::services::mission::increment_mission_progress_server(email_for_spawn, "lesson".to_string()).await;
+                                    let _ = crate::services::mission::increment_mission_progress_server(
+                                            email_for_spawn,
+                                            "lesson".to_string(),
+                                        )
+                                        .await;
                                 });
                             }
                         },
-                        if is_loading_next_lesson { "Memuat..." } else { "Lanjut Belajar" }
+                        if is_loading_next_lesson {
+                            "Memuat..."
+                        } else {
+                            "Lanjut Belajar"
+                        }
                     }
                     Link {
-                        to: Route::Quiz { goal: goal.clone(), battle_id: None },
+                        to: Route::Quiz {
+                            goal: goal.clone(),
+                            battle_id: None,
+                        },
                         class: "flex-1 bg-teal-500 hover:bg-teal-600 text-white font-bold px-4 py-3.5 rounded-2xl text-sm transition-colors shadow-md hover:shadow-lg text-center cursor-pointer",
                         "Mulai Quiz"
                     }

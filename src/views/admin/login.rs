@@ -62,27 +62,32 @@ pub fn AdminLogin() -> Element {
             div { class: "bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-xl max-w-md w-full border border-slate-200 dark:border-slate-800 text-center relative overflow-hidden",
                 // Decorative top border for enterprise feel
                 div { class: "absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-600" }
-                
+
                 img {
                     src: asset!("/assets/logo.png"),
                     alt: "LingoMind Logo",
                     class: "w-20 h-20 rounded-2xl mx-auto mb-4 shadow-md object-cover border border-slate-100 dark:border-slate-700",
                 }
-                
-                h2 { class: "text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-1", "Admin Portal" }
-                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium", "Secure Access Control" }
-                
+
+                h2 { class: "text-2xl font-extrabold text-slate-800 dark:text-slate-100 mb-1",
+                    "Admin Portal"
+                }
+                p { class: "text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium",
+                    "Secure Access Control"
+                }
+
                 if let Some(msg) = error_message() {
                     div { class: "mb-6 p-3 bg-rose-50/50 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2 text-left",
                         "⚠️ {msg}"
                     }
                 }
-                
-                form {
-                    onsubmit: move |e| e.prevent_default(),
+
+                form { onsubmit: move |e| e.prevent_default(),
                     div { class: "space-y-4 text-left",
                         div {
-                            label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5", "Admin Email" }
+                            label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5",
+                                "Admin Email"
+                            }
                             div { class: "relative",
                                 i { class: "fa-solid fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" }
                                 input {
@@ -91,12 +96,14 @@ pub fn AdminLogin() -> Element {
                                     r#type: "email",
                                     value: "{email_input}",
                                     oninput: move |e| email_input.set(e.value()),
-                                    disabled: is_loading()
+                                    disabled: is_loading(),
                                 }
                             }
                         }
                         div {
-                            label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5", "Password" }
+                            label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5",
+                                "Password"
+                            }
                             div { class: "relative",
                                 i { class: "fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" }
                                 input {
@@ -105,7 +112,7 @@ pub fn AdminLogin() -> Element {
                                     r#type: "password",
                                     value: "{password_input}",
                                     oninput: move |e| password_input.set(e.value()),
-                                    disabled: is_loading()
+                                    disabled: is_loading(),
                                 }
                             }
                         }
@@ -117,7 +124,7 @@ pub fn AdminLogin() -> Element {
                                 "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 cursor-not-allowed opacity-80"
                             } else {
                                 "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white hover:shadow-lg hover:shadow-blue-500/30"
-                            }
+                            },
                         ),
                         onclick: handle_login,
                         disabled: is_loading(),

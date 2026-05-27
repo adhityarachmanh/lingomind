@@ -10,3 +10,11 @@ pub struct ShopItem {
     pub icon_name: Option<String>,
     pub is_owned: bool,
 }
+
+use crate::models::engagement::UserEngagementStats;
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct ShopSummary {
+    pub items: Vec<ShopItem>,
+    pub engagement: Option<UserEngagementStats>,
+}

@@ -23,34 +23,34 @@ pub fn CurriculumPanel(email: String) -> Element {
                 div { class: "w-1/3 border-r border-slate-200 flex flex-col h-full",
                     div { class: "p-4 bg-slate-50 border-b border-slate-200 flex justify-between items-center",
                         h3 { class: "text-lg font-bold text-slate-800", "Levels (CEFR)" }
-                        button { 
+                        button {
                             class: "bg-blue-600 hover:bg-blue-700 text-white p-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 shadow-sm",
                             onclick: move |_| editing_level.set(Some(None)),
                             i { class: "fa-solid fa-plus text-xxs" }
                             "Tambah"
                         }
                     }
-                    
+
                     div { class: "flex-1 overflow-y-auto p-4 space-y-2 bg-white",
                         match levels() {
                             Some(lvl_list) => {
                                 if lvl_list.is_empty() {
-                                    rsx! { div { class: "text-center text-slate-400 py-8 text-xs", "Belum ada level." } }
+                                    rsx! {
+                                        div { class: "text-center text-slate-400 py-8 text-xs", "Belum ada level." } // Automatically select first level if none selected
+                                    }
                                 } else {
-                                    // Automatically select first level if none selected
                                     if selected_level_id().is_none() {
                                         if let Some(first) = lvl_list.first() {
                                             selected_level_id.set(Some(first.id.clone()));
                                         }
                                     }
-                                    
                                     rsx! {
                                         for level in lvl_list {
                                             LevelRow {
                                                 level: level.clone(),
                                                 is_selected: selected_level_id() == Some(level.id.clone()),
                                                 on_select: move |id| selected_level_id.set(Some(id)),
-                                                on_edit: move |_| editing_level.set(Some(Some(level.clone())))
+                                                on_edit: move |_| editing_level.set(Some(Some(level.clone()))),
                                             }
                                         }
                                     }
@@ -61,22 +61,21 @@ pub fn CurriculumPanel(email: String) -> Element {
                                     i { class: "fa-solid fa-spinner fa-spin mr-2" }
                                     "Memuat Levels..."
                                 }
-                            }
+                            },
                         }
                     }
                 }
-                
+
                 // Right Panel: Topics in selected level
                 div { class: "flex-1 flex flex-col bg-slate-50/50 h-full",
                     if let Some(lvl_id) = selected_level_id() {
-                        TopicListPanel {
-                            email: email.clone(),
-                            level_id: lvl_id,
-                        }
+                        TopicListPanel { email: email.clone(), level_id: lvl_id }
                     } else {
                         div { class: "flex-1 flex flex-col items-center justify-center text-slate-400 p-8",
                             i { class: "fa-solid fa-layer-group text-4xl mb-4" }
-                            p { class: "text-sm", "Pilih salah satu Level di sebelah kiri untuk melihat dan mengelola Topik." }
+                            p { class: "text-sm",
+                                "Pilih salah satu Level di sebelah kiri untuk melihat dan mengelola Topik."
+                            }
                         }
                     }
                 }
@@ -88,7 +87,7 @@ pub fn CurriculumPanel(email: String) -> Element {
                     email: email.clone(),
                     level: opt_level,
                     on_close: move |_| editing_level.set(None),
-                    on_save: move |_| levels.restart()
+                    on_save: move |_| levels.restart(),
                 }
             }
         }
@@ -104,25 +103,25 @@ fn LevelRow(level: LevelAdminItem, is_selected: bool, on_select: EventHandler<St
 
     rsx! {
         div {
-            class: if is_selected {
-                "p-4 rounded-xl border border-blue-500 bg-blue-50/70 cursor-pointer shadow-sm relative group transition-all"
-            } else {
-                "p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition-all relative group"
-            },
+            class: if is_selected { "p-4 rounded-xl border border-blue-500 bg-blue-50/70 cursor-pointer shadow-sm relative group transition-all" } else { "p-4 rounded-xl border border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 cursor-pointer transition-all relative group" },
             onclick: move |_| {
                 on_select.call(id.clone());
             },
-            
+
             div { class: "flex justify-between items-start pr-8",
                 div { class: "space-y-1",
                     div { class: "flex items-center gap-2",
-                        span { class: "font-mono font-bold text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded", "{level.id}" }
+                        span { class: "font-mono font-bold text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded",
+                            "{level.id}"
+                        }
                         span { class: "font-bold text-slate-800 text-sm", "{title}" }
                     }
-                    p { class: "text-xs text-slate-500 line-clamp-2 leading-relaxed", "{desc}" }
+                    p { class: "text-xs text-slate-500 line-clamp-2 leading-relaxed",
+                        "{desc}"
+                    }
                 }
-                
-                button { 
+
+                button {
                     class: "absolute right-3 top-3 text-slate-400 hover:text-blue-600 p-1.5 hover:bg-slate-100 rounded-lg opacity-0 group-hover:opacity-100 transition-all",
                     onclick: move |e| {
                         e.stop_propagation();
@@ -131,15 +130,13 @@ fn LevelRow(level: LevelAdminItem, is_selected: bool, on_select: EventHandler<St
                     i { class: "fa-solid fa-pen text-xs" }
                 }
             }
-            
+
             div { class: "mt-3 flex items-center gap-3 text-xxs font-bold",
                 span { class: "text-amber-500 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-lg flex items-center gap-1",
                     i { class: "fa-solid fa-coins text-[10px]" }
                     "{reward} pts"
                 }
-                span { class: "text-slate-400 font-mono",
-                    "Index: {level.order_index}"
-                }
+                span { class: "text-slate-400 font-mono", "Index: {level.order_index}" }
             }
         }
     }
@@ -163,16 +160,18 @@ fn TopicListPanel(email: ReadOnlySignal<String>, level_id: ReadOnlySignal<String
             h3 { class: "text-lg font-bold text-slate-800 flex items-center gap-2",
                 i { class: "fa-solid fa-list-ul text-blue-600" }
                 "Daftar Topik: "
-                span { class: "font-mono text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded", "{level_id()}" }
+                span { class: "font-mono text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded",
+                    "{level_id()}"
+                }
             }
-            button { 
+            button {
                 class: "bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 shadow-sm",
                 onclick: move |_| editing_topic.set(Some(None)),
                 i { class: "fa-solid fa-plus text-[10px]" }
                 "Tambah Topik"
             }
         }
-        
+
         div { class: "flex-1 overflow-y-auto p-6 bg-slate-50/50",
             match topics() {
                 Some(top_list) => {
@@ -189,7 +188,7 @@ fn TopicListPanel(email: ReadOnlySignal<String>, level_id: ReadOnlySignal<String
                                 for topic in top_list {
                                     TopicRow {
                                         topic: topic.clone(),
-                                        on_edit: move |_| editing_topic.set(Some(Some(topic.clone())))
+                                        on_edit: move |_| editing_topic.set(Some(Some(topic.clone()))),
                                     }
                                 }
                             }
@@ -201,7 +200,7 @@ fn TopicListPanel(email: ReadOnlySignal<String>, level_id: ReadOnlySignal<String
                         i { class: "fa-solid fa-spinner fa-spin text-3xl mb-4 block text-blue-500" }
                         "Memuat Topik..."
                     }
-                }
+                },
             }
         }
 
@@ -212,7 +211,7 @@ fn TopicListPanel(email: ReadOnlySignal<String>, level_id: ReadOnlySignal<String
                 level_id: level_id(),
                 topic: opt_topic,
                 on_close: move |_| editing_topic.set(None),
-                on_save: move |_| topics.restart()
+                on_save: move |_| topics.restart(),
             }
         }
     }
@@ -233,7 +232,7 @@ fn TopicRow(topic: TopicAdminItem, on_edit: EventHandler<()>) -> Element {
                 div { class: "font-bold text-slate-800 text-sm", "{title}" }
                 div { class: "text-xxs font-mono text-slate-400", "Topic ID: {id}" }
             }
-            button { 
+            button {
                 class: "text-slate-400 hover:text-blue-600 p-2 hover:bg-slate-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all shadow-sm border border-transparent hover:border-slate-100 bg-white",
                 onclick: move |_| on_edit.call(()),
                 i { class: "fa-solid fa-pen" }
@@ -306,47 +305,55 @@ fn LevelModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1 overflow-y-auto max-h-[70vh]",
                     div { class: "grid grid-cols-3 gap-4",
                         div { class: "col-span-1 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Kode Level" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Kode Level"
+                            }
                             input {
                                 class: "w-full text-center bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 font-mono font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed text-sm",
                                 value: "{id}",
                                 oninput: move |e| id.set(e.value()),
                                 placeholder: "e.g. A1",
-                                disabled: is_edit
+                                disabled: is_edit,
                             }
                         }
-                        
+
                         div { class: "col-span-2 space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nama Level" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Nama Level"
+                            }
                             input {
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-semibold",
                                 value: "{title}",
                                 oninput: move |e| title.set(e.value()),
-                                placeholder: "e.g. Beginner"
+                                placeholder: "e.g. Beginner",
                             }
                         }
                     }
 
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Base Reward (Pts)" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Base Reward (Pts)"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-amber-600 font-bold focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm",
                                 value: "{base_reward_points}",
                                 oninput: move |e| base_reward_points.set(e.value()),
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Order Index" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Order Index"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-mono text-sm",
                                 value: "{order_index}",
                                 oninput: move |e| order_index.set(e.value()),
@@ -355,16 +362,18 @@ fn LevelModal(
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Deskripsi Level" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Deskripsi Level"
+                        }
                         textarea {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-600 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all min-h-[80px]",
                             value: "{description}",
                             oninput: move |e| description.set(e.value()),
-                            placeholder: "Deskripsi target keterampilan level pembelajaran..."
+                            placeholder: "Deskripsi target keterampilan level pembelajaran...",
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -377,7 +386,11 @@ fn LevelModal(
                         onclick: save_action,
                         disabled: is_saving() || id().trim().is_empty() || title().trim().is_empty(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan"
+                        }
                     }
                 }
             }
@@ -448,39 +461,45 @@ fn TopicModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1 overflow-y-auto max-h-[70vh]",
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Level Pembelajaran" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Level Pembelajaran"
+                        }
                         input {
                             class: "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-500 font-mono font-bold text-sm focus:outline-none cursor-not-allowed",
                             value: "{level_id}",
-                            disabled: true
+                            disabled: true,
                         }
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nama Topik" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Nama Topik"
+                        }
                         input {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-semibold",
                             value: "{title}",
                             oninput: move |e| title.set(e.value()),
-                            placeholder: "e.g. Greetings & Introductions"
+                            placeholder: "e.g. Greetings & Introductions",
                         }
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Order Index" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Order Index"
+                        }
                         input {
-                            type: "number",
+                            r#type: "number",
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-700 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-mono text-sm",
                             value: "{order_index}",
                             oninput: move |e| order_index.set(e.value()),
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -493,7 +512,11 @@ fn TopicModal(
                         onclick: save_action,
                         disabled: is_saving() || title().trim().is_empty(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan"
+                        }
                     }
                 }
             }

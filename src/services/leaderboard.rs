@@ -1,6 +1,6 @@
 // src/services/leaderboard.rs
 use dioxus::prelude::*;
-use crate::models::leaderboard::LeaderboardEntry;
+use crate::models::leaderboard::{LeaderboardEntry, LeaderboardSummary};
 use crate::models::league::{LeagueMember, WeeklyLeagueData};
 
 #[server]
@@ -211,4 +211,21 @@ pub async fn get_weekly_league_server(email: String) -> Result<WeeklyLeagueData,
     {
         Err(ServerFnError::new("Cannot execute on client"))
     }
+}
+
+#[server]
+pub async fn get_leaderboard_summary_server(email: String) -> Result<LeaderboardSummary, ServerFnError> {
+    use crate::services::social::get_following_leaderboard_server;
+    
+    let (weekly_league_res, global_res, following_res) = tokio::join!(
+        get_weekly_league_server(email.clone()),
+        get_leaderboard_server(10),
+        get_following_leaderboard_server(email)
+    );
+
+    Ok(LeaderboardSummary {
+        weekly_league: weekly_league_res.ok(),
+        global: global_res.unwrap_or_default(),
+        following: following_res.unwrap_or_default(),
+    })
 }

@@ -21,7 +21,9 @@ pub fn Story(goal: String) -> Element {
 
     let Some(user) = user_opt else {
         navigator.replace(Route::Login {});
-        return rsx! { div {} };
+        return rsx! {
+            div {}
+        };
     };
 
     let language = selected_language();
@@ -105,14 +107,20 @@ pub fn Story(goal: String) -> Element {
         None => rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center text-slate-600 dark:text-slate-400 p-6",
                 div { class: "animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600 mb-6" }
-                h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-2 text-center", "Menyiapkan Cerita Interaktif..." }
-                p { class: "text-center max-w-md", "AI sedang menulis cerita pendek bahasa {selected_language()} yang sesuai dengan level Anda ({level}). Mohon tunggu sebentar." }
+                h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-2 text-center",
+                    "Menyiapkan Cerita Interaktif..."
+                }
+                p { class: "text-center max-w-md",
+                    "AI sedang menulis cerita pendek bahasa {selected_language()} yang sesuai dengan level Anda ({level}). Mohon tunggu sebentar."
+                }
             }
         },
         Some(Err(e)) => rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center text-slate-600 dark:text-slate-400 p-6",
                 div { class: "text-4xl mb-4", "⚠️" }
-                h2 { class: "text-xl font-bold text-red-600 dark:text-red-400 mb-2 text-center", "Gagal Memuat Cerita" }
+                h2 { class: "text-xl font-bold text-red-600 dark:text-red-400 mb-2 text-center",
+                    "Gagal Memuat Cerita"
+                }
                 p { class: "text-center max-w-md mb-6", "{e}" }
                 button {
                     class: "bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold hover:bg-indigo-700 transition-colors",
@@ -121,7 +129,9 @@ pub fn Story(goal: String) -> Element {
                 }
                 button {
                     class: "mt-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-medium",
-                    onclick: move |_| { navigator.push(Route::Roadmap {}); },
+                    onclick: move |_| {
+                        navigator.push(Route::Roadmap {});
+                    },
                     "Kembali ke Peta"
                 }
             }
@@ -131,12 +141,18 @@ pub fn Story(goal: String) -> Element {
                 rsx! {
                     div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 text-center animate-in fade-in zoom-in duration-500",
                         div { class: "text-6xl mb-6", "🎉" }
-                        h1 { class: "text-3xl font-black text-slate-800 dark:text-slate-200 mb-2", "Cerita Selesai!" }
-                        p { class: "text-slate-500 dark:text-slate-400 mb-8 max-w-md", "Anda telah menyelesaikan cerita \"{story.title}\". Sangat bagus untuk melatih pendengaran Anda!" }
-                        
+                        h1 { class: "text-3xl font-black text-slate-800 dark:text-slate-200 mb-2",
+                            "Cerita Selesai!"
+                        }
+                        p { class: "text-slate-500 dark:text-slate-400 mb-8 max-w-md",
+                            "Anda telah menyelesaikan cerita \"{story.title}\". Sangat bagus untuk melatih pendengaran Anda!"
+                        }
+
                         if !reward_status().is_empty() {
                             div { class: "bg-teal-50 dark:bg-teal-900/30 border border-teal-200 dark:border-teal-800 rounded-xl p-4 mb-8 max-w-sm w-full",
-                                p { class: "text-teal-700 dark:text-teal-400 font-bold", "{reward_status}" }
+                                p { class: "text-teal-700 dark:text-teal-400 font-bold",
+                                    "{reward_status}"
+                                }
                             }
                         }
 
@@ -170,13 +186,20 @@ pub fn Story(goal: String) -> Element {
                         div { class: "max-w-2xl mx-auto",
                             // Progress bar
                             div { class: "w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2.5 mb-8",
-                                div { class: "bg-indigo-600 h-2.5 rounded-full transition-all duration-500", width: "{progress}%" }
+                                div {
+                                    class: "bg-indigo-600 h-2.5 rounded-full transition-all duration-500",
+                                    width: "{progress}%",
+                                }
                             }
 
                             // Header Cerita
                             div { class: "text-center mb-10 animate-in fade-in slide-in-from-top-4 duration-500",
-                                h1 { class: "text-2xl font-black text-indigo-700 dark:text-indigo-400", "{story.title}" }
-                                p { class: "text-sm text-slate-500 dark:text-slate-400 italic", "{story.title_translation}" }
+                                h1 { class: "text-2xl font-black text-indigo-700 dark:text-indigo-400",
+                                    "{story.title}"
+                                }
+                                p { class: "text-sm text-slate-500 dark:text-slate-400 italic",
+                                    "{story.title_translation}"
+                                }
                             }
 
                             // Kartu Narasi Utama
@@ -213,13 +236,13 @@ pub fn Story(goal: String) -> Element {
                             if let Some(question) = &segment.question {
                                 div { class: "animate-in slide-in-from-bottom-8 duration-500 delay-150 fill-mode-both",
                                     h3 { class: "text-lg font-bold mb-4", "{question.question_text}" }
-                                    
+
                                     div { class: "space-y-3",
                                         for option in &question.options {
                                             {
                                                 let is_this_selected = selected_option().as_deref() == Some(option);
                                                 let is_this_correct = option.eq_ignore_ascii_case(&question.correct_answer);
-                                                
+
                                                 let btn_class = if is_ans {
                                                     if is_this_correct {
                                                         "bg-teal-100 dark:bg-teal-900/30 border-teal-500 text-teal-800 dark:text-teal-300 ring-2 ring-teal-500"
@@ -234,7 +257,10 @@ pub fn Story(goal: String) -> Element {
 
                                                 rsx! {
                                                     button {
-                                                        class: format!("w-full text-left p-4 rounded-2xl border-2 transition-all font-medium {}", btn_class),
+                                                        class: format!(
+                                                            "w-full text-left p-4 rounded-2xl border-2 transition-all font-medium {}",
+                                                            btn_class,
+                                                        ),
                                                         disabled: is_ans,
                                                         onclick: {
                                                             let opt = option.to_string();
@@ -251,11 +277,33 @@ pub fn Story(goal: String) -> Element {
                                     // Feedback & Lanjut
                                     if is_ans {
                                         div { class: "mt-6 animate-in slide-in-from-bottom-4",
-                                            div { class: format!("p-4 rounded-2xl border mb-6 {}", if is_right { "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800" } else { "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800" }),
-                                                h4 { class: format!("font-black text-lg flex items-center gap-2 {}", if is_right { "text-teal-700 dark:text-teal-400" } else { "text-rose-700 dark:text-rose-400" }),
-                                                    if is_right { "✨ Benar!" } else { "❌ Salah" }
+                                            div {
+                                                class: format!(
+                                                    "p-4 rounded-2xl border mb-6 {}",
+                                                    if is_right {
+                                                        "bg-teal-50 dark:bg-teal-900/20 border-teal-200 dark:border-teal-800"
+                                                    } else {
+                                                        "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800"
+                                                    },
+                                                ),
+                                                h4 {
+                                                    class: format!(
+                                                        "font-black text-lg flex items-center gap-2 {}",
+                                                        if is_right {
+                                                            "text-teal-700 dark:text-teal-400"
+                                                        } else {
+                                                            "text-rose-700 dark:text-rose-400"
+                                                        },
+                                                    ),
+                                                    if is_right {
+                                                        "✨ Benar!"
+                                                    } else {
+                                                        "❌ Salah"
+                                                    }
                                                 }
-                                                p { class: "text-slate-600 dark:text-slate-400 mt-2 text-sm", "{question.explanation}" }
+                                                p { class: "text-slate-600 dark:text-slate-400 mt-2 text-sm",
+                                                    "{question.explanation}"
+                                                }
                                             }
 
                                             button {

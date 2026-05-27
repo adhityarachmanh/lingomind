@@ -13,3 +13,13 @@ pub struct LeaderboardEntry {
     pub active_title: Option<String>,
     pub active_name_color: Option<String>,
 }
+
+use crate::models::league::WeeklyLeagueData;
+use crate::models::social::SocialUser;
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub struct LeaderboardSummary {
+    pub weekly_league: Option<WeeklyLeagueData>,
+    pub global: Vec<LeaderboardEntry>,
+    pub following: Vec<SocialUser>,
+}

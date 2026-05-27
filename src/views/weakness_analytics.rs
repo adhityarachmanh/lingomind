@@ -19,7 +19,9 @@ pub fn WeaknessAnalytics() -> Element {
         };
     }
     let Some(user) = user_opt else {
-        return rsx! { div { class: "p-6 text-slate-600 dark:text-slate-400 font-sans", "Silakan login dulu." } };
+        return rsx! {
+            div { class: "p-6 text-slate-600 dark:text-slate-400 font-sans", "Silakan login dulu." }
+        };
     };
 
     let u = user.email.clone();
@@ -56,7 +58,11 @@ pub fn WeaknessAnalytics() -> Element {
 
     let items = match analytics_data {
         Ok(v) => v,
-        Err(e) => return rsx! { div { class: "p-6 text-rose-600 dark:text-rose-400 font-sans", "Gagal memuat analytics: {e}" } },
+        Err(e) => return rsx! {
+            div { class: "p-6 text-rose-600 dark:text-rose-400 font-sans",
+                "Gagal memuat analytics: {e}"
+            }
+        },
     };
 
     let skill_points = match skill_data {
@@ -137,22 +143,24 @@ pub fn WeaknessAnalytics() -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 sm:p-8 flex items-center justify-center font-sans",
             div { class: "max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-6 sm:p-8 shadow-xl",
-                
+
                 // Header
                 div { class: "flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8",
                     div {
-                        h2 { class: "text-3xl font-black text-slate-800 dark:text-slate-200 tracking-tight", 
+                        h2 { class: "text-3xl font-black text-slate-800 dark:text-slate-200 tracking-tight",
                             "Analisis Kelemahan"
                         }
                         p { class: "text-slate-500 dark:text-slate-400 text-sm font-semibold mt-1",
                             "Pantau topik & keterampilan aktif yang memerlukan latihan ekstra untuk bahasa "
-                            span { class: "text-teal-600 dark:text-teal-400 font-extrabold", "{language}" }
+                            span { class: "text-teal-600 dark:text-teal-400 font-extrabold",
+                                "{language}"
+                            }
                         }
                     }
-                    Link { 
-                        to: Route::Dashboard {}, 
-                        class: "text-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold px-5 py-2.5 rounded-2xl transition-all shadow-sm text-center", 
-                        "Kembali ke Dashboard" 
+                    Link {
+                        to: Route::Dashboard {},
+                        class: "text-sm bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 font-bold px-5 py-2.5 rounded-2xl transition-all shadow-sm text-center",
+                        "Kembali ke Dashboard"
                     }
                 }
 
@@ -161,7 +169,11 @@ pub fn WeaknessAnalytics() -> Element {
                     button {
                         class: format!(
                             "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 {}",
-                            if active_tab() == 0 { "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200" }
+                            if active_tab() == 0 {
+                                "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md"
+                            } else {
+                                "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
+                            },
                         ),
                         onclick: move |_| active_tab.set(0),
                         "📋 Peta Topik Kelemahan"
@@ -169,7 +181,11 @@ pub fn WeaknessAnalytics() -> Element {
                     button {
                         class: format!(
                             "flex-1 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 {}",
-                            if active_tab() == 1 { "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md" } else { "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200" }
+                            if active_tab() == 1 {
+                                "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 shadow-md"
+                            } else {
+                                "text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
+                            },
                         ),
                         onclick: move |_| active_tab.set(1),
                         "📊 Tren 7 Hari Terakhir"
@@ -182,8 +198,12 @@ pub fn WeaknessAnalytics() -> Element {
                     if items.is_empty() {
                         div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 border-dashed rounded-2xl p-12 text-center",
                             span { class: "text-4xl block mb-3", "🌱" }
-                            p { class: "text-slate-500 dark:text-slate-400 font-bold text-base", "Belum ada data kelemahan untuk bahasa ini." }
-                            p { class: "text-slate-400 text-xs mt-1", "Lakukan kuis atau latihan agar AI dapat memetakan fokus kelemahan Anda." }
+                            p { class: "text-slate-500 dark:text-slate-400 font-bold text-base",
+                                "Belum ada data kelemahan untuk bahasa ini."
+                            }
+                            p { class: "text-slate-400 text-xs mt-1",
+                                "Lakukan kuis atau latihan agar AI dapat memetakan fokus kelemahan Anda."
+                            }
                         }
                     } else {
                         div { class: "grid grid-cols-1 md:grid-cols-2 gap-6",
@@ -194,28 +214,42 @@ pub fn WeaknessAnalytics() -> Element {
                                     rsx! {
                                         div { class: "bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all group flex flex-col justify-between hover:border-teal-100/50 dark:border-teal-900/50",
                                             div { class: "mb-4",
-                                                p { class: "text-base text-slate-800 dark:text-slate-200 font-black mb-2 group-hover:text-teal-600 dark:text-teal-400 transition-colors", "{item.topic}" }
-                                                p { class: "text-xs text-slate-400 font-semibold", "Akurasi kesalahan terdistribusi secara berkala." }
+                                                p { class: "text-base text-slate-800 dark:text-slate-200 font-black mb-2 group-hover:text-teal-600 dark:text-teal-400 transition-colors",
+                                                    "{item.topic}"
+                                                } // Track 7 Hari
+                                                p { class: "text-xs text-slate-400 font-semibold",
+                                                    "Akurasi kesalahan terdistribusi secara berkala."
+                                                }
                                             }
                                             div { class: "space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800",
                                                 // Track 7 Hari
                                                 div { class: "space-y-1.5",
                                                     div { class: "flex items-center justify-between text-xs font-black text-slate-500/30 dark:text-slate-400",
                                                         span { "7 Hari Terakhir" }
-                                                        span { class: "text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-100", "{item.count_7d}x salah" }
+                                                        span { class: "text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-900/30 px-2 py-0.5 rounded-lg border border-amber-100",
+                                                            "{item.count_7d}x salah"
+                                                        }
                                                     }
                                                     div { class: "w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden",
-                                                        div { class: "bg-amber-500 h-full rounded-full transition-all duration-500", style: "width: {pct_7d}%" }
+                                                        div {
+                                                            class: "bg-amber-500 h-full rounded-full transition-all duration-500",
+                                                            style: "width: {pct_7d}%",
+                                                        }
                                                     }
                                                 }
                                                 // Track 30 Hari
                                                 div { class: "space-y-1.5",
                                                     div { class: "flex items-center justify-between text-xs font-black text-slate-500/30 dark:text-slate-400",
                                                         span { "30 Hari Terakhir" }
-                                                        span { class: "text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-lg border border-teal-100/50 dark:border-teal-900/50", "{item.count_30d}x salah" }
+                                                        span { class: "text-teal-600 dark:text-teal-400 bg-teal-50/30 dark:bg-teal-900/30 px-2 py-0.5 rounded-lg border border-teal-100/50 dark:border-teal-900/50",
+                                                            "{item.count_30d}x salah"
+                                                        }
                                                     }
                                                     div { class: "w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden",
-                                                        div { class: "bg-teal-500 h-full rounded-full transition-all duration-500", style: "width: {pct_30d}%" }
+                                                        div {
+                                                            class: "bg-teal-500 h-full rounded-full transition-all duration-500",
+                                                            style: "width: {pct_30d}%",
+                                                        }
                                                     }
                                                 }
                                             }
@@ -230,8 +264,12 @@ pub fn WeaknessAnalytics() -> Element {
                     if skill_points.is_empty() {
                         div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 border-dashed rounded-2xl p-12 text-center",
                             span { class: "text-4xl block mb-3", "📈" }
-                            p { class: "text-slate-500 dark:text-slate-400 font-bold text-base", "Belum ada data tren keterampilan." }
-                            p { class: "text-slate-400 text-xs mt-1", "Selesaikan materi pelajaran & kuis harian untuk melihat grafik tren keterampilan Anda." }
+                            p { class: "text-slate-500 dark:text-slate-400 font-bold text-base",
+                                "Belum ada data tren keterampilan."
+                            }
+                            p { class: "text-slate-400 text-xs mt-1",
+                                "Selesaikan materi pelajaran & kuis harian untuk melihat grafik tren keterampilan Anda."
+                            }
                         }
                     } else {
                         div { class: "space-y-6",
@@ -241,17 +279,56 @@ pub fn WeaknessAnalytics() -> Element {
                                     view_box: "0 0 560 220",
                                     class: "w-full h-auto",
                                     defs {
-                                        linearGradient { id: "grad-grammar", x1: "0", y1: "0", x2: "0", y2: "1",
-                                            stop { offset: "0%", stop_color: "#6366f1", stop_opacity: "0.2" }
-                                            stop { offset: "100%", stop_color: "#6366f1", stop_opacity: "0" }
+                                        linearGradient {
+                                            id: "grad-grammar",
+                                            x1: "0",
+                                            y1: "0",
+                                            x2: "0",
+                                            y2: "1",
+                                            stop {
+                                                offset: "0%",
+                                                stop_color: "#6366f1",
+                                                stop_opacity: "0.2",
+                                            }
+                                            stop {
+                                                offset: "100%",
+                                                stop_color: "#6366f1",
+                                                stop_opacity: "0",
+                                            }
                                         }
-                                        linearGradient { id: "grad-vocab", x1: "0", y1: "0", x2: "0", y2: "1",
-                                            stop { offset: "0%", stop_color: "#ec4899", stop_opacity: "0.2" }
-                                            stop { offset: "100%", stop_color: "#ec4899", stop_opacity: "0" }
+                                        linearGradient {
+                                            id: "grad-vocab",
+                                            x1: "0",
+                                            y1: "0",
+                                            x2: "0",
+                                            y2: "1",
+                                            stop {
+                                                offset: "0%",
+                                                stop_color: "#ec4899",
+                                                stop_opacity: "0.2",
+                                            }
+                                            stop {
+                                                offset: "100%",
+                                                stop_color: "#ec4899",
+                                                stop_opacity: "0",
+                                            }
                                         }
-                                        linearGradient { id: "grad-listening", x1: "0", y1: "0", x2: "0", y2: "1",
-                                            stop { offset: "0%", stop_color: "#f59e0b", stop_opacity: "0.2" }
-                                            stop { offset: "100%", stop_color: "#f59e0b", stop_opacity: "0" }
+                                        linearGradient {
+                                            id: "grad-listening",
+                                            x1: "0",
+                                            y1: "0",
+                                            x2: "0",
+                                            y2: "1",
+                                            stop {
+                                                offset: "0%",
+                                                stop_color: "#f59e0b",
+                                                stop_opacity: "0.2",
+                                            }
+                                            stop {
+                                                offset: "100%",
+                                                stop_color: "#f59e0b",
+                                                stop_opacity: "0",
+                                            }
                                         }
                                     }
 
@@ -261,22 +338,66 @@ pub fn WeaknessAnalytics() -> Element {
                                             let y = pad_y + height - f * height;
                                             rsx! {
                                                 g {
-                                                    line { x1: "{pad_x}", y1: "{y}", x2: "{pad_x + width}", y2: "{y}", stroke: "#e2e8f0", stroke_width: "1" }
-                                                    text { x: "{pad_x - 12.0}", y: "{y + 3.5}", text_anchor: "end", font_size: "10", class: "fill-slate-400 font-black", "{(f * max_val) as i64}" }
+                                                    line {
+                                                        x1: "{pad_x}",
+                                                        y1: "{y}",
+                                                        x2: "{pad_x + width}",
+                                                        y2: "{y}",
+                                                        stroke: "#e2e8f0",
+                                                        stroke_width: "1",
+                                                    }
+                                                    text {
+                                                        x: "{pad_x - 12.0}",
+                                                        y: "{y + 3.5}",
+                                                        text_anchor: "end",
+                                                        font_size: "10",
+                                                        class: "fill-slate-400 font-black",
+                                                        "{(f * max_val) as i64}"
+                                                    }
                                                 }
                                             }
                                         }
                                     }
 
                                     // Areas
-                                    path { d: "{grammar_area}", fill: "url(#grad-grammar)", stroke: "none" }
-                                    path { d: "{vocabulary_area}", fill: "url(#grad-vocab)", stroke: "none" }
-                                    path { d: "{listening_area}", fill: "url(#grad-listening)", stroke: "none" }
+                                    path {
+                                        d: "{grammar_area}",
+                                        fill: "url(#grad-grammar)",
+                                        stroke: "none",
+                                    }
+                                    path {
+                                        d: "{vocabulary_area}",
+                                        fill: "url(#grad-vocab)",
+                                        stroke: "none",
+                                    }
+                                    path {
+                                        d: "{listening_area}",
+                                        fill: "url(#grad-listening)",
+                                        stroke: "none",
+                                    }
 
                                     // Lines
-                                    path { d: "{grammar_path}", fill: "none", stroke: "#6366f1", stroke_width: "3", stroke_linecap: "round" }
-                                    path { d: "{vocabulary_path}", fill: "none", stroke: "#ec4899", stroke_width: "3", stroke_linecap: "round" }
-                                    path { d: "{listening_path}", fill: "none", stroke: "#f59e0b", stroke_width: "3", stroke_linecap: "round" }
+                                    path {
+                                        d: "{grammar_path}",
+                                        fill: "none",
+                                        stroke: "#6366f1",
+                                        stroke_width: "3",
+                                        stroke_linecap: "round",
+                                    }
+                                    path {
+                                        d: "{vocabulary_path}",
+                                        fill: "none",
+                                        stroke: "#ec4899",
+                                        stroke_width: "3",
+                                        stroke_linecap: "round",
+                                    }
+                                    path {
+                                        d: "{listening_path}",
+                                        fill: "none",
+                                        stroke: "#f59e0b",
+                                        stroke_width: "3",
+                                        stroke_linecap: "round",
+                                    }
 
                                     // Data Circles & Date Labels
                                     for (i, p) in skill_points.iter().enumerate() {
@@ -285,20 +406,58 @@ pub fn WeaknessAnalytics() -> Element {
                                             let gy = g_coords[i];
                                             let vy = v_coords[i];
                                             let ly = l_coords[i];
-                                            let display_day = if p.day.len() >= 10 { p.day[5..10].to_string() } else { p.day.clone() };
-
+                                            let display_day = if p.day.len() >= 10 {
+                                                p.day[5..10].to_string()
+                                            } else {
+                                                p.day.clone()
+                                            };
                                             rsx! {
                                                 g {
                                                     // Vertical grid lines
-                                                    line { x1: "{x}", y1: "{pad_y}", x2: "{x}", y2: "{pad_y + height}", stroke: "#f1f5f9", stroke_width: "1" }
-                                                    
+                                                    line {
+                                                        x1: "{x}",
+                                                        y1: "{pad_y}",
+                                                        x2: "{x}",
+                                                        y2: "{pad_y + height}",
+                                                        stroke: "#f1f5f9",
+                                                        stroke_width: "1",
+                                                    }
+
                                                     // Data circles
-                                                    circle { cx: "{x}", cy: "{gy}", r: "4", fill: "#ffffff", stroke: "#6366f1", stroke_width: "2.5" }
-                                                    circle { cx: "{x}", cy: "{vy}", r: "4", fill: "#ffffff", stroke: "#ec4899", stroke_width: "2.5" }
-                                                    circle { cx: "{x}", cy: "{ly}", r: "4", fill: "#ffffff", stroke: "#f59e0b", stroke_width: "2.5" }
+                                                    circle {
+                                                        cx: "{x}",
+                                                        cy: "{gy}",
+                                                        r: "4",
+                                                        fill: "#ffffff",
+                                                        stroke: "#6366f1",
+                                                        stroke_width: "2.5",
+                                                    }
+                                                    circle {
+                                                        cx: "{x}",
+                                                        cy: "{vy}",
+                                                        r: "4",
+                                                        fill: "#ffffff",
+                                                        stroke: "#ec4899",
+                                                        stroke_width: "2.5",
+                                                    }
+                                                    circle {
+                                                        cx: "{x}",
+                                                        cy: "{ly}",
+                                                        r: "4",
+                                                        fill: "#ffffff",
+                                                        stroke: "#f59e0b",
+                                                        stroke_width: "2.5",
+                                                    }
 
                                                     // Date labels
-                                                    text { x: "{x}", y: "{pad_y + height + 18.0}", text_anchor: "middle", font_size: "10", class: "fill-slate-400 font-bold", "{display_day}" }
+                                                    text {
+                                                        x: "{x}",
+                                                        y: "{pad_y + height + 18.0}",
+                                                        text_anchor: "middle",
+                                                        font_size: "10",
+                                                        class: "fill-slate-400 font-bold",
+                                                        "{display_day}"
+                                                    }
                                                 }
                                             }
                                         }

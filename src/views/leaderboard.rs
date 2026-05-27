@@ -3,8 +3,8 @@ use dioxus::prelude::*;
 use crate::models::user::UserProfile;
 use crate::models::social::SocialUser;
 use crate::models::league::LeagueMember;
-use crate::services::leaderboard::{get_leaderboard_server, get_weekly_league_server};
-use crate::services::social::{get_following_leaderboard_server, search_users_server, toggle_follow_server};
+use crate::services::leaderboard::{get_leaderboard_summary_server};
+use crate::services::social::{search_users_server, toggle_follow_server};
 use crate::services::battle::create_battle_server;
 use crate::routes::Route;
 
@@ -31,20 +31,10 @@ pub fn Leaderboard() -> Element {
     let current_email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
     let current_user_name = user_opt.as_ref().map(|u| u.full_name.clone()).unwrap_or_default();
 
-    let current_email_for_league = current_email.clone();
-    let league_resource = use_resource(move || {
-        let e = current_email_for_league.clone();
-        async move { get_weekly_league_server(e).await }
-    });
-
-    let global_resource = use_resource(move || async move {
-        get_leaderboard_server(10).await
-    });
-
-    let current_email1 = current_email.clone();
-    let mut following_resource = use_resource(move || {
-        let e = current_email1.clone();
-        async move { get_following_leaderboard_server(e).await }
+    let current_email_summary = current_email.clone();
+    let mut summary_resource = use_resource(move || {
+        let e = current_email_summary.clone();
+        async move { get_leaderboard_summary_server(e).await }
     });
 
     let current_email2 = current_email.clone();
@@ -100,29 +90,59 @@ pub fn Leaderboard() -> Element {
                 div { class: "relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-6 sm:p-10 shadow-xl shadow-orange-500/20 text-white text-center",
                     div { class: "relative z-10",
                         h1 { class: "text-3xl sm:text-4xl font-extrabold mb-2", "🏆 Papan Peringkat" }
-                        p { class: "text-amber-50 text-sm sm:text-base opacity-90 font-medium", "Pantau progresmu dan tantang temanmu!" }
+                        p { class: "text-amber-50 text-sm sm:text-base opacity-90 font-medium",
+                            "Pantau progresmu dan tantang temanmu!"
+                        }
                     }
                 }
 
                 // Tabs
                 div { class: "flex bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-1 overflow-x-auto",
                     button {
-                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "liga" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!(
+                            "flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}",
+                            if active_tab() == "liga" {
+                                "bg-amber-100 text-amber-700 shadow-sm"
+                            } else {
+                                "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            },
+                        ),
                         onclick: move |_| active_tab.set("liga".to_string()),
                         "🛡️ Liga Mingguan"
                     }
                     button {
-                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "global" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!(
+                            "flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}",
+                            if active_tab() == "global" {
+                                "bg-amber-100 text-amber-700 shadow-sm"
+                            } else {
+                                "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            },
+                        ),
                         onclick: move |_| active_tab.set("global".to_string()),
                         "🌍 Global"
                     }
                     button {
-                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "teman" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!(
+                            "flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}",
+                            if active_tab() == "teman" {
+                                "bg-amber-100 text-amber-700 shadow-sm"
+                            } else {
+                                "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            },
+                        ),
                         onclick: move |_| active_tab.set("teman".to_string()),
                         "👥 Teman"
                     }
                     button {
-                        class: format!("flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}", if active_tab() == "cari" { "bg-amber-100 text-amber-700 shadow-sm" } else { "text-slate-500 hover:text-slate-700 hover:bg-slate-50" }),
+                        class: format!(
+                            "flex-1 py-3 px-4 text-sm font-bold rounded-xl transition-all whitespace-nowrap {}",
+                            if active_tab() == "cari" {
+                                "bg-amber-100 text-amber-700 shadow-sm"
+                            } else {
+                                "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                            },
+                        ),
                         onclick: move |_| active_tab.set("cari".to_string()),
                         "🔍 Cari"
                     }
@@ -130,59 +150,105 @@ pub fn Leaderboard() -> Element {
 
                 // Content
                 if active_tab() == "liga" {
-                    match league_resource.value()() {
-                        None => rsx! { div { class: "text-center py-10", "Memuat data liga minggu ini..." } },
-                        Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
-                        Some(Ok(data)) => rsx! {
-                            div { class: "mb-6 text-center space-y-2",
-                                h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200", 
-                                    if data.division == "Bronze" { "🥉 Liga Perunggu" }
-                                    else if data.division == "Silver" { "🥈 Liga Perak" }
-                                    else if data.division == "Gold" { "🥇 Liga Emas" }
-                                    else { "💎 Liga Berlian" }
+                    match summary_resource.value()() {
+                        None => rsx! {
+                            div { class: "text-center py-10", "Memuat data liga minggu ini..." }
+                        },
+                        Some(Err(e)) => rsx! {
+                            div { class: "text-red-500 text-center py-10", "{e}" }
+                        },
+                        Some(Ok(summary)) => {
+                            if let Some(data) = summary.weekly_league {
+                                rsx! {
+                                    div { class: "mb-6 text-center space-y-2",
+                                        h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200",
+                                            if data.division == "Bronze" {
+                                                "🥉 Liga Perunggu"
+                                            } else if data.division == "Silver" {
+                                                "🥈 Liga Perak"
+                                            } else if data.division == "Gold" {
+                                                "🥇 Liga Emas"
+                                            } else {
+                                                "💎 Liga Berlian"
+                                            }
+                                        }
+                                        p { class: "text-sm font-bold text-slate-500", "Sisa {data.days_left} hari lagi minggu ini!" }
+                                    }
+                                    LeagueList { members: data.members, current_name: current_user_name.clone() }
                                 }
-                                p { class: "text-sm font-bold text-slate-500", "Sisa {data.days_left} hari lagi minggu ini!" }
+                            } else {
+                                rsx! {
+                                    div { class: "text-center py-10", "Data liga belum tersedia." }
+                                }
                             }
-                            LeagueList { members: data.members, current_name: current_user_name.clone() }
                         }
                     }
                 } else if active_tab() == "global" {
-                    match global_resource.value()() {
-                        None => rsx! { div { class: "text-center py-10", "Memuat global leaderboard..." } },
-                        Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
-                        Some(Ok(entries)) => {
-                            let mapped: Vec<SocialUser> = entries.into_iter().map(|e| SocialUser {
-                                email: e.email,
-                                full_name: e.full_name,
-                                is_following: false,
-                                score: e.score,
-                                rank: e.rank,
-                                current_streak: e.current_streak,
-                                total_quiz_completed: e.total_quiz_completed,
-                                active_frame: e.active_frame.clone(),
-                                active_title: e.active_title.clone(),
-                                active_name_color: e.active_name_color.clone(),
-                            }).collect();
-                            rsx! { LeaderboardList { entries: mapped, current_name: current_user_name.clone(), is_global: true, on_challenge: handle_challenge } }
+                    match summary_resource.value()() {
+                        None => rsx! {
+                            div { class: "text-center py-10", "Memuat global leaderboard..." }
+                        },
+                        Some(Err(e)) => rsx! {
+                            div { class: "text-red-500 text-center py-10", "{e}" }
+                        },
+                        Some(Ok(summary)) => {
+                            let mapped: Vec<SocialUser> = summary
+                                .global
+                                .into_iter()
+                                .map(|e| SocialUser {
+                                    email: e.email,
+                                    full_name: e.full_name,
+                                    is_following: false,
+                                    score: e.score,
+                                    rank: e.rank,
+                                    current_streak: e.current_streak,
+                                    total_quiz_completed: e.total_quiz_completed,
+                                    active_frame: e.active_frame.clone(),
+                                    active_title: e.active_title.clone(),
+                                    active_name_color: e.active_name_color.clone(),
+                                })
+                                .collect();
+                            rsx! {
+                                LeaderboardList {
+                                    entries: mapped,
+                                    current_name: current_user_name.clone(),
+                                    is_global: true,
+                                    on_challenge: handle_challenge,
+                                }
+                            }
                         }
                     }
                 } else if active_tab() == "teman" {
-                    match following_resource.value()() {
-                        None => rsx! { div { class: "text-center py-10", "Memuat teman..." } },
-                        Some(Err(e)) => rsx! { div { class: "text-red-500 text-center py-10", "{e}" } },
-                        Some(Ok(entries)) => rsx! {
-                            if entries.len() <= 1 {
-                                div { class: "text-center py-10 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700",
-                                    p { class: "text-4xl mb-4", "🕵️" }
-                                    p { class: "text-slate-500 dark:text-slate-400 font-medium", "Anda belum mengikuti siapa pun." }
-                                    button {
-                                        class: "mt-4 bg-teal-500 text-white font-bold py-2 px-6 rounded-xl",
-                                        onclick: move |_| active_tab.set("cari".to_string()),
-                                        "Cari Teman"
+                    match summary_resource.value()() {
+                        None => rsx! {
+                            div { class: "text-center py-10", "Memuat teman..." }
+                        },
+                        Some(Err(e)) => rsx! {
+                            div { class: "text-red-500 text-center py-10", "{e}" }
+                        },
+                        Some(Ok(summary)) => {
+                            let entries = summary.following;
+                            rsx! {
+                                if entries.len() <= 1 {
+                                    div { class: "text-center py-10 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700",
+                                        p { class: "text-4xl mb-4", "🕵️" }
+                                        p { class: "text-slate-500 dark:text-slate-400 font-medium",
+                                            "Anda belum mengikuti siapa pun."
+                                        }
+                                        button {
+                                            class: "mt-4 bg-teal-500 text-white font-bold py-2 px-6 rounded-xl",
+                                            onclick: move |_| active_tab.set("cari".to_string()),
+                                            "Cari Teman"
+                                        }
+                                    }
+                                } else {
+                                    LeaderboardList {
+                                        entries,
+                                        current_name: current_user_name.clone(),
+                                        is_global: false,
+                                        on_challenge: handle_challenge,
                                     }
                                 }
-                            } else {
-                                LeaderboardList { entries: entries, current_name: current_user_name.clone(), is_global: false, on_challenge: handle_challenge }
                             }
                         }
                     }
@@ -193,16 +259,22 @@ pub fn Leaderboard() -> Element {
                             class: "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:border-teal-500 transition-colors",
                             placeholder: "Cari nama atau email teman...",
                             value: "{search_query}",
-                            oninput: move |e| search_query.set(e.value())
+                            oninput: move |e| search_query.set(e.value()),
                         }
 
                         div { class: "mt-6 space-y-3",
                             match search_resource.value()() {
-                                None => rsx! { div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Ketik minimal 3 huruf..." } },
-                                Some(Err(e)) => rsx! { div { class: "text-red-500", "{e}" } },
+                                None => rsx! {
+                                    div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Ketik minimal 3 huruf..." }
+                                },
+                                Some(Err(e)) => rsx! {
+                                    div { class: "text-red-500", "{e}" }
+                                },
                                 Some(Ok(results)) => {
                                     if results.is_empty() && search_query().len() >= 3 {
-                                        rsx! { div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Tidak ditemukan." } }
+                                        rsx! {
+                                            div { class: "text-center text-sm text-slate-500 dark:text-slate-400", "Tidak ditemukan." }
+                                        }
                                     } else {
                                         rsx! {
                                             for user in results {
@@ -212,27 +284,36 @@ pub fn Leaderboard() -> Element {
                                                         p { class: "text-xs text-slate-500 dark:text-slate-400", "{user.score} pts" }
                                                     }
                                                     button {
-                                                        class: format!("px-4 py-2 text-xs font-bold rounded-lg transition-colors {}", 
-                                                            if user.is_following { "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300" } 
-                                                            else { "bg-teal-500 text-white hover:bg-teal-600" }),
+                                                        class: format!(
+                                                            "px-4 py-2 text-xs font-bold rounded-lg transition-colors {}",
+                                                            if user.is_following {
+                                                                "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300"
+                                                            } else {
+                                                                "bg-teal-500 text-white hover:bg-teal-600"
+                                                            },
+                                                        ),
                                                         onclick: {
                                                             let u_email = user.email.clone();
                                                             let is_f = user.is_following;
                                                             let me_email = current_email.clone();
                                                             let mut s_res = search_resource;
-                                                            let mut f_res = following_resource;
+                                                            let mut sum_res = summary_resource;
                                                             move |_| {
                                                                 let target = u_email.clone();
                                                                 let me = me_email.clone();
                                                                 spawn(async move {
                                                                     if let Ok(_) = toggle_follow_server(me, target, !is_f).await {
-                                                                        f_res.restart();
+                                                                        sum_res.restart();
                                                                         s_res.restart();
                                                                     }
                                                                 });
                                                             }
                                                         },
-                                                        if user.is_following { "Unfollow" } else { "Follow" }
+                                                        if user.is_following {
+                                                            "Unfollow"
+                                                        } else {
+                                                            "Follow"
+                                                        }
                                                     }
                                                 }
                                             }
@@ -257,21 +338,28 @@ pub fn Leaderboard() -> Element {
                 if challenge_modal_open() {
                     div { class: "fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4",
                         div { class: "bg-white dark:bg-slate-900 rounded-3xl p-6 w-full max-w-sm shadow-xl",
-                            h3 { class: "text-lg font-black text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2", span { class: "text-xl", "⚔️" } "Tantang Teman" }
-                            p { class: "text-sm text-slate-500 dark:text-slate-400 mb-4", "Pilih topik kuis yang ingin Anda ujikan. Siapa yang paling tinggi skornya, dia yang dapat Koin!" }
-                            
+                            h3 { class: "text-lg font-black text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2",
+                                span { class: "text-xl", "⚔️" }
+                                "Tantang Teman"
+                            }
+                            p { class: "text-sm text-slate-500 dark:text-slate-400 mb-4",
+                                "Pilih topik kuis yang ingin Anda ujikan. Siapa yang paling tinggi skornya, dia yang dapat Koin!"
+                            }
+
                             input {
                                 r#type: "text",
                                 class: "w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 mb-4 focus:outline-none focus:border-indigo-500 transition-colors",
                                 placeholder: "Contoh: Past Tense, Passive Voice...",
                                 value: "{challenge_goal}",
-                                oninput: move |e| challenge_goal.set(e.value())
+                                oninput: move |e| challenge_goal.set(e.value()),
                             }
-                            
+
                             if !challenge_status().is_empty() {
-                                p { class: "text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-4 text-center", "{challenge_status}" }
+                                p { class: "text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-4 text-center",
+                                    "{challenge_status}"
+                                }
                             }
-                            
+
                             div { class: "flex gap-3",
                                 button {
                                     class: "flex-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold py-3 rounded-xl transition-colors cursor-pointer",
@@ -319,10 +407,24 @@ pub fn get_name_color_class(color: Option<&str>) -> &'static str {
 
 pub fn render_title_badge(title: Option<&str>) -> Element {
     match title {
-        Some("polyglot") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-full", "🎓 Polyglot" } },
-        Some("sultan") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-700 rounded-full", "👑 Sultan" } },
-        Some("legend") => rsx! { span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full", "🌟 Legend" } },
-        _ => rsx! { span {} }
+        Some("polyglot") => rsx! {
+            span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-indigo-100 text-indigo-700 rounded-full",
+                "🎓 Polyglot"
+            }
+        },
+        Some("sultan") => rsx! {
+            span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-yellow-100 text-yellow-700 rounded-full",
+                "👑 Sultan"
+            }
+        },
+        Some("legend") => rsx! {
+            span { class: "inline-block ml-1 px-2 py-0.5 text-[10px] font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-full",
+                "🌟 Legend"
+            }
+        },
+        _ => rsx! {
+            span {}
+        }
     }
 }
 
@@ -354,24 +456,45 @@ fn LeagueList(members: Vec<LeagueMember>, current_name: String) -> Element {
 
                         rsx! {
                             div { class: "flex items-center gap-4 px-6 py-3.5 transition-colors {bg_class}",
-                                div { class: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 {rank_color}", "{member.rank}" }
+                                div { class: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 {rank_color}",
+                                    "{member.rank}"
+                                }
                                 div { class: "flex-1 min-w-0 flex items-center flex-wrap",
                                     Link {
-                                        to: Route::Profile { email: member.email.clone() },
+                                        to: Route::Profile {
+                                            email: member.email.clone(),
+                                        },
                                         class: "hover:underline",
-                                        p { class: format!("text-sm font-bold truncate {} {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }, get_name_color_class(member.active_name_color.as_deref())), "{member.full_name}" }
+                                        p {
+                                            class: format!(
+                                                "text-sm font-bold truncate {} {}",
+                                                if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" },
+                                                get_name_color_class(member.active_name_color.as_deref()),
+                                            ),
+                                            "{member.full_name}"
+                                        }
                                     }
                                     {render_title_badge(member.active_title.as_deref())}
-                                    if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
-                                    
+                                    if is_me {
+                                        span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase",
+                                            "Anda"
+                                        }
+                                    }
+
                                     if member.status_zone == "promosi" {
-                                        span { class: "ml-2 text-[10px] font-bold text-emerald-600 uppercase flex items-center", "⬆ Promosi" }
+                                        span { class: "ml-2 text-[10px] font-bold text-emerald-600 uppercase flex items-center",
+                                            "⬆ Promosi"
+                                        }
                                     }
                                     if member.status_zone == "degradasi" {
-                                        span { class: "ml-2 text-[10px] font-bold text-rose-600 uppercase flex items-center", "⬇ Degradasi" }
+                                        span { class: "ml-2 text-[10px] font-bold text-rose-600 uppercase flex items-center",
+                                            "⬇ Degradasi"
+                                        }
                                     }
                                 }
-                                div { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right shrink-0", "{member.league_score} pts" }
+                                div { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right shrink-0",
+                                    "{member.league_score} pts"
+                                }
                             }
                         }
                     }
@@ -399,15 +522,30 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center",
-                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg", is_me, "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700", "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400"), "🥈" }
+                                        div {
+                                            class: get_frame_class(
+                                                entry.active_frame.as_deref(),
+                                                "w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center text-2xl sm:text-3xl font-black shadow-lg",
+                                                is_me,
+                                                "bg-gradient-to-br from-slate-100 to-slate-200 text-slate-700",
+                                                "bg-gradient-to-br from-amber-100 to-amber-200 ring-2 ring-amber-400",
+                                            ),
+                                            "🥈"
+                                        }
                                         Link {
-                                            to: Route::Profile { email: entry.email.clone() },
+                                            to: Route::Profile {
+                                                email: entry.email.clone(),
+                                            },
                                             class: "hover:underline flex items-center justify-center flex-wrap max-w-[110px]",
-                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}",
+                                                "{entry.full_name}"
+                                            }
                                             {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
-                                        div { class: "w-16 sm:w-20 h-16 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-2xl font-black text-slate-400", "2" } }
+                                        div { class: "w-16 sm:w-20 h-16 bg-gradient-to-t from-slate-200 to-slate-100 rounded-t-xl mt-2 flex items-center justify-center",
+                                            span { class: "text-2xl font-black text-slate-400", "2" }
+                                        }
                                     }
                                 }
                             }
@@ -418,15 +556,30 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center -mt-4",
-                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl", is_me, "bg-gradient-to-br from-amber-100 to-yellow-200 text-amber-800", "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400"), "🥇" }
+                                        div {
+                                            class: get_frame_class(
+                                                entry.active_frame.as_deref(),
+                                                "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center text-3xl sm:text-4xl font-black shadow-xl",
+                                                is_me,
+                                                "bg-gradient-to-br from-amber-100 to-yellow-200 text-amber-800",
+                                                "bg-gradient-to-br from-amber-200 to-yellow-300 ring-4 ring-amber-400",
+                                            ),
+                                            "🥇"
+                                        }
                                         Link {
-                                            to: Route::Profile { email: entry.email.clone() },
+                                            to: Route::Profile {
+                                                email: entry.email.clone(),
+                                            },
                                             class: "hover:underline flex items-center justify-center flex-wrap max-w-[130px]",
-                                            p { class: "text-sm sm:text-base mt-2 text-center font-black line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            p { class: "text-sm sm:text-base mt-2 text-center font-black line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}",
+                                                "{entry.full_name}"
+                                            }
                                             {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-sm font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
-                                        div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-3xl font-black text-amber-600 dark:text-amber-400", "1" } }
+                                        div { class: "w-20 sm:w-24 h-24 bg-gradient-to-t from-amber-300 to-amber-100 rounded-t-xl mt-2 flex items-center justify-center",
+                                            span { class: "text-3xl font-black text-amber-600 dark:text-amber-400", "1" }
+                                        }
                                     }
                                 }
                             }
@@ -437,15 +590,30 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div { class: "flex flex-col items-center",
-                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg", is_me, "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-800", "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400"), "🥉" }
+                                        div {
+                                            class: get_frame_class(
+                                                entry.active_frame.as_deref(),
+                                                "w-14 h-14 sm:w-18 sm:h-18 rounded-full flex items-center justify-center text-xl sm:text-2xl font-black shadow-lg",
+                                                is_me,
+                                                "bg-gradient-to-br from-orange-50 to-orange-100 text-orange-800",
+                                                "bg-gradient-to-br from-orange-100 to-orange-200 ring-2 ring-orange-400",
+                                            ),
+                                            "🥉"
+                                        }
                                         Link {
-                                            to: Route::Profile { email: entry.email.clone() },
+                                            to: Route::Profile {
+                                                email: entry.email.clone(),
+                                            },
                                             class: "hover:underline flex items-center justify-center flex-wrap max-w-[100px]",
-                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}", "{entry.full_name}" }
+                                            p { class: "text-xs sm:text-sm font-bold mt-2 text-center line-clamp-2 leading-tight {get_name_color_class(entry.active_name_color.as_deref())}",
+                                                "{entry.full_name}"
+                                            }
                                             {render_title_badge(entry.active_title.as_deref())}
                                         }
                                         p { class: "text-xs font-black text-amber-600 dark:text-amber-400", "{entry.score} pts" }
-                                        div { class: "w-14 sm:w-18 h-12 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-xl mt-2 flex items-center justify-center", span { class: "text-xl font-black text-orange-400", "3" } }
+                                        div { class: "w-14 sm:w-18 h-12 bg-gradient-to-t from-orange-200 to-orange-100 rounded-t-xl mt-2 flex items-center justify-center",
+                                            span { class: "text-xl font-black text-orange-400", "3" }
+                                        }
                                     }
                                 }
                             }
@@ -462,16 +630,46 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                             {
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
-                                    div { class: format!("flex items-center gap-4 px-6 py-3.5 transition-colors {}", if is_me { "bg-amber-50/30 dark:bg-amber-900/30 border-l-4 border-amber-400" } else { "hover:bg-slate-50 dark:bg-slate-950" }),
-                                        div { class: get_frame_class(entry.active_frame.as_deref(), "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0", is_me, "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400", "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400"), "{entry.rank}" }
+                                    div {
+                                        class: format!(
+                                            "flex items-center gap-4 px-6 py-3.5 transition-colors {}",
+                                            if is_me {
+                                                "bg-amber-50/30 dark:bg-amber-900/30 border-l-4 border-amber-400"
+                                            } else {
+                                                "hover:bg-slate-50 dark:bg-slate-950"
+                                            },
+                                        ),
+                                        div {
+                                            class: get_frame_class(
+                                                entry.active_frame.as_deref(),
+                                                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0",
+                                                is_me,
+                                                "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400",
+                                                "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400",
+                                            ),
+                                            "{entry.rank}"
+                                        }
                                         div { class: "flex-1 min-w-0 flex items-center flex-wrap",
                                             Link {
-                                                to: Route::Profile { email: entry.email.clone() },
+                                                to: Route::Profile {
+                                                    email: entry.email.clone(),
+                                                },
                                                 class: "hover:underline",
-                                                p { class: format!("text-sm font-bold truncate {} {}", if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" }, get_name_color_class(entry.active_name_color.as_deref())), "{entry.full_name}" }
+                                                p {
+                                                    class: format!(
+                                                        "text-sm font-bold truncate {} {}",
+                                                        if is_me { "text-amber-700" } else { "text-slate-800 dark:text-slate-200" },
+                                                        get_name_color_class(entry.active_name_color.as_deref()),
+                                                    ),
+                                                    "{entry.full_name}"
+                                                }
                                             }
                                             {render_title_badge(entry.active_title.as_deref())}
-                                            if is_me { span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase", "Anda" } }
+                                            if is_me {
+                                                span { class: "ml-2 text-[10px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded-full font-bold uppercase",
+                                                    "Anda"
+                                                }
+                                            }
                                         }
                                         div { class: "flex items-center gap-2 shrink-0",
                                             if !is_me && is_global == false {
@@ -488,7 +686,9 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                             }
                                             div { class: "flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 font-semibold shrink-0",
                                                 span { class: "hidden sm:inline", "🔥 {entry.current_streak}" }
-                                                span { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right", "{entry.score} pts" }
+                                                span { class: "text-sm font-black text-amber-600 dark:text-amber-400 min-w-[50px] text-right",
+                                                    "{entry.score} pts"
+                                                }
                                             }
                                         }
                                     }

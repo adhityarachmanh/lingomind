@@ -448,10 +448,19 @@ pub fn VoiceChat(goal: String) -> Element {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/50 dark:text-slate-50 p-4 md:p-8 flex flex-col justify-center items-center font-sans",
                 div { class: "max-w-4xl w-full bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-700 rounded-3xl p-6 md:p-10 shadow-xl text-center",
-                    span { class: "text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm", "Gemini Live Voice - {language}" }
-                    p { class: "text-xs text-slate-500 dark:text-slate-400 mb-3 font-medium", "Global language: ", span { class: "text-emerald-600 font-bold", "{selected_language}" } }
-                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mb-3", "Pilih Partner Panggilan Suara" }
-                    p { class: "text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto", "Latih berbicara langsung secara verbal. Asisten AI akan mendengarkan pelafalan Anda dan langsung merespons via suara." }
+                    span { class: "text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100 px-4 py-1.5 rounded-full uppercase tracking-wider mb-4 inline-block shadow-sm",
+                        "Gemini Live Voice - {language}"
+                    }
+                    p { class: "text-xs text-slate-500 dark:text-slate-400 mb-3 font-medium",
+                        "Global language: "
+                        span { class: "text-emerald-600 font-bold", "{selected_language}" }
+                    }
+                    h2 { class: "text-3xl font-extrabold text-slate-800 dark:text-slate-200 mb-3",
+                        "Pilih Partner Panggilan Suara"
+                    }
+                    p { class: "text-slate-600 dark:text-slate-400 text-sm mb-8 leading-relaxed font-medium max-w-2xl mx-auto",
+                        "Latih berbicara langsung secara verbal. Asisten AI akan mendengarkan pelafalan Anda dan langsung merespons via suara."
+                    }
 
                     div { class: "grid grid-cols-1 sm:grid-cols-2 gap-4",
                         for (setting_key, title, desc) in preset_scenarios {
@@ -464,16 +473,24 @@ pub fn VoiceChat(goal: String) -> Element {
                                     move |_| click_setting(scenario_name.clone())
                                 },
                                 div {
-                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 transition-colors text-base", "{title}" }
-                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed", "{desc}" }
+                                    p { class: "text-slate-800 dark:text-slate-200 group-hover:text-emerald-700 transition-colors text-base",
+                                        "{title}"
+                                    }
+                                    p { class: "text-xs text-slate-500 dark:text-slate-400 font-medium mt-1.5 leading-relaxed",
+                                        "{desc}"
+                                    }
                                 }
-                                span { class: "text-slate-400 group-hover:text-emerald-500 transition-colors mt-0.5", "🎙️" }
+                                span { class: "text-slate-400 group-hover:text-emerald-500 transition-colors mt-0.5",
+                                    "🎙️"
+                                }
                             }
                         }
                     }
 
                     div { class: "mt-8 p-6 rounded-2xl border-2 border-slate-100/20 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-left shadow-inner",
-                        p { class: "text-sm font-extrabold text-emerald-700 uppercase tracking-wider mb-2", "Buat Skenario Telepon Kustom" }
+                        p { class: "text-sm font-extrabold text-emerald-700 uppercase tracking-wider mb-2",
+                            "Buat Skenario Telepon Kustom"
+                        }
                         div { class: "flex flex-col sm:flex-row gap-3",
                             input {
                                 r#type: "text",
@@ -511,7 +528,9 @@ pub fn VoiceChat(goal: String) -> Element {
 
                     if !custom_scenarios.is_empty() {
                         div { class: "mt-6 text-left p-6 bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl shadow-sm",
-                            p { class: "text-sm font-bold text-slate-700 dark:text-slate-300 mb-3", "Pernah Anda hubungi:" }
+                            p { class: "text-sm font-bold text-slate-700 dark:text-slate-300 mb-3",
+                                "Pernah Anda hubungi:"
+                            }
                             div { class: "flex flex-wrap gap-2.5",
                                 for scenario in custom_scenarios {
                                     button {
@@ -531,7 +550,9 @@ pub fn VoiceChat(goal: String) -> Element {
                     }
 
                     if let Some(err) = error_msg() {
-                        p { class: "text-xs text-rose-600 dark:text-rose-400 font-bold mt-6 bg-rose-50/30 dark:bg-rose-900/30 p-3 rounded-xl border border-rose-200 shadow-sm", "{err}" }
+                        p { class: "text-xs text-rose-600 dark:text-rose-400 font-bold mt-6 bg-rose-50/30 dark:bg-rose-900/30 p-3 rounded-xl border border-rose-200 shadow-sm",
+                            "{err}"
+                        }
                     }
                 }
             }
@@ -557,7 +578,7 @@ pub fn VoiceChat(goal: String) -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-between pt-20 pb-8 px-4 md:px-8 font-sans",
             div { class: "max-w-md w-full mx-auto flex-1 flex flex-col justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-[2rem] shadow-2xl p-6 md:p-8 relative overflow-hidden min-h-[650px]",
-                
+
                 // Gelombang background
                 div { class: "absolute -inset-20 opacity-10 pointer-events-none select-none bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-teal-200 via-transparent to-transparent" }
 
@@ -565,28 +586,46 @@ pub fn VoiceChat(goal: String) -> Element {
                 div { class: "flex justify-between items-center z-10 bg-slate-50 dark:bg-slate-950 border border-slate-100/50 dark:border-slate-800 p-3 rounded-2xl shadow-sm",
                     div { class: "flex items-center gap-3",
                         span { class: "h-3 w-3 rounded-full bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" }
-                        p { class: "text-xs font-extrabold tracking-widest text-slate-600 dark:text-slate-400 uppercase", "Live Voice" }
+                        p { class: "text-xs font-extrabold tracking-widest text-slate-600 dark:text-slate-400 uppercase",
+                            "Live Voice"
+                        }
                     }
-                    span { class: "text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-teal-600 dark:text-teal-400 px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm", "{active_level} - {language}" }
+                    span { class: "text-[10px] font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-teal-600 dark:text-teal-400 px-3 py-1.5 rounded-full uppercase tracking-wider shadow-sm",
+                        "{active_level} - {language}"
+                    }
                 }
 
                 // Central Pulse Call Interface
                 div { class: "flex-1 flex flex-col justify-center items-center py-8 z-10",
-                    h3 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2 text-center", "{setting_title}" }
-                    p { class: "text-sm text-slate-500 dark:text-slate-400 font-medium mb-10 text-center", "Partner Belajar Bahasa Asing" }
+                    h3 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2 text-center",
+                        "{setting_title}"
+                    }
+                    p { class: "text-sm text-slate-500 dark:text-slate-400 font-medium mb-10 text-center",
+                        "Partner Belajar Bahasa Asing"
+                    }
 
                     // Glowing Circle Avatar
                     div {
                         class: format!(
                             "h-48 w-48 rounded-full border-[3px] flex items-center justify-center transition-all duration-700 shadow-xl relative {}",
                             match current_status.as_str() {
-                                "menghubungkan" => "border-indigo-400 shadow-indigo-200 bg-indigo-50/30 dark:bg-indigo-900/30",
-                                "mendengarkan" => "border-emerald-400 shadow-emerald-200 animate-pulse bg-emerald-50",
-                                "berpikir" => "border-amber-400 shadow-amber-200 bg-amber-50/30 dark:bg-amber-900/30",
-                                "berbicara" => "border-teal-400 shadow-teal-200 bg-teal-50/30 dark:bg-teal-900/30",
-                                "muted" => "border-rose-400 shadow-rose-200 bg-rose-50/30 dark:bg-rose-900/30",
-                                _ => "border-slate-200 dark:border-slate-700"
-                            }
+                                "menghubungkan" => {
+                                    "border-indigo-400 shadow-indigo-200 bg-indigo-50/30 dark:bg-indigo-900/30"
+                                }
+                                "mendengarkan" => {
+                                    "border-emerald-400 shadow-emerald-200 animate-pulse bg-emerald-50"
+                                }
+                                "berpikir" => {
+                                    "border-amber-400 shadow-amber-200 bg-amber-50/30 dark:bg-amber-900/30"
+                                }
+                                "berbicara" => {
+                                    "border-teal-400 shadow-teal-200 bg-teal-50/30 dark:bg-teal-900/30"
+                                }
+                                "muted" => {
+                                    "border-rose-400 shadow-rose-200 bg-rose-50/30 dark:bg-rose-900/30"
+                                }
+                                _ => "border-slate-200 dark:border-slate-700",
+                            },
                         ),
                         // Gelombang ekstra jika sedang didengarkan/berbicara
                         if current_status == "mendengarkan" {
@@ -604,7 +643,7 @@ pub fn VoiceChat(goal: String) -> Element {
                                     "berpikir" => "⚡",
                                     "berbicara" => "🤖",
                                     "muted" => "🔇",
-                                    _ => "📞"
+                                    _ => "📞",
                                 }
                             }
                         }
@@ -617,10 +656,16 @@ pub fn VoiceChat(goal: String) -> Element {
                             match current_status.as_str() {
                                 "mendengarkan" => "text-emerald-600 border-emerald-100",
                                 "berpikir" => "text-amber-600 dark:text-amber-400 border-amber-100",
-                                "berbicara" => "text-teal-600 dark:text-teal-400 border-teal-100/50 dark:border-teal-900/50",
-                                "muted" => "text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50",
-                                _ => "text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                            }
+                                "berbicara" => {
+                                    "text-teal-600 dark:text-teal-400 border-teal-100/50 dark:border-teal-900/50"
+                                }
+                                "muted" => {
+                                    "text-rose-600 dark:text-rose-400 border-rose-100 dark:border-rose-900/50"
+                                }
+                                _ => {
+                                    "text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                                }
+                            },
                         ),
                         "{status_label}"
                     }
@@ -630,14 +675,22 @@ pub fn VoiceChat(goal: String) -> Element {
                 div { class: "w-full max-h-40 overflow-y-auto mb-8 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-sm border border-slate-200/30 dark:border-slate-700 rounded-2xl p-5 space-y-3 z-10 text-sm shadow-inner",
                     if !user_caption().is_empty() {
                         div { class: "flex flex-col gap-1",
-                            span { class: "text-[10px] text-teal-600 dark:text-teal-400 uppercase tracking-widest font-black", "Anda berkata" }
-                            p { class: "text-slate-700/30 dark:text-slate-300 italic font-medium leading-relaxed", "\"{user_caption}\"" }
+                            span { class: "text-[10px] text-teal-600 dark:text-teal-400 uppercase tracking-widest font-black",
+                                "Anda berkata"
+                            }
+                            p { class: "text-slate-700/30 dark:text-slate-300 italic font-medium leading-relaxed",
+                                "\"{user_caption}\""
+                            }
                         }
                     }
                     if !ai_caption().is_empty() {
                         div { class: "flex flex-col gap-1 border-t border-slate-200/30 dark:border-slate-700 pt-3",
-                            span { class: "text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-black", "AI Merespons" }
-                            p { class: "text-slate-800 dark:text-slate-200 font-bold leading-relaxed", "{ai_caption}" }
+                            span { class: "text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-black",
+                                "AI Merespons"
+                            }
+                            p { class: "text-slate-800 dark:text-slate-200 font-bold leading-relaxed",
+                                "{ai_caption}"
+                            }
                         }
                     }
                     if !ai_feedback().is_empty() {
@@ -650,13 +703,15 @@ pub fn VoiceChat(goal: String) -> Element {
                         }
                     }
                     if user_caption().is_empty() && ai_caption().is_empty() && ai_feedback().is_empty() {
-                        p { class: "text-center text-slate-500 dark:text-slate-400 py-4 font-medium", "Transkrip ucapan akan muncul di sini..." }
+                        p { class: "text-center text-slate-500 dark:text-slate-400 py-4 font-medium",
+                            "Transkrip ucapan akan muncul di sini..."
+                        }
                     }
                 }
 
                 // Control panel
                 div { class: "flex justify-center items-center gap-8 z-10 pt-2",
-                    
+
                     // Tombol Mute
                     button {
                         r#type: "button",
@@ -666,11 +721,17 @@ pub fn VoiceChat(goal: String) -> Element {
                                 "bg-rose-50/30 dark:bg-rose-900/30 border-rose-200 text-rose-500"
                             } else {
                                 "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-slate-300 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:text-slate-200"
-                            }
+                            },
                         ),
                         onclick: handle_mute_toggle,
                         title: "Mute/Unmute",
-                        span { class: "text-2xl", if is_muted() { "🎙️" } else { "🔇" } }
+                        span { class: "text-2xl",
+                            if is_muted() {
+                                "🎙️"
+                            } else {
+                                "🔇"
+                            }
+                        }
                     }
 
                     // Tombol Tutup Panggilan (Hang Up)

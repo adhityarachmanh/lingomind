@@ -180,3 +180,30 @@ pub async fn equip_color_server(email: String, color: String) -> Result<(), Serv
     #[cfg(target_arch = "wasm32")]
     { Ok(()) }
 }
+
+#[server]
+pub async fn get_profile_summary_server(target_email: String, requesting_email: String) -> Result<crate::models::user::ProfileSummary, ServerFnError> {
+    let profile_res = get_public_profile_server(target_email.clone()).await?;
+    
+    let mut frames = vec![];
+    let mut titles = vec![];
+    let mut colors = vec![];
+    
+    if target_email == requesting_email {
+        let (f_res, t_res, c_res) = tokio::join!(
+            get_user_frames_server(target_email.clone()),
+            get_user_titles_server(target_email.clone()),
+            get_user_colors_server(target_email)
+        );
+        frames = f_res.unwrap_or_default();
+        titles = t_res.unwrap_or_default();
+        colors = c_res.unwrap_or_default();
+    }
+    
+    Ok(crate::models::user::ProfileSummary {
+        profile: profile_res,
+        frames,
+        titles,
+        colors,
+    })
+}

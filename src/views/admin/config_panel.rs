@@ -32,7 +32,7 @@ pub fn ConfigPanel(email: String) -> Element {
                     i { class: "fa-solid fa-sliders text-blue-600" }
                     "Sistem Konfigurasi Utama"
                 }
-                
+
                 div { class: "overflow-x-auto",
                     table { class: "w-full text-left text-sm text-slate-700",
                         thead { class: "text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200",
@@ -48,11 +48,17 @@ pub fn ConfigPanel(email: String) -> Element {
                                 for config in configs {
                                     AppConfigRow {
                                         config: config.clone(),
-                                        on_edit: move |_| editing_app_config.set(Some(config.clone()))
+                                        on_edit: move |_| editing_app_config.set(Some(config.clone())),
                                     }
                                 }
                             } else {
-                                tr { td { colspan: "4", class: "px-4 py-8 text-center text-slate-500", "Memuat data..." } }
+                                tr {
+                                    td {
+                                        colspan: "4",
+                                        class: "px-4 py-8 text-center text-slate-500",
+                                        "Memuat data..."
+                                    }
+                                }
                             }
                         }
                     }
@@ -65,7 +71,7 @@ pub fn ConfigPanel(email: String) -> Element {
                     i { class: "fa-solid fa-bullseye text-orange-500" }
                     "Konfigurasi Misi Harian"
                 }
-                
+
                 div { class: "overflow-x-auto",
                     table { class: "w-full text-left text-sm text-slate-700",
                         thead { class: "text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200",
@@ -82,11 +88,17 @@ pub fn ConfigPanel(email: String) -> Element {
                                 for mission in missions {
                                     MissionConfigRow {
                                         config: mission.clone(),
-                                        on_edit: move |_| editing_mission_config.set(Some(mission.clone()))
+                                        on_edit: move |_| editing_mission_config.set(Some(mission.clone())),
                                     }
                                 }
                             } else {
-                                tr { td { colspan: "5", class: "px-4 py-8 text-center text-slate-500", "Memuat data..." } }
+                                tr {
+                                    td {
+                                        colspan: "5",
+                                        class: "px-4 py-8 text-center text-slate-500",
+                                        "Memuat data..."
+                                    }
+                                }
                             }
                         }
                     }
@@ -99,7 +111,7 @@ pub fn ConfigPanel(email: String) -> Element {
                     email: email.clone(),
                     config,
                     on_close: move |_| editing_app_config.set(None),
-                    on_save: move |_| app_configs.restart()
+                    on_save: move |_| app_configs.restart(),
                 }
             }
 
@@ -108,7 +120,7 @@ pub fn ConfigPanel(email: String) -> Element {
                     email: email.clone(),
                     config: mission,
                     on_close: move |_| editing_mission_config.set(None),
-                    on_save: move |_| mission_configs.restart()
+                    on_save: move |_| mission_configs.restart(),
                 }
             }
         }
@@ -125,7 +137,9 @@ fn AppConfigRow(config: AppConfigItem, on_edit: EventHandler<()>) -> Element {
         tr { class: "hover:bg-slate-50 transition-colors border-b border-slate-100",
             td { class: "px-4 py-4 font-mono text-blue-600 font-bold", "{config_key}" }
             td { class: "px-4 py-4",
-                span { class: "font-semibold text-slate-800 bg-slate-100/80 px-2.5 py-1 rounded-lg text-xs font-mono", "{config_val}" }
+                span { class: "font-semibold text-slate-800 bg-slate-100/80 px-2.5 py-1 rounded-lg text-xs font-mono",
+                    "{config_val}"
+                }
             }
             td { class: "px-4 py-4 text-slate-500 text-xs", "{config_desc}" }
             td { class: "px-4 py-4 text-right",
@@ -159,8 +173,8 @@ fn MissionConfigRow(config: MissionConfigItem, on_edit: EventHandler<()>) -> Ele
                 span { class: "text-slate-800 font-medium", "Quiz: {quiz_tgt}" }
             }
             td { class: "px-4 py-4",
-                span { class: "text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg", 
-                    "Weakness: {weak_tgt} | FC: {fcm_tgt}-{fcx_tgt}" 
+                span { class: "text-xs font-medium text-slate-500 bg-slate-50 border border-slate-200/60 px-2.5 py-1 rounded-lg",
+                    "Weakness: {weak_tgt} | FC: {fcm_tgt}-{fcx_tgt}"
                 }
             }
             td { class: "px-4 py-4 text-right",
@@ -219,28 +233,32 @@ fn AppConfigModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1",
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Kunci Konfigurasi (Key)" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Kunci Konfigurasi (Key)"
+                        }
                         input {
                             class: "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-slate-500 font-mono text-sm focus:outline-none cursor-not-allowed",
                             value: "{key}",
-                            disabled: true
+                            disabled: true,
                         }
                     }
-                    
+
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Nilai Baru (Value)" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Nilai Baru (Value)"
+                        }
                         input {
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-slate-800 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all font-semibold",
                             value: "{edit_value}",
                             oninput: move |e| edit_value.set(e.value()),
-                            autofocus: true
+                            autofocus: true,
                         }
                     }
-                    
+
                     if !description.is_empty() {
                         div { class: "bg-blue-50/50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700/80 leading-relaxed",
                             i { class: "fa-solid fa-info-circle mr-1.5" }
@@ -248,7 +266,7 @@ fn AppConfigModal(
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -261,7 +279,11 @@ fn AppConfigModal(
                         onclick: save_action,
                         disabled: is_saving(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan Perubahan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan Perubahan"
+                        }
                     }
                 }
             }
@@ -320,33 +342,39 @@ fn MissionConfigModal(
                         i { class: "fa-solid fa-xmark text-lg" }
                     }
                 }
-                
+
                 // Body
                 div { class: "p-6 space-y-4 flex-1",
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Tipe Misi (Mission Name)" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Tipe Misi (Mission Name)"
+                        }
                         input {
                             class: "w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 text-orange-600 font-semibold text-sm focus:outline-none cursor-not-allowed",
                             value: "{mission_name}",
-                            disabled: true
+                            disabled: true,
                         }
                     }
-                    
+
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Target Lesson" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Target Lesson"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all font-semibold",
                                 value: "{edit_lesson}",
                                 oninput: move |e| edit_lesson.set(e.value()),
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Target Quiz" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Target Quiz"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all font-semibold",
                                 value: "{edit_quiz}",
                                 oninput: move |e| edit_quiz.set(e.value()),
@@ -355,9 +383,11 @@ fn MissionConfigModal(
                     }
 
                     div { class: "space-y-1",
-                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Target Weakness" }
+                        label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                            "Target Weakness"
+                        }
                         input {
-                            type: "number",
+                            r#type: "number",
                             class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all font-semibold",
                             value: "{edit_weakness}",
                             oninput: move |e| edit_weakness.set(e.value()),
@@ -366,19 +396,23 @@ fn MissionConfigModal(
 
                     div { class: "grid grid-cols-2 gap-4",
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Flashcard Target Min" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Flashcard Target Min"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all font-semibold",
                                 value: "{edit_fc_min}",
                                 oninput: move |e| edit_fc_min.set(e.value()),
                             }
                         }
-                        
+
                         div { class: "space-y-1",
-                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400", "Flashcard Target Max" }
+                            label { class: "text-xs font-semibold uppercase tracking-wider text-slate-400",
+                                "Flashcard Target Max"
+                            }
                             input {
-                                type: "number",
+                                r#type: "number",
                                 class: "w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-slate-800 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 transition-all font-semibold",
                                 value: "{edit_fc_max}",
                                 oninput: move |e| edit_fc_max.set(e.value()),
@@ -386,7 +420,7 @@ fn MissionConfigModal(
                         }
                     }
                 }
-                
+
                 // Footer
                 div { class: "px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3",
                     button {
@@ -399,7 +433,11 @@ fn MissionConfigModal(
                         onclick: save_action,
                         disabled: is_saving(),
                         i { class: if is_saving() { "fa-solid fa-spinner fa-spin" } else { "fa-solid fa-floppy-disk" } }
-                        if is_saving() { "Menyimpan..." } else { "Simpan Perubahan" }
+                        if is_saving() {
+                            "Menyimpan..."
+                        } else {
+                            "Simpan Perubahan"
+                        }
                     }
                 }
             }

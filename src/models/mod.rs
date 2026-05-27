@@ -4,6 +4,7 @@ pub mod quiz;
 pub mod lesson;
 pub mod constants;
 pub mod chat;
+
 pub mod flashcard;
 pub mod weakness;
 pub mod goal;
@@ -12,6 +13,7 @@ pub mod engagement;
 pub mod leaderboard;
 pub mod badge;
 pub mod social;
+pub mod dashboard;
 pub mod admin;
 pub mod shop;
 pub mod story;

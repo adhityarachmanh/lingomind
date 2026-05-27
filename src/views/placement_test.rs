@@ -11,15 +11,23 @@ pub fn PlacementTest() -> Element {
     let (user_opt, ready) = session_state();
 
     if !ready {
-        return rsx! { div { "Loading..." } };
+        return rsx! {
+            div { "Loading..." }
+        };
     }
 
     let Some(user) = user_opt else {
         return rsx! {
             div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex items-center justify-center",
                 div { class: "p-8 bg-white dark:bg-slate-900 rounded-2xl shadow-sm text-center",
-                    h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-4", "Silakan login terlebih dahulu" }
-                    Link { to: Route::Login {}, class: "text-teal-600 dark:text-teal-400 font-bold hover:underline", "Ke Halaman Login" }
+                    h2 { class: "text-xl font-bold text-slate-800 dark:text-slate-200 mb-4",
+                        "Silakan login terlebih dahulu"
+                    }
+                    Link {
+                        to: Route::Login {},
+                        class: "text-teal-600 dark:text-teal-400 font-bold hover:underline",
+                        "Ke Halaman Login"
+                    }
                 }
             }
         };
@@ -88,22 +96,32 @@ pub fn PlacementTest() -> Element {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 p-4 sm:p-8 font-sans pb-24",
             div { class: "max-w-2xl mx-auto bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-3xl p-6 shadow-sm flex flex-col h-[80vh]",
                 div { class: "flex justify-between items-center mb-4 border-b border-slate-100 dark:border-slate-800 pb-4",
-                    h1 { class: "text-xl font-black text-slate-800 dark:text-slate-200", "Tes Penempatan" }
-                    span { class: "bg-teal-50/30 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-3 py-1 rounded-full text-xs font-bold border border-teal-100/50 dark:border-teal-900/50", "{language}" }
+                    h1 { class: "text-xl font-black text-slate-800 dark:text-slate-200",
+                        "Tes Penempatan"
+                    }
+                    span { class: "bg-teal-50/30 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 px-3 py-1 rounded-full text-xs font-bold border border-teal-100/50 dark:border-teal-900/50",
+                        "{language}"
+                    }
                 }
-                
+
                 if !evaluation_result().is_empty() {
                     div { class: "flex-1 flex flex-col items-center justify-center text-center animate-fade-in",
                         if evaluation_result().starts_with("Error") {
                             p { class: "text-rose-500 font-bold mb-4", "{evaluation_result()}" }
                         } else {
                             div { class: "text-6xl mb-4", "🎉" }
-                            h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2", "Evaluasi Selesai!" }
-                            p { class: "text-slate-600 dark:text-slate-400 mb-6", "Level bahasa Anda saat ini adalah:" }
-                            div { class: "text-5xl font-black text-teal-600 dark:text-teal-400 mb-8 bg-teal-50/30 dark:bg-teal-900/30 w-32 h-32 flex items-center justify-center rounded-full mx-auto border-4 border-teal-100/50 dark:border-teal-900/50", 
-                                "{evaluation_result()}" 
+                            h2 { class: "text-2xl font-black text-slate-800 dark:text-slate-200 mb-2",
+                                "Evaluasi Selesai!"
                             }
-                            p { class: "text-sm text-slate-500 dark:text-slate-400 mb-8", "Level ini telah disimpan ke profil Anda. Materi pembelajaran Anda selanjutnya akan disesuaikan dengan level ini." }
+                            p { class: "text-slate-600 dark:text-slate-400 mb-6",
+                                "Level bahasa Anda saat ini adalah:"
+                            }
+                            div { class: "text-5xl font-black text-teal-600 dark:text-teal-400 mb-8 bg-teal-50/30 dark:bg-teal-900/30 w-32 h-32 flex items-center justify-center rounded-full mx-auto border-4 border-teal-100/50 dark:border-teal-900/50",
+                                "{evaluation_result()}"
+                            }
+                            p { class: "text-sm text-slate-500 dark:text-slate-400 mb-8",
+                                "Level ini telah disimpan ke profil Anda. Materi pembelajaran Anda selanjutnya akan disesuaikan dengan level ini."
+                            }
                         }
                         Link {
                             to: Route::Dashboard {},
@@ -121,7 +139,7 @@ pub fn PlacementTest() -> Element {
                             }
                         }
                     }
-                    
+
                     div { class: "pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3",
                         div { class: "flex gap-2",
                             input {
@@ -130,7 +148,11 @@ pub fn PlacementTest() -> Element {
                                 placeholder: "Ketik jawaban Anda di sini...",
                                 value: "{input_text}",
                                 oninput: move |e| input_text.set(e.value()),
-                                onkeydown: move |e| { if e.key() == Key::Enter { handle_send(); } }
+                                onkeydown: move |e| {
+                                    if e.key() == Key::Enter {
+                                        handle_send();
+                                    }
+                                },
                             }
                             button {
                                 class: "bg-indigo-600 hover:bg-indigo-700 text-white p-3 rounded-xl shadow-sm transition-colors cursor-pointer",
@@ -138,13 +160,17 @@ pub fn PlacementTest() -> Element {
                                 "Kirim"
                             }
                         }
-                        
+
                         if chat_history().iter().filter(|(r, _)| r == "User").count() >= 1 {
                             button {
                                 class: if is_evaluating() { "w-full bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400 font-bold py-3 rounded-xl cursor-not-allowed" } else { "w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-xl transition-all shadow-md cursor-pointer" },
                                 disabled: is_evaluating(),
                                 onclick: evaluate_level,
-                                if is_evaluating() { "Mengevaluasi Level..." } else { "Selesai & Evaluasi Level Saya" }
+                                if is_evaluating() {
+                                    "Mengevaluasi Level..."
+                                } else {
+                                    "Selesai & Evaluasi Level Saya"
+                                }
                             }
                         }
                     }

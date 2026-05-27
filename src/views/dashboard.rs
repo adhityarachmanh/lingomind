@@ -1,5 +1,7 @@
 use dioxus::prelude::*;
 use crate::models::constants::LanguageCourse;
+use crate::models::dashboard::DashboardSummary;
+use crate::services::dashboard::get_dashboard_summary_server;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
 use crate::services::flashcard::get_due_flashcard_count_server;
@@ -161,85 +163,63 @@ pub fn Dashboard() -> Element {
     let email = user.email.clone();
     let selected_lang_for_resources = selected_language;
 
-    let due_resource = use_resource(move || {
-        let u = email.clone();
+    let mut summary_resource = use_resource(move || {
+        let e = email.clone();
         let l = selected_lang_for_resources();
-        async move { get_due_flashcard_count_server(u, l).await }
+        async move { get_dashboard_summary_server(e, l).await }
     });
-    let due_count = due_resource.value()().and_then(|r| r.ok()).unwrap_or(0);
-
-    let email2 = user.email.clone();
-    let selected_lang_for_weak = selected_language;
-    let weak_resource = use_resource(move || {
-        let u = email2.clone();
-        let l = selected_lang_for_weak();
-        async move { get_top_weaknesses_server(u, l, 2).await }
-    });
-    let weaknesses = weak_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
+    
+    let (
+        due_count,
+        weaknesses,
+        mission,
+        trend,
+        skill_points,
+        engagement,
+        badges,
+        active_battles,
+        active_pet,
+        social_feed
+    ): (
+        i32,
+        Vec<crate::models::weakness::WeaknessItem>,
+        Option<crate::models::mission::DailyMission>,
+        Option<crate::models::weakness::WeaknessAnalyticsItem>,
+        Vec<crate::models::weakness::SkillProgressPoint>,
+        Option<crate::models::engagement::UserEngagementStats>,
+        Vec<crate::models::badge::Badge>,
+        Vec<crate::models::social::QuizBattle>,
+        Option<crate::models::pet::PetData>,
+        Vec<crate::models::social::SocialFeedItem>
+    ) = match summary_resource.value()() {
+        Some(Ok(summary)) => (
+            summary.due_flashcard_count,
+            summary.top_weaknesses.clone(),
+            summary.daily_mission.clone(),
+            summary.weakness_analytics_trend.clone().into_iter().next(),
+            summary.skill_progress.clone(),
+            summary.engagement.clone(),
+            summary.badges.clone(),
+            summary.active_battles.clone(),
+            summary.active_pet.clone(),
+            summary.social_feed.clone(),
+        ),
+        _ => (0, vec![], None, None, vec![], None, vec![], vec![], None, vec![]),
+    };
+    
+    let goal = "General".to_string();
+    
     let weak_text = if weaknesses.is_empty() { "belum ada".to_string() } else { weaknesses.iter().map(|w| w.topic.clone()).collect::<Vec<_>>().join(", ") };
-
-    let email3 = user.email.clone();
-    let selected_lang_for_mission = selected_language;
-    let mission_resource = use_resource(move || {
-        let u = email3.clone();
-        let l = selected_lang_for_mission();
-        async move { get_daily_mission_server(u, l).await }
-    });
-    let mission = mission_resource.value()().and_then(|r| r.ok());
-
-    let email4 = user.email.clone();
-    let selected_lang_for_trend = selected_language;
-    let trend_resource = use_resource(move || {
-        let u = email4.clone();
-        let l = selected_lang_for_trend();
-        async move { get_weakness_analytics_server(u, l, 1).await }
-    });
-    let trend = trend_resource.value()().and_then(|r| r.ok()).and_then(|v| v.into_iter().next());
-    let trend_label = if let Some(t) = trend {
+    let trend_label = if let Some(ref t) = trend {
         let ratio = if t.count_30d == 0 { 0.0 } else { t.count_7d as f64 / t.count_30d as f64 };
         if ratio >= 0.6 { "naik" } else if ratio >= 0.35 { "stabil" } else { "membaik" }
     } else {
         "belum ada"
     };
-
-    let email5 = user.email.clone();
-    let selected_lang_for_skill = selected_language;
-    let skill_progress_resource = use_resource(move || {
-        let u = email5.clone();
-        let l = selected_lang_for_skill();
-        async move { get_skill_progress_7d_server(u, l).await }
-    });
-    let skill_points = skill_progress_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
-
-    let goal = "General".to_string();
-    let email6 = user.email.clone();
-    let mut engagement_resource = use_resource(move || {
-        let u = email6.clone();
-        async move { get_engagement_stats_server(u).await }
-    });
-    let engagement = engagement_resource.value()().and_then(|r| r.ok());
-
-    let email7 = user.email.clone();
-    let badges_resource = use_resource(move || {
-        let u = email7.clone();
-        async move { get_user_badges_server(u).await }
-    });
-    let badges = badges_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
-
-    let email_for_battles = user.email.clone();
-    let battles_resource = use_resource(move || {
-        let e = email_for_battles.clone();
-        async move { crate::services::battle::get_active_battles_server(e).await }
-    });
-    let active_battles = battles_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
-
-    let email_for_pet = user.email.clone();
-    let mut pet_resource = use_resource(move || {
-        let e = email_for_pet.clone();
-        async move { get_active_pet_server(e).await }
-    });
-    let active_pet = pet_resource.value()().and_then(|r| r.ok()).flatten();
-
+    
+    let mut engagement_resource = summary_resource;
+    let mut pet_resource = summary_resource;
+    
     let email_for_feed = user.email.clone();
     let mut feed_status = use_signal(String::new);
     let feed_pet = move |pet_id: i32| {
@@ -287,13 +267,8 @@ pub fn Dashboard() -> Element {
         });
     };
 
-    let email_for_social = user.email.clone();
-    let mut social_feed_resource = use_resource(move || {
-        let e = email_for_social.clone();
-        async move { get_social_feed_server(e).await }
-    });
-    
-    let feed_items = social_feed_resource.value()().and_then(|r| r.ok()).unwrap_or_default();
+    let mut social_feed_resource = summary_resource;
+    let feed_items = social_feed;
     let email_for_like = user.email.clone();
 
     let selected_lang_for_dl = selected_language();

@@ -77,20 +77,22 @@ pub fn Login() -> Element {
     rsx! {
         div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6 font-sans",
             div { class: "bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 dark:border-slate-700 text-center",
-                
+
                 img {
                     src: asset!("/assets/logo.png"),
                     alt: "LingoMind Logo",
                     class: "w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800",
                 }
-                h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Welcome Back" }
-                p { class: "text-slate-500/30 dark:text-slate-400 text-sm mb-6 font-medium", "Learn English & German powered by Gemini AI" }
-                
+                h2 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2",
+                    "Welcome Back"
+                }
+                p { class: "text-slate-500/30 dark:text-slate-400 text-sm mb-6 font-medium",
+                    "Learn English & German powered by Gemini AI"
+                }
+
                 if let Some(msg) = error_message() {
                     div { class: "mb-4 p-3 bg-rose-50/30 dark:bg-rose-900/30 border border-rose-200 rounded-lg text-rose-600 dark:text-rose-400 text-xs text-left font-semibold flex flex-col gap-2",
-                        div { class: "flex items-center gap-2",
-                            "⚠️ {msg}"
-                        }
+                        div { class: "flex items-center gap-2", "⚠️ {msg}" }
                         if is_unverified() {
                             button {
                                 class: "mt-1 self-start text-xs font-bold text-teal-600 dark:text-teal-400 hover:text-teal-700 hover:underline bg-transparent border-none cursor-pointer p-0",
@@ -100,7 +102,7 @@ pub fn Login() -> Element {
                         }
                     }
                 }
-                
+
                 if let Some(msg) = resend_message() {
                     div { class: "mb-4 p-3 bg-teal-50/30 dark:bg-teal-900/30 border border-teal-200 rounded-lg text-teal-700 text-xs text-left font-semibold flex items-center gap-2",
                         "📩 {msg}"
@@ -109,7 +111,9 @@ pub fn Login() -> Element {
 
                 // Input Email
                 div { class: "mb-4 text-left",
-                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2", "Email" }
+                    label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2",
+                        "Email"
+                    }
                     input {
                         r#type: "email",
                         class: "w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-slate-800 dark:text-slate-200 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 transition-all text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-sm",
@@ -123,7 +127,9 @@ pub fn Login() -> Element {
                 // Input Password
                 div { class: "mb-6 text-left",
                     div { class: "flex justify-between items-center mb-2",
-                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider", "Password" }
+                        label { class: "block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider",
+                            "Password"
+                        }
                         Link {
                             to: Route::ForgotPassword {},
                             class: "text-[11px] font-bold text-teal-600 dark:text-teal-400 hover:underline",
@@ -144,11 +150,15 @@ pub fn Login() -> Element {
                             class: "absolute right-4 text-slate-400 hover:text-teal-600 dark:text-teal-400 text-xs font-bold select-none bg-transparent border-none cursor-pointer disabled:opacity-30 transition-colors",
                             disabled: is_loading(),
                             onclick: move |_| show_password.set(!show_password()),
-                            if show_password() { "HIDE" } else { "SHOW" }
+                            if show_password() {
+                                "HIDE"
+                            } else {
+                                "SHOW"
+                            }
                         }
                     }
                 }
-                
+
                 // Tombol Submit
                 button {
                     class: format!(
@@ -157,9 +167,9 @@ pub fn Login() -> Element {
                             "bg-teal-100 text-teal-800 cursor-not-allowed opacity-80"
                         } else {
                             "bg-teal-500 hover:bg-teal-600 text-white hover:shadow-lg hover:shadow-teal-500/30"
-                        }
+                        },
                     ),
-                    disabled: is_loading(), 
+                    disabled: is_loading(),
                     onclick: handle_login,
                     if is_loading() {
                         div { class: "flex items-center gap-2",
@@ -173,7 +183,7 @@ pub fn Login() -> Element {
 
                 div { class: "text-xs text-slate-500 dark:text-slate-400 pt-5 border-t border-slate-100 dark:border-slate-800 mt-6",
                     span { "Belum punya akun? " }
-                    Link { 
+                    Link {
                         to: Route::Register {},
                         class: "text-teal-600 dark:text-teal-400 font-bold hover:underline",
                         "Daftar sekarang"

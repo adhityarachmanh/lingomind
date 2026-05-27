@@ -103,7 +103,12 @@ fn LessonLegacy(level: String, goal: String) -> Element {
         navigator.replace(Route::Lesson { goal: goal.clone() });
     });
 
-    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route lesson terbaru..." } }
+    rsx! {
+        div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center",
+            "Mengarahkan ke route lesson terbaru..."
+        }
+
+    }
 }
 
 #[component]
@@ -114,7 +119,12 @@ fn QuizLegacy(level: String, goal: String) -> Element {
         navigator.replace(Route::Quiz { goal: goal.clone(), battle_id: None });
     });
 
-    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route quiz terbaru..." } }
+    rsx! {
+        div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center",
+            "Mengarahkan ke route quiz terbaru..."
+        }
+
+    }
 }
 
 #[component]
@@ -125,7 +135,12 @@ fn ChatRoleplayLegacy(level: String, goal: String) -> Element {
         navigator.replace(Route::ChatRoleplay { goal: goal.clone() });
     });
 
-    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route chat terbaru..." } }
+    rsx! {
+        div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center",
+            "Mengarahkan ke route chat terbaru..."
+        }
+
+    }
 }
 
 #[component]
@@ -136,7 +151,12 @@ fn VoiceChatLegacy(level: String, goal: String) -> Element {
         navigator.replace(Route::VoiceChat { goal: goal.clone() });
     });
 
-    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke rute voice chat terbaru..." } }
+    rsx! {
+        div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center",
+            "Mengarahkan ke rute voice chat terbaru..."
+        }
+
+    }
 }
 
 #[component]
@@ -147,5 +167,10 @@ fn WeaknessPracticeLegacy(level: String, goal: String) -> Element {
         navigator.replace(Route::WeaknessPractice { goal: goal.clone() });
     });
 
-    rsx! { div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center", "Mengarahkan ke route practice terbaru..." } }
+    rsx! {
+        div { class: "min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center",
+            "Mengarahkan ke route practice terbaru..."
+        }
+
+    }
 }
