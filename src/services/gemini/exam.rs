@@ -80,13 +80,17 @@ pub async fn generate_exam_server(
     );
     let prompt = build_exam_prompt(&language, &level, &topics_str);
     // Call the shared retry mechanism from quiz.rs
-    super::quiz::generate_quiz_with_retries(
+    super::quiz::get_or_generate_quiz_variant(
         &client,
         &url,
         prompt,
         8, // we request 8 questions
         "exam",
         None,
+        &language,
+        &level,
+        "exam",
+        "normal"
     )
     .await
 }

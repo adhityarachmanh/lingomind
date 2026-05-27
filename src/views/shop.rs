@@ -91,7 +91,9 @@ pub fn Shop() -> Element {
                                     && !i.effect_type.starts_with("name_color_")
                             })
                         {
-                            div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
+                            div {
+                                key: "{item.id}", 
+                                class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
                                 div { class: "flex items-start gap-4 mb-4",
                                     div { class: "w-16 h-16 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-100 dark:border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform",
                                         "{item.icon_name.clone().unwrap_or_else(|| \"📦\".to_string())}"
@@ -170,7 +172,9 @@ pub fn Shop() -> Element {
                                     || i.effect_type.starts_with("name_color_")
                             })
                         {
-                            div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
+                            div {
+                                key: "{item.id}", 
+                                class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden group flex flex-col",
                                 div { class: "flex items-start gap-4 mb-4",
                                     div { class: "w-16 h-16 rounded-2xl bg-amber-50 dark:bg-slate-800 border border-amber-100 dark:border-slate-700 flex items-center justify-center text-3xl shadow-inner shrink-0 group-hover:scale-110 transition-transform",
                                         "{item.icon_name.clone().unwrap_or_else(|| \"📦\".to_string())}"

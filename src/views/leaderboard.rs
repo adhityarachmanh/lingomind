@@ -278,7 +278,9 @@ pub fn Leaderboard() -> Element {
                                     } else {
                                         rsx! {
                                             for user in results {
-                                                div { class: "flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800",
+                                                div { 
+                                                    key: "{user.email}",
+                                                    class: "flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-100 dark:border-slate-800",
                                                     div {
                                                         p { class: "font-bold text-slate-800 dark:text-slate-200", "{user.full_name}" }
                                                         p { class: "text-xs text-slate-500 dark:text-slate-400", "{user.score} pts" }
@@ -455,7 +457,9 @@ fn LeagueList(members: Vec<LeagueMember>, current_name: String) -> Element {
                         };
 
                         rsx! {
-                            div { class: "flex items-center gap-4 px-6 py-3.5 transition-colors {bg_class}",
+                            div { 
+                                key: "{member.email}",
+                                class: "flex items-center gap-4 px-6 py-3.5 transition-colors {bg_class}",
                                 div { class: "w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 {rank_color}",
                                     "{member.rank}"
                                 }
@@ -631,6 +635,7 @@ fn LeaderboardList(entries: Vec<SocialUser>, current_name: String, is_global: bo
                                 let is_me = entry.full_name == current_name;
                                 rsx! {
                                     div {
+                                        key: "{entry.rank}",
                                         class: format!(
                                             "flex items-center gap-4 px-6 py-3.5 transition-colors {}",
                                             if is_me {

@@ -538,6 +538,85 @@ pub(crate) async fn generate_quiz_with_retries(
     )))
 }
 
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) async fn get_or_generate_quiz_variant(
+    client: &reqwest::Client,
+    url: &str,
+    base_prompt: String,
+    expected_count: usize,
+    label: &str,
+    weakness_focus: Option<String>,
+    language: &str,
+    level: &str,
+    goal: &str,
+    modifier: &str,
+) -> Result<QuizContainer, ServerFnError> {
+    use sqlx::Row;
+    use rand::seq::SliceRandom;
+    
+    let pool = crate::services::db::get_pool();
+    let rows = sqlx::query("SELECT payload FROM cached_quizzes WHERE language=$1 AND level=$2 AND goal=$3 AND modifier=$4")
+        .bind(language)
+        .bind(level)
+        .bind(goal)
+        .bind(modifier)
+        .fetch_all(pool)
+        .await
+        .unwrap_or_default();
+    
+    let variant_limit = 5;
+    let mut chosen_quiz = None;
+
+    if rows.len() < variant_limit {
+        match generate_quiz_with_retries(client, url, base_prompt, expected_count, label, weakness_focus).await {
+            Ok(new_quiz) => {
+                let payload_json = serde_json::to_value(&new_quiz).unwrap();
+                let _ = sqlx::query("INSERT INTO cached_quizzes (language, level, goal, modifier, payload) VALUES ($1, $2, $3, $4, $5)")
+                    .bind(language)
+                    .bind(level)
+                    .bind(goal)
+                    .bind(modifier)
+                    .bind(payload_json)
+                    .execute(pool)
+                    .await;
+                chosen_quiz = Some(new_quiz);
+            },
+            Err(e) => {
+                if !rows.is_empty() {
+                    let mut rng = rand::thread_rng();
+                    let random_row = rows.choose(&mut rng).unwrap();
+                    let payload: serde_json::Value = random_row.get("payload");
+                    if let Ok(q) = serde_json::from_value::<QuizContainer>(payload) {
+                        chosen_quiz = Some(q);
+                    } else {
+                        return Err(e);
+                    }
+                } else {
+                    return Err(e);
+                }
+            }
+        }
+    } else {
+        let mut rng = rand::thread_rng();
+        let random_row = rows.choose(&mut rng).unwrap();
+        let payload: serde_json::Value = random_row.get("payload");
+        if let Ok(q) = serde_json::from_value::<QuizContainer>(payload) {
+            chosen_quiz = Some(q);
+        } else {
+            return Err(ServerFnError::new("Gagal parsing cached quiz payload"));
+        }
+    }
+    
+    let mut quiz = chosen_quiz.unwrap();
+    let mut rng = rand::thread_rng();
+    for q in &mut quiz.questions {
+        q.options.shuffle(&mut rng);
+    }
+    
+    Ok(quiz)
+}
+
+
 #[server]
 pub async fn generate_quiz_server(email: String, language: String, level: String, goal: String) -> Result<QuizContainer, ServerFnError> {
     use reqwest::Client;
@@ -570,10 +649,7 @@ pub async fn generate_quiz_server(email: String, language: String, level: String
     let weakness_context = build_quiz_context(&email, &language).await;
     let prompt = build_quiz_prompt(&language, &level, &goal, &weakness_context);
 
-    let quiz = generate_quiz_with_retries(&client, &url, prompt, 5, "kuis", None).await?;
-
-    // CACHE DISABLED: No longer saving to cached_quizzes
-
+    let quiz = get_or_generate_quiz_variant(&client, &url, prompt, 5, "kuis", None, &language, &level, &goal, "normal").await?;
 
     Ok(quiz)
 }
@@ -625,13 +701,17 @@ pub async fn generate_general_practice_quiz_server(
 
     let prompt = build_general_practice_prompt(&language, &level);
 
-    generate_quiz_with_retries(
+    get_or_generate_quiz_variant(
         &client,
         &url,
         prompt,
         5,
         "general practice quiz",
         None,
+        &language,
+        &level,
+        "general_practice",
+        "normal"
     )
     .await
 }
@@ -665,13 +745,17 @@ pub async fn generate_weakness_practice_quiz_server(
     let weakness_context = build_weakness_context(&email, &language, &weakness_topic).await;
     let prompt = build_weakness_prompt(&language, &level, &weakness_topic, &weakness_context);
 
-    generate_quiz_with_retries(
+    get_or_generate_quiz_variant(
         &client,
         &url,
         prompt,
         3,
         "practice quiz",
-        Some(weakness_topic),
+        Some(weakness_topic.clone()),
+        &language,
+        &level,
+        "weakness",
+        &weakness_topic
     )
     .await
 }

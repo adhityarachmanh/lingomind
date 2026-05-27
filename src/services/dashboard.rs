@@ -14,29 +14,16 @@ pub async fn get_dashboard_summary_server(
     email: String,
     language: String,
 ) -> Result<DashboardSummary, ServerFnError> {
-    let (
-        due_flashcard_count_res,
-        top_weaknesses_res,
-        daily_mission_res,
-        weakness_analytics_trend_res,
-        skill_progress_res,
-        engagement_res,
-        badges_res,
-        active_battles_res,
-        active_pet_res,
-        social_feed_res
-    ) = tokio::join!(
-        get_due_flashcard_count_server(email.clone(), language.clone()),
-        get_top_weaknesses_server(email.clone(), language.clone(), 2),
-        get_daily_mission_server(email.clone(), language.clone()),
-        get_weakness_analytics_server(email.clone(), language.clone(), 1),
-        get_skill_progress_7d_server(email.clone(), language.clone()),
-        get_engagement_stats_server(email.clone()),
-        get_user_badges_server(email.clone()),
-        get_active_battles_server(email.clone()),
-        get_active_pet_server(email.clone()),
-        get_social_feed_server(email.clone())
-    );
+    let due_flashcard_count_res = get_due_flashcard_count_server(email.clone(), language.clone()).await;
+    let top_weaknesses_res = get_top_weaknesses_server(email.clone(), language.clone(), 2).await;
+    let daily_mission_res = get_daily_mission_server(email.clone(), language.clone()).await;
+    let weakness_analytics_trend_res = get_weakness_analytics_server(email.clone(), language.clone(), 1).await;
+    let skill_progress_res = get_skill_progress_7d_server(email.clone(), language.clone()).await;
+    let engagement_res = get_engagement_stats_server(email.clone()).await;
+    let badges_res = get_user_badges_server(email.clone()).await;
+    let active_battles_res = get_active_battles_server(email.clone()).await;
+    let active_pet_res = get_active_pet_server(email.clone()).await;
+    let social_feed_res = get_social_feed_server(email.clone()).await;
 
     Ok(DashboardSummary {
         due_flashcard_count: due_flashcard_count_res.unwrap_or(0) as i32,

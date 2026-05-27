@@ -696,7 +696,9 @@ pub fn Dashboard() -> Element {
                 } else {
                     div { class: "space-y-4",
                         for item in feed_items {
-                            div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-4 flex gap-4 transition-all hover:shadow-md",
+                            div { 
+                                key: "{item.id}",
+                                class: "bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl p-4 flex gap-4 transition-all hover:shadow-md",
                                 div { class: "w-12 h-12 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center text-2xl shadow-sm shrink-0 border border-slate-200 dark:border-slate-700",
                                     "{item.emoji}"
                                 }
