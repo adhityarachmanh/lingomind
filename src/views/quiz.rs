@@ -278,6 +278,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let quiz_finished = use_signal(|| false);
     let mut show_explanation = use_signal(|| false);
     let mut listen_speed = use_signal(|| 0.95_f32);
+    let mut is_submitting = use_signal(|| false);
 
     let selected_lang_for_resource = selected_language;
     let session_for_resource = session_state;
@@ -697,8 +698,11 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                         }
                     } else {
                         button {
-                            class: "w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-2xl text-base transition-colors shadow-lg hover:shadow-xl cursor-pointer",
+                            class: "w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 py-3.5 rounded-2xl text-base transition-colors shadow-lg hover:shadow-xl cursor-pointer disabled:opacity-50",
+                            disabled: is_submitting(),
                             onclick: move |_| {
+                                if is_submitting() { return; }
+                                is_submitting.set(true);
                                 stop_speech();
                                 let email = user_opt.as_ref().map(|u| u.email.clone()).unwrap_or_default();
                                 let language = language.clone();
@@ -718,11 +722,15 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                             }
                                             session_state.set((Some(updated_profile), true));
                                             quiz_finished.set(true);
+                                        } else {
+                                            is_submitting.set(false);
                                         }
+                                    } else {
+                                        is_submitting.set(false);
                                     }
                                 });
                             },
-                            "Selesai & Simpan Skor"
+                            if is_submitting() { "Menyimpan..." } else { "Selesai & Simpan Skor" }
                         }
                     }
                 }

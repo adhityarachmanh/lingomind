@@ -317,7 +317,7 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
         "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
         Buat 5 soal kuis pilihan ganda bahasa {} untuk level CEFR {} dengan topik pembelajaran/goal: '{}'.\n\
         Wajib kualitas:\n\
-        1) SEMUA SOAL WAJIB berfokus 100% pada materi/topik '{}'. Jangan buat soal pengetahuan umum yang melenceng dari topik ini.\n\
+        1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '{}'. HANYA fokus pada pembelajaran bahasa untuk topik ini!
         2) Setiap soal 4 opsi, hanya 1 benar.\n\
         3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
@@ -579,6 +579,64 @@ pub async fn generate_quiz_server(email: String, language: String, level: String
 
 
     Ok(quiz)
+}
+fn build_general_practice_prompt(language: &str, level: &str) -> String {
+    format!(
+        "TARGET BAHASA SOAL: {0} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
+        Buat 5 soal kuis latihan acak (general practice) pilihan ganda bahasa {0} untuk level CEFR {1}.\n\
+        Wajib kualitas:\n\
+        1) Ini adalah latihan acak. Buat soal campuran: grammar, vocabulary, dan listening comprehension sesuai level {1}.\n\
+        2) Setiap soal 4 opsi, hanya 1 benar.\n\
+        3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
+        4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.\n\
+        5) Minimal 1 soal harus bertipe listening.\n\
+        6) Pertahankan kosakata sesuai level CEFR.\n\
+        7) Gunakan field JSON ini dengan konsisten:\n\
+           - question_type: isi 'listening' atau 'text'.\n\
+           - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
+           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
+           - untuk question_type='text', listen_text boleh diisi string kosong.\n\
+        8) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{0}'. Explanation tetap dalam Bahasa Indonesia.",
+        language, level
+    )
+}
+
+#[server]
+pub async fn generate_general_practice_quiz_server(
+    email: String,
+    language: String,
+    level: String,
+) -> Result<QuizContainer, ServerFnError> {
+    use reqwest::Client;
+
+    #[cfg(not(target_arch = "wasm32"))]
+    dotenvy::dotenv().ok();
+
+    let gemini_api_key = std::env::var("GEMINI_API_KEY")
+        .map_err(|_| ServerFnError::new("Kunci GEMINI_API_KEY belum dikonfigurasi di file .env!"))?;
+
+    let client = Client::builder()
+        .timeout(std::time::Duration::from_secs(25))
+        .build()
+        .map_err(|e| ServerFnError::new(format!("Gagal menyiapkan HTTP client: {e}")))?;
+
+    let gemini_model = super::model_for_quiz();
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+        gemini_model, gemini_api_key
+    );
+
+    let prompt = build_general_practice_prompt(&language, &level);
+
+    generate_quiz_with_retries(
+        &client,
+        &url,
+        prompt,
+        3,
+        "general practice quiz",
+        None,
+    )
+    .await
 }
 
 #[server]

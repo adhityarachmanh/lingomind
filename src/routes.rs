@@ -10,6 +10,7 @@ use crate::views::voice_chat::VoiceChat;
 use crate::views::pronunciation_practice::PronunciationPractice;
 use crate::views::flashcard_review::FlashcardReview;
 use crate::views::weakness_practice::WeaknessPractice;
+use crate::views::general_practice::GeneralPractice;
 use crate::views::weakness_analytics::WeaknessAnalytics;
 use crate::views::roadmap::Roadmap;
 use crate::views::leaderboard::Leaderboard;
@@ -67,6 +68,8 @@ pub enum Route {
     WeaknessPracticeLegacy { level: String, goal: String },
     #[route("/practice/:goal")]
     WeaknessPractice { goal: String },
+    #[route("/general-practice")]
+    GeneralPractice {},
     #[route("/analytics")]
     WeaknessAnalytics {},
     #[route("/leaderboard")]

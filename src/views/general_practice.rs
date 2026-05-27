@@ -3,8 +3,8 @@ use crate::models::constants::LanguageCourse;
 use crate::models::quiz::QuizQuestion;
 use crate::models::user::UserProfile;
 use crate::routes::Route;
-use crate::services::gemini::{generate_weakness_practice_quiz_server, resolve_tts_lang_code, sanitize_tts_text};
-use crate::services::weakness::{get_priority_weakness_server, log_weakness_server};
+use crate::services::gemini::{generate_general_practice_quiz_server, resolve_tts_lang_code, sanitize_tts_text};
+use crate::services::engagement::{add_heart_server, update_engagement_after_quiz_server};
 
 const SFX_CORRECT: Asset = asset!("/assets/correct.mp3");
 const SFX_WRONG: Asset = asset!("/assets/wrong.mp3");
@@ -223,7 +223,7 @@ fn question_audio_text(question: &QuizQuestion) -> String {
 }
 
 #[component]
-pub fn WeaknessPractice(goal: String) -> Element {
+pub fn GeneralPractice() -> Element {
     let languages_res = use_context::<Resource<Vec<LanguageCourse>>>();
     let langs = languages_res().unwrap_or_default();
     let session_state = use_context::<Signal<(Option<UserProfile>, bool)>>();
@@ -241,21 +241,8 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let active_level = user.base_level(&language);
 
     let email = user.email.clone();
-    let selected_lang_for_weakness = selected_language;
-    let weakness_res = use_resource(move || {
-        let u = email.clone();
-        let l = selected_lang_for_weakness();
-        async move { get_priority_weakness_server(u, l).await }
-    });
-
-    let Some(weakness_data) = weakness_res.value()() else {
-        return rsx! { div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
-    };
-    let weakness_topic = weakness_data.ok().flatten().unwrap_or(goal);
-
     let selected_lang_for_quiz = selected_language;
     let session_for_level = session_state;
-    let topic2 = weakness_topic.clone();
     let email_for_quiz = user.email.clone();
     let quiz_res = use_resource(move || {
         let email_value = email_for_quiz.clone();
@@ -265,8 +252,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
             .as_ref()
             .map(|u| u.base_level(&l))
             .unwrap_or_else(|| "A1".to_string());
-        let t = topic2.clone();
-        async move { generate_weakness_practice_quiz_server(email_value, l, lv, t).await }
+        async move { generate_general_practice_quiz_server(email_value, l, lv).await }
     });
 
     let mut idx = use_signal(|| 0usize);
@@ -275,6 +261,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
     let mut listen_speed = use_signal(|| 0.95_f32);
     let mut finished = use_signal(|| false);
     let mut is_submitting = use_signal(|| false);
+    let mut mistakes = use_signal(|| 0usize);
 
     let Some(quiz_data) = quiz_res.value()() else {
         return rsx! { div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex items-center justify-center font-sans", div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" } } };
@@ -291,10 +278,12 @@ pub fn WeaknessPractice(goal: String) -> Element {
                 div { class: "bg-white dark:bg-slate-900 p-6 sm:p-10 rounded-3xl border border-slate-200/30 dark:border-slate-700 text-center max-w-md w-full shadow-xl",
                     h2 { class: "text-5xl mb-4", "🎉" }
                     h3 { class: "text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2", "Latihan Selesai!" }
-                    p { class: "text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium", "Kamu berhasil menuntaskan latihan fokus kelemahan." }
+                    p { class: "text-slate-500 dark:text-slate-400 text-sm mb-8 font-medium", "Kamu berhasil menuntaskan latihan acak ini." }
                     div { class: "bg-teal-50/30 dark:bg-teal-900/30 p-6 rounded-2xl border border-teal-100/50 dark:border-teal-900/50 mb-8",
-                        p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2", "Topik Fokus" }
-                        p { class: "text-xl font-extrabold text-teal-700 leading-snug", "{weakness_topic}" }
+                        p { class: "text-xs uppercase tracking-widest text-teal-600 dark:text-teal-400 font-bold mb-2", "Hadiah Didapatkan" }
+                        p { class: "text-xl font-extrabold text-teal-700 leading-snug", 
+                            if mistakes() == 0 { "1 Nyawa ❤️ & 15 Koin 🪙" } else { "10 Koin 🪙" }
+                        }
                     }
                     Link { to: Route::Dashboard {}, class: "inline-block w-full bg-slate-800 hover:bg-slate-900 text-white py-3.5 rounded-xl font-bold transition-colors shadow-md", "Kembali ke Dashboard" }
                 }
@@ -349,7 +338,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
 
                     // Level and status badges
                     div { class: "flex flex-wrap items-center gap-2 mb-4",
-                        span { class: "text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-amber-100", "Fokus Kelemahan: {weakness_topic}" }
+                        span { class: "text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50/30 dark:bg-amber-900/30 px-2.5 py-1 rounded-full uppercase tracking-wider border border-amber-100", "Latihan Acak" }
                         if is_listening_question {
                             span { class: "text-[10px] font-bold uppercase tracking-wider bg-amber-50/30 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 px-2.5 py-1 rounded-full", "Listening Test" }
                         }
@@ -416,7 +405,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
                     // Options Grid
                     div { class: "flex flex-col gap-3 mb-6",
                         {
-                            quiz_options.into_iter().enumerate().map(|(opt_idx, option)| {
+                            quiz_options.into_iter().enumerate().map(|(opt_idx, option): (usize, String)| {
                                 let option_for_select = option.clone();
                                 let option_for_listen = option.clone();
                                 let option_for_click = option.clone();
@@ -499,18 +488,7 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                 stop_speech();
                                 if selected() != Some(correct_ans_check.clone()) {
                                     play_sfx(SFX_WRONG);
-                                    let email_log = user.email.clone();
-                                    let lang = language.clone();
-                                    let topic = weakness_topic.clone();
-                                    let note = format!(
-                                        "Practice Q: {} | Selected: {} | Correct: {}",
-                                        question_text.clone(),
-                                        selected().unwrap_or_default(),
-                                        correct_ans_check.clone()
-                                    );
-                                    spawn(async move {
-                                        let _ = log_weakness_server(email_log, lang, topic, note).await;
-                                    });
+                                    mistakes.set(mistakes() + 1);
                                 } else {
                                     play_sfx(SFX_CORRECT);
                                 }
@@ -542,8 +520,14 @@ pub fn WeaknessPractice(goal: String) -> Element {
                                     play_sfx(SFX_WINNER);
                                     let e = email_for_finish.clone();
                                     let mut finished_signal = finished;
+                                    let mistakes_count = mistakes();
                                     spawn(async move {
-                                        let _ = crate::services::mission::increment_mission_progress_server(e, "weakness".to_string()).await;
+                                        if mistakes_count == 0 {
+                                            let _ = add_heart_server(e.clone()).await;
+                                            let _ = update_engagement_after_quiz_server(e.clone(), 15).await;
+                                        } else {
+                                            let _ = update_engagement_after_quiz_server(e.clone(), 10).await;
+                                        }
                                         finished_signal.set(true);
                                     });
                                 }

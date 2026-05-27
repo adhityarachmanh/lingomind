@@ -46,6 +46,7 @@ pub fn model_for_lesson() -> String {
 
 pub use quiz::generate_quiz_server;
 pub use quiz::generate_weakness_practice_quiz_server;
+pub use quiz::generate_general_practice_quiz_server;
 pub use lesson::generate_lesson_server;
 pub use chat::{send_chat_message_server, get_or_create_session_server};
 pub use placement::evaluate_placement_server;

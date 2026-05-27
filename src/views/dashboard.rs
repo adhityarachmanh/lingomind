@@ -583,6 +583,19 @@ pub fn Dashboard() -> Element {
 
                 div { class: "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-2",
                     
+                    // Latihan Acak
+                    div { class: "bg-gradient-to-br from-emerald-500 to-teal-600 border border-emerald-400 rounded-2xl p-5 hover:shadow-lg transition-all group sm:col-span-2 lg:col-span-3 text-white relative overflow-hidden",
+                        div { class: "relative z-10",
+                            h3 { class: "font-black text-xl flex items-center gap-2", span { class: "text-2xl", "🎯" } "Latihan Acak" }
+                            p { class: "text-teal-50 mt-1 text-sm font-medium mb-4", "Latih kemampuanmu secara acak! Jika menjawab semua benar, dapatkan +1 Nyawa ❤️ dan +15 Koin 🪙." }
+                            Link {
+                                to: Route::GeneralPractice {},
+                                class: "inline-block bg-white text-teal-700 font-bold px-6 py-3 rounded-xl hover:bg-teal-50 transition-colors shadow-md",
+                                "Mulai Latihan Acak"
+                            }
+                        }
+                    }
+                    
                     if let Some(pet) = active_pet.as_ref() {
                         div { class: "bg-gradient-to-br from-amber-50 to-orange-100 dark:from-slate-800 dark:to-slate-900 border border-amber-200 dark:border-slate-700 rounded-2xl p-5 hover:shadow-lg transition-all flex flex-col items-center sm:col-span-2 lg:col-span-3 text-center",
                             h3 { class: "font-black text-xl text-amber-800 dark:text-amber-400 mb-4", "Peliharaan Saya" }

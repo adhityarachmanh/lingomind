@@ -500,6 +500,7 @@ pub fn Exam(level: String) -> Element {
                         class: "w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3.5 rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50",
                         disabled: submitting_result(),
                         onclick: move |_| {
+                            if submitting_result() { return; }
                             submitting_result.set(true);
                             let email_val = user.email.clone();
                             let lang_val = language.clone();

@@ -39,124 +39,68 @@ fn is_section_label(label: &str) -> bool {
             .all(|c| c.is_alphanumeric() || c.is_whitespace() || c == '/' || c == '-' || c == '_')
 }
 
-fn split_compact_line(line: &str) -> Vec<String> {
-    let normalized = line
-        .replace(". ", ".\n")
-        .replace("! ", "!\n")
-        .replace("? ", "?\n")
-        .replace(": ", ":\n");
 
-    normalized
-        .lines()
-        .map(normalize_markdown_line)
-        .filter(|x| !x.is_empty())
-        .collect()
-}
-
-fn expand_section_lines(content: &str) -> Vec<String> {
-    let mut lines = Vec::new();
-    for raw in content.lines() {
-        let base = normalize_markdown_line(raw);
-        if base.is_empty() {
-            continue;
-        }
-        if base.len() > 110 {
-            lines.extend(split_compact_line(&base));
-        } else {
-            lines.push(base);
-        }
-    }
-    lines
-}
-
-fn extract_inline_sections(content: &str) -> Vec<(String, String)> {
-    let mut sections = Vec::new();
-    let mut cursor = 0usize;
-    let mut current_title: Option<String> = None;
-    let mut current_body = String::new();
-
-    while cursor < content.len() {
-        let Some(start_rel) = content[cursor..].find('[') else {
-            break;
-        };
-        let start = cursor + start_rel;
-        let Some(end_rel) = content[start + 1..].find(']') else {
-            break;
-        };
-        let end = start + 1 + end_rel;
-        let label = content[start + 1..end].trim();
-
-        if !is_section_label(label) {
-            cursor = end + 1;
-            continue;
-        }
-
-        if let Some(title) = current_title.take() {
-            sections.push((title, current_body.trim().to_string()));
-            current_body.clear();
-        }
-        current_title = Some(label.to_string());
-
-        let content_start = end + 1;
-        let next_start = content[content_start..]
-            .find('[')
-            .map(|v| content_start + v)
-            .unwrap_or(content.len());
-        let chunk = content[content_start..next_start].trim();
-        if !chunk.is_empty() {
-            if !current_body.is_empty() {
-                current_body.push('\n');
-            }
-            current_body.push_str(chunk);
-        }
-        cursor = next_start;
-    }
-
-    if let Some(title) = current_title {
-        sections.push((title, current_body.trim().to_string()));
-    }
-
-    sections
-}
 
 fn parse_lesson_sections(content: &str) -> Vec<(String, Vec<String>)> {
-    let inline_sections = extract_inline_sections(content);
-    if !inline_sections.is_empty() {
-        return inline_sections
-            .into_iter()
-            .map(|(title, body)| (title, expand_section_lines(&body)))
-            .filter(|(_, lines)| !lines.is_empty())
-            .collect();
-    }
-
     let mut sections: Vec<(String, Vec<String>)> = Vec::new();
     let mut current_title = "Ringkasan".to_string();
     let mut current_lines: Vec<String> = Vec::new();
 
-    for raw in content.lines() {
+    // Ensure main section headers are always on their own lines
+    // because AI sometimes forgets to add newlines before/after them
+    let safe_content = content
+        .replace("[Konsep Inti]", "\n[Konsep Inti]\n")
+        .replace("[Pola]", "\n[Pola]\n")
+        .replace("[Kesalahan Umum]", "\n[Kesalahan Umum]\n")
+        .replace("[Tips Praktik]", "\n[Tips Praktik]\n")
+        .replace(".1.", ".\n1.")
+        .replace(".2.", ".\n2.")
+        .replace(".3.", ".\n3.")
+        .replace(".4.", ".\n4.")
+        .replace(".5.", ".\n5.")
+        .replace(".6.", ".\n6.")
+        .replace("?1.", "?\n1.")
+        .replace("?2.", "?\n2.")
+        .replace("?3.", "?\n3.")
+        .replace("?4.", "?\n4.")
+        .replace("?5.", "?\n5.")
+        .replace("?6.", "?\n6.")
+        .replace(".Contoh:", ".\nContoh:");
+
+    for raw in safe_content.lines() {
         let line = raw.trim();
         if line.is_empty() {
             continue;
         }
 
-        if line.starts_with('[') && line.ends_with(']') && line.len() > 2 {
-            if !current_lines.is_empty() {
-                sections.push((current_title, current_lines));
+        // Check if the line starts with a section label like [Title]
+        if line.starts_with('[') && line.contains(']') {
+            let end_idx = line.find(']').unwrap();
+            let label = line[1..end_idx].trim();
+            
+            // Only treat it as a section header if the label is valid
+            if is_section_label(label) {
+                if !current_lines.is_empty() {
+                    sections.push((current_title.clone(), current_lines));
+                }
+                current_title = label.to_string();
+                current_lines = Vec::new();
+                
+                // Add the rest of the line to the body if there is any text after the ]
+                let remainder = line[end_idx + 1..].trim();
+                if !remainder.is_empty() {
+                    let cleaned = normalize_markdown_line(remainder);
+                    if !cleaned.is_empty() {
+                        current_lines.push(cleaned);
+                    }
+                }
+                continue;
             }
-            current_title = line.trim_matches(&['[', ']'][..]).trim().to_string();
-            current_lines = Vec::new();
-            continue;
         }
 
-        let expanded = if line.len() > 110 {
-            split_compact_line(line)
-        } else {
-            vec![normalize_markdown_line(line)]
-        };
-        for cleaned in expanded {
-            if !cleaned.is_empty() {
-                current_lines.push(cleaned);
-            }
+        let cleaned = normalize_markdown_line(line);
+        if !cleaned.is_empty() {
+            current_lines.push(cleaned);
         }
     }
 

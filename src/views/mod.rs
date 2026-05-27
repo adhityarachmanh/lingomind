@@ -12,6 +12,7 @@ pub mod flashcard_review;
 pub mod pronunciation_practice;
 
 pub mod weakness_practice;
+pub mod general_practice;
 
 pub mod weakness_analytics;
 
