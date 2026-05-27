@@ -317,7 +317,7 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
         "TARGET BAHASA SOAL: {} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
         Buat 5 soal kuis pilihan ganda bahasa {} untuk level CEFR {} dengan topik pembelajaran/goal: '{}'.\n\
         Wajib kualitas:\n\
-        1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '{}'. HANYA fokus pada pembelajaran bahasa untuk topik ini!
+        1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '{}'. HANYA fokus pada pembelajaran bahasa untuk topik ini! DILARANG KERAS membuat soal pengetahuan umum (trivia)!
         2) Setiap soal 4 opsi, hanya 1 benar.\n\
         3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
@@ -464,66 +464,63 @@ pub(crate) async fn generate_quiz_with_retries(
     label: &str,
     weakness_focus: Option<String>,
 ) -> Result<QuizContainer, ServerFnError> {
-    let mut prompt = base_prompt;
     let mut best_candidate: Option<(QuizContainer, i32, Vec<String>)> = None;
     let mut last_error_message = String::new();
+    let mut prompt = base_prompt.clone();
 
     for attempt in 1..=3 {
         match request_quiz_from_gemini(client, url, prompt.clone()).await {
             Ok(raw_quiz) => {
                 let quiz = normalize_quiz(raw_quiz);
 
-                if let Err(e) = validate_quiz_shape(&quiz, expected_count, label) {
-                    last_error_message = e.to_string();
-                    prompt = format!(
-                        "Output sebelumnya gagal validasi shape. Error: {}\\nPerbaiki dan kirim ulang JSON sesuai schema tanpa teks lain.",
-                        last_error_message
-                    );
-                    continue;
-                }
-
-                let issues = quality_issues(&quiz, expected_count, weakness_focus.as_deref());
-                let score = quality_score(&issues);
-
-                let replace_best = match &best_candidate {
-                    Some((_, best_score, _)) => score > *best_score,
-                    None => true,
-                };
-                if replace_best {
-                    best_candidate = Some((quiz.clone(), score, issues.clone()));
-                }
-
-                if issues.is_empty() || score >= 92 {
-                    return Ok(quiz);
-                }
-
-                if attempt < 3 {
-                    let issues_text = issues
-                        .iter()
-                        .enumerate()
-                        .map(|(i, issue)| format!("{}. {}", i + 1, issue))
-                        .collect::<Vec<_>>()
-                        .join("\\n");
-
-                    let quiz_json = serde_json::to_string(&quiz).unwrap_or_default();
-                    prompt = format!(
-                        "Perbaiki kualitas quiz berikut dan kirim ulang JSON final tanpa teks tambahan.\\n\\
-                        Masalah kualitas yang harus diperbaiki:\\n{}\\n\\
-                        JSON sebelumnya:\\n{}",
-                        issues_text, quiz_json
-                    );
-                }
-            }
-            Err(e) => {
+            if let Err(e) = validate_quiz_shape(&quiz, expected_count, label) {
                 last_error_message = e.to_string();
-                if attempt < 3 {
-                    prompt = format!(
-                        "Ulangi pembuatan {label}. Permintaan sebelumnya gagal karena: {}.\\n\\
-                        Hasilkan JSON bersih sesuai schema, tanpa markdown fence.",
-                        last_error_message
-                    );
-                }
+                prompt = format!(
+                    "{}\\n\\n---\\nOutput sebelumnya gagal validasi shape. Error: {}\\nPerbaiki dan kirim ulang JSON sesuai schema tanpa teks lain.",
+                    base_prompt, last_error_message
+                );
+                continue;
             }
+
+            let issues = quality_issues(&quiz, expected_count, weakness_focus.as_deref());
+            let score = quality_score(&issues);
+
+            let replace_best = match &best_candidate {
+                Some((_, best_score, _)) => score > *best_score,
+                None => true,
+            };
+            if replace_best {
+                best_candidate = Some((quiz.clone(), score, issues.clone()));
+            }
+
+            if issues.is_empty() || score >= 92 {
+                return Ok(quiz);
+            }
+
+            if attempt < 3 {
+                let issues_text = issues
+                    .iter()
+                    .enumerate()
+                    .map(|(i, issue)| format!("{}. {}", i + 1, issue))
+                    .collect::<Vec<_>>()
+                    .join("\\n");
+
+                let quiz_json = serde_json::to_string(&quiz).unwrap_or_default();
+                prompt = format!(
+                    "{}\\n\\n---\\nPerbaiki kualitas quiz sebelumnya dan kirim ulang JSON final tanpa teks tambahan.\\nMasalah kualitas yang harus diperbaiki:\\n{}\\nJSON sebelumnya:\\n{}",
+                    base_prompt, issues_text, quiz_json
+                );
+            }
+        }
+        Err(e) => {
+            last_error_message = e.to_string();
+            if attempt < 3 {
+                prompt = format!(
+                    "{}\\n\\n---\\nUlangi pembuatan {}. Permintaan sebelumnya gagal karena: {}.\\nHasilkan JSON bersih sesuai schema.",
+                    base_prompt, label, last_error_message
+                );
+            }
+        }
         }
     }
 
@@ -585,11 +582,11 @@ fn build_general_practice_prompt(language: &str, level: &str) -> String {
         "TARGET BAHASA SOAL: {0} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).\n\n\
         Buat 5 soal kuis latihan acak (general practice) pilihan ganda bahasa {0} untuk level CEFR {1}.\n\
         Wajib kualitas:\n\
-        1) Ini adalah latihan acak. Buat soal campuran: grammar, vocabulary, dan listening comprehension sesuai level {1}.\n\
+        1) Ini adalah latihan acak kemampuan bahasa. HANYA uji kosakata (vocabulary), tata bahasa (grammar), dan pemahaman (comprehension) sesuai level {1}. DILARANG KERAS membuat soal pengetahuan umum (trivia)!
         2) Setiap soal 4 opsi, hanya 1 benar.\n\
         3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.\n\
-        5) Minimal 1 soal harus bertipe listening.\n\
+        5) Minimal 2 soal harus bertipe listening.\n\
         6) Pertahankan kosakata sesuai level CEFR.\n\
         7) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
@@ -632,7 +629,7 @@ pub async fn generate_general_practice_quiz_server(
         &client,
         &url,
         prompt,
-        3,
+        5,
         "general practice quiz",
         None,
     )

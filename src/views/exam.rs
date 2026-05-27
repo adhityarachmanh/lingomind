@@ -158,62 +158,6 @@ fn speak_with_edge_or_fallback(edge_tts_voice: String, fallback_lang_code: Strin
     });
 }
 
-fn insert_newline_after_marker_case_insensitive(text: &str, marker: &str) -> String {
-    let text_lower = text.to_lowercase();
-    let marker_lower = marker.to_lowercase();
-
-    if let Some(idx) = text_lower.find(&marker_lower) {
-        let split_at = idx + marker.len();
-        let left = text[..split_at].trim_end();
-        let right = text[split_at..].trim_start();
-        format!("{left}\n{right}")
-    } else {
-        text.to_string()
-    }
-}
-
-fn format_question_for_display(question: &str) -> Vec<String> {
-    let mut formatted = question
-        .replace("Read the dialogue:", "Read the dialogue:\n")
-        .replace("Read the dialog:", "Read the dialog:\n")
-        .replace("read the dialogue:", "read the dialogue:\n")
-        .replace("read the dialog:", "read the dialog:\n")
-        .replace("Read the passage:", "Read the passage:\n")
-        .replace("Read the text:", "Read the text:\n");
-
-    for marker in [
-        "based on the context:",
-        "based on context:",
-        "based on the sentence:",
-        "in the context:",
-    ] {
-        formatted = insert_newline_after_marker_case_insensitive(&formatted, marker);
-    }
-
-    formatted = formatted
-        .replace("sentence: ", "sentence:\n")
-        .replace("blank: ", "blank:\n")
-        .replace("word: ", "word:\n")
-        .replace("following: ", "following:\n")
-        .replace("question: ", "question:\n")
-        .replace("statement: ", "statement:\n")
-        .replace(": '", ":\n'")
-        .replace(": \"", ":\n\"");
-
-    for marker in ["A:", "B:", "C:", "D:", "E:"] {
-        let from = format!(" {marker}");
-        let to = format!("\n{marker}");
-        formatted = formatted.replace(&from, &to);
-    }
-
-    formatted
-        .lines()
-        .map(|line| line.trim())
-        .filter(|line| !line.is_empty())
-        .map(|line| line.to_string())
-        .collect()
-}
-
 fn question_audio_text(question: &QuizQuestion) -> String {
     if question.question_type.eq_ignore_ascii_case("listening") && !question.listen_text.trim().is_empty() {
         question.listen_text.clone()
@@ -533,7 +477,7 @@ pub fn Exam(level: String) -> Element {
     let current_q = exam_container.questions[current_question_idx()].clone();
     let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
     let tts_question = question_audio_text(&current_q);
-    let question_lines = format_question_for_display(&current_q.question);
+    let question_lines = super::format_question_for_display(&current_q.question);
     
     let tts_lang_code = langs
         .iter()

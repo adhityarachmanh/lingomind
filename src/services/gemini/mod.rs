@@ -71,11 +71,26 @@ pub async fn gemini_post_with_retry(
     let mut attempt = 0;
     loop {
         attempt += 1;
+        
+        let safe_url = if let Some(idx) = url.find("?key=") {
+            &url[..idx]
+        } else {
+            url
+        };
+        let model_name = safe_url.split("/models/").nth(1).unwrap_or("unknown-model");
+        
+        println!("[Gemini API] Requesting model: {} (Attempt {}/{})", model_name, attempt, max_retries);
+        let start_time = std::time::Instant::now();
+        
         let response = client.post(url).json(payload).send().await;
+        
+        let duration = start_time.elapsed();
 
         match response {
             Ok(resp) => {
                 let status = resp.status();
+                println!("[Gemini API] Model {} responded with status {} in {:.2?}", model_name, status, duration);
+                
                 if status.is_success() {
                     let json_resp: serde_json::Value = resp
                         .json()
