@@ -111,10 +111,33 @@ pub fn Lesson(goal: String) -> Element {
 
     let Some(lesson_result) = lesson_value else {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900/30 dark:text-slate-50 flex flex-col justify-center items-center gap-4 font-sans",
-                div { class: "animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-teal-500" }
-                p { class: "text-slate-500 dark:text-slate-400 animate-pulse text-sm font-medium",
-                    "Menyusun materi belajar khusus untuk Anda..."
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 font-sans text-center relative overflow-hidden",
+                div { class: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-teal-500/10 dark:bg-teal-500/5 rounded-full blur-3xl animate-pulse pointer-events-none" }
+                
+                div { class: "relative w-28 h-28 mb-8",
+                    div { class: "absolute inset-0 rounded-full border-4 border-dashed border-teal-500/30 dark:border-teal-400/20 animate-[spin_10s_linear_infinite]" }
+                    div { class: "absolute inset-2 rounded-full border-t-4 border-l-4 border-teal-500 dark:border-teal-400 animate-spin" }
+                    div { class: "absolute inset-0 flex items-center justify-center",
+                        span { class: "text-4xl animate-bounce", "📚" }
+                    }
+                }
+                
+                h2 { class: "text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 mb-4 tracking-tight",
+                    "Menyusun Materi Belajar..."
+                }
+                
+                div { class: "bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm max-w-sm w-full z-10",
+                    div { class: "flex items-start gap-4",
+                        div { class: "bg-indigo-50 dark:bg-indigo-900/30 p-2.5 rounded-xl text-indigo-600 dark:text-indigo-400 shrink-0", 
+                            "✨" 
+                        }
+                        div { class: "text-left",
+                            p { class: "text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider", "Lingomind Memproses" }
+                            p { class: "text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed", 
+                                "Merancang materi pelajaran khusus untuk Anda. Mohon tunggu beberapa saat." 
+                            }
+                        }
+                    }
                 }
             }
         };

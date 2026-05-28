@@ -219,8 +219,34 @@ pub fn GeneralPractice() -> Element {
 
     let Some(quiz_data) = quiz_res.value()() else {
         return rsx! {
-            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex items-center justify-center font-sans",
-                div { class: "animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-teal-500" }
+            div { class: "min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col justify-center items-center p-6 font-sans text-center relative overflow-hidden",
+                div { class: "absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-sky-500/10 dark:bg-sky-500/5 rounded-full blur-3xl animate-pulse pointer-events-none" }
+                
+                div { class: "relative w-28 h-28 mb-8",
+                    div { class: "absolute inset-0 rounded-full border-4 border-dashed border-sky-500/30 dark:border-sky-400/20 animate-[spin_10s_linear_infinite]" }
+                    div { class: "absolute inset-2 rounded-full border-t-4 border-l-4 border-sky-500 dark:border-sky-400 animate-spin" }
+                    div { class: "absolute inset-0 flex items-center justify-center",
+                        span { class: "text-4xl animate-bounce", "🏋️" }
+                    }
+                }
+                
+                h2 { class: "text-2xl sm:text-3xl font-black text-slate-800 dark:text-slate-100 mb-4 tracking-tight",
+                    "Menyiapkan Latihan..."
+                }
+                
+                div { class: "bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-5 shadow-sm max-w-sm w-full z-10",
+                    div { class: "flex items-start gap-4",
+                        div { class: "bg-sky-50 dark:bg-sky-900/30 p-2.5 rounded-xl text-sky-600 dark:text-sky-400 shrink-0", 
+                            "✨" 
+                        }
+                        div { class: "text-left",
+                            p { class: "text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1 uppercase tracking-wider", "Lingomind Memproses" }
+                            p { class: "text-sm text-slate-600 dark:text-slate-300 font-medium leading-relaxed", 
+                                "Sedang merancang soal latihan umum untuk Anda. Mohon tunggu sebentar." 
+                            }
+                        }
+                    }
+                }
             }
         };
     };
