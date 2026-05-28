@@ -430,7 +430,8 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
     let tts_question = question_audio_text(&current_q);
     let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
     let question_type_for_skill = current_q.question_type.clone();
-    let question_lines = super::format_question_for_display(&current_q.question);
+    let question_text_for_html = current_q.question.clone();
+    let question_text_for_closure = current_q.question.clone();
     let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
@@ -479,13 +480,9 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
 
                     // Question lines
                     div { class: "flex flex-col gap-4 mb-6",
-                        h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed space-y-2",
-                            for line in question_lines {
-                                p { class: if line.starts_with("A:") || line.starts_with("B:") || line.starts_with("C:")
-    || line.starts_with("D:") || line.starts_with("E:") { "text-slate-700 dark:text-slate-300 font-bold" } else if line.starts_with('\'') || line.starts_with('"') { "text-amber-700 italic font-medium" } else { "text-slate-800 dark:text-slate-200" },
-                                    "{line}"
-                                }
-                            }
+                        div { 
+                            class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed prose dark:prose-invert max-w-none",
+                            dangerous_inner_html: "{question_text_for_html}"
                         }
                     }
 
@@ -641,7 +638,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                     let cards = vec![
                                         NewFlashcard {
                                             language: language.clone(),
-                                            front_text: current_q.question.clone(),
+                                            front_text: question_text_for_closure.clone(),
                                             back_text: format!(
                                                 "Jawaban benar: {} | Penjelasan: {}",
                                                 correct_ans_check.clone(),
@@ -665,7 +662,7 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                     if let Some(user) = user_opt.clone() {
                                         let lang = language.clone();
                                         let skill = classify_skill(
-                                            &current_q.question,
+                                            &question_text_for_closure,
                                             &explanation_text,
                                             &question_type_for_skill,
                                         );
@@ -678,13 +675,13 @@ pub fn Quiz(goal: String, battle_id: Option<i32>) -> Element {
                                     play_sfx(SFX_WRONG);
                                     let topic = classify_weakness_topic(&explanation_text);
                                     let skill = classify_skill(
-                                        &current_q.question,
+                                        &question_text_for_closure,
                                         &explanation_text,
                                         &question_type_for_skill,
                                     );
                                     let note = format!(
                                         "Q: {} | Selected: {} | Correct: {}",
-                                        current_q.question,
+                                        question_text_for_closure,
                                         selected_option().unwrap_or_default(),
                                         correct_ans_check.clone(),
                                     );

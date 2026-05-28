@@ -163,15 +163,12 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
         \n\nKualitas wajib:\
         \n- content harus cukup detail untuk belajar mandiri 10-15 menit.\
         \n- content tulis dalam Bahasa Indonesia.\
-        \n- content WAJIB dipisah rapi dengan format persis seperti ini (label ada di baris sendiri):\
-        \n[Konsep Inti]\
-        \n<isi konsep inti>\
-        \n[Pola]\
-        \n<isi pola>\
-        \n[Kesalahan Umum]\
-        \n<isi kesalahan umum>\
-        \n[Tips Praktik]\
-        \n<isi tips praktik>.\
+        \n- field 'content' WAJIB diformat menggunakan HTML (Gunakan tag seperti <br> untuk baris baru, <b> untuk tebal, <i> untuk miring, atau list HTML <ul><li> jika perlu) agar tampil rapi di UI.\
+        \n- content WAJIB dipisah rapi dengan judul bagian (misal dibungkus <b> atau <h3>):\
+        \nKonsep Inti\
+        \nPola\
+        \nKesalahan Umum\
+        \nTips Praktik.\
         \n- vocabulary minimal 8 item relevan topik (dalam bahasa target {}).\
         \n- example_sentences minimal 8 kalimat; setiap item format: \"<kalimat bahasa {}> || <arti Indonesia>\".\
         \n- hindari penjelasan terlalu umum.",
@@ -184,7 +181,7 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
         let enrich_prompt = format!(
             "TARGET BAHASA MATERI: {} (Penjelasan bahasa Indonesia, TAPI kosakata/kalimat WAJIB dalam bahasa {}).\n\n\
             Perbaiki JSON materi berikut agar lebih kaya dan tetap satu topik.\n\
-            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, label bagian [Konsep Inti], [Pola], [Kesalahan Umum], [Tips Praktik] harus ada dan masing-masing berada di baris sendiri, vocabulary minimal 8 (dalam bahasa {}), example_sentences minimal 8 format \"kalimat bahasa {} || arti Indonesia\".\n\
+            Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, field 'content' WAJIB menggunakan format HTML yang rapi (dengan tag <br>, <b>, <h3>), harus ada bagian Konsep Inti, Pola, Kesalahan Umum, Tips Praktik, vocabulary minimal 8 (dalam bahasa {}), example_sentences minimal 8 format \"kalimat bahasa {} || arti Indonesia\".\n\
             Kembalikan JSON dengan schema yang sama, tanpa teks lain.\n\
             JSON awal:\n{}",
             language, language, language, language, serde_json::to_string(&lesson).unwrap_or_default()

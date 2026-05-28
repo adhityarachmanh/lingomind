@@ -328,8 +328,8 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
         9) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
            - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
-           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
-           - untuk question_type='text', listen_text boleh diisi string kosong.\n\
+           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text. WAJIB diformat menggunakan elemen HTML yang rapi (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan gunakan tag root, berikan inner HTML langsung.\n\
+           - untuk question_type='text', listen_text boleh diisi string kosong, dan question WAJIB diformat menggunakan HTML (misal untuk dialog '<b>A:</b> Hello<br><b>B:</b> Hi!').\n\
         10) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
         11) Jika konteks kelemahan user tersedia, gunakan untuk menyesuaikan soal remedial ringan.\n\
         Konteks kelemahan user:\n{}",
@@ -351,8 +351,8 @@ fn build_weakness_prompt(language: &str, level: &str, weakness_topic: &str, weak
         5) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
            - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).\n\
-           - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
-           - untuk question_type='text', listen_text boleh string kosong.\n\
+           - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio. WAJIB format HTML (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.\n\
+           - untuk question_type='text', listen_text boleh string kosong, dan question WAJIB format HTML.\n\
         6) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.\n\
         7) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.\n\
         8) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
@@ -667,8 +667,8 @@ fn build_general_practice_prompt(language: &str, level: &str) -> String {
         7) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
            - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).\n\
-           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text.\n\
-           - untuk question_type='text', listen_text boleh diisi string kosong.\n\
+           - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text. WAJIB format HTML (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.\n\
+           - untuk question_type='text', listen_text boleh diisi string kosong, dan question WAJIB format HTML.\n\
         8) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{0}'. Explanation tetap dalam Bahasa Indonesia.",
         language, level
     )

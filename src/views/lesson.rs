@@ -19,97 +19,7 @@ thread_local! {
 #[cfg(target_arch = "wasm32")]
 static LESSON_AUDIO_SEQ: AtomicU64 = AtomicU64::new(0);
 
-fn normalize_markdown_line(line: &str) -> String {
-    let mut s = line.trim().replace("**", "").replace('`', "");
-    while s.starts_with("* ") || s.starts_with("- ") {
-        s = s[2..].trim().to_string();
-    }
-    if s.starts_with('*') {
-        s = s[1..].trim().to_string();
-    }
-    s
-}
 
-fn is_section_label(label: &str) -> bool {
-    let trimmed = label.trim();
-    !trimmed.is_empty()
-        && trimmed.len() <= 40
-        && trimmed
-            .chars()
-            .all(|c| c.is_alphanumeric() || c.is_whitespace() || c == '/' || c == '-' || c == '_')
-}
-
-
-
-fn parse_lesson_sections(content: &str) -> Vec<(String, Vec<String>)> {
-    let mut sections: Vec<(String, Vec<String>)> = Vec::new();
-    let mut current_title = "Ringkasan".to_string();
-    let mut current_lines: Vec<String> = Vec::new();
-
-    // Ensure main section headers are always on their own lines
-    // because AI sometimes forgets to add newlines before/after them
-    let safe_content = content
-        .replace("[Konsep Inti]", "\n[Konsep Inti]\n")
-        .replace("[Pola]", "\n[Pola]\n")
-        .replace("[Kesalahan Umum]", "\n[Kesalahan Umum]\n")
-        .replace("[Tips Praktik]", "\n[Tips Praktik]\n")
-        .replace(".1.", ".\n1.")
-        .replace(".2.", ".\n2.")
-        .replace(".3.", ".\n3.")
-        .replace(".4.", ".\n4.")
-        .replace(".5.", ".\n5.")
-        .replace(".6.", ".\n6.")
-        .replace("?1.", "?\n1.")
-        .replace("?2.", "?\n2.")
-        .replace("?3.", "?\n3.")
-        .replace("?4.", "?\n4.")
-        .replace("?5.", "?\n5.")
-        .replace("?6.", "?\n6.")
-        .replace(".Contoh:", ".\nContoh:");
-
-    for raw in safe_content.lines() {
-        let line = raw.trim();
-        if line.is_empty() {
-            continue;
-        }
-
-        // Check if the line starts with a section label like [Title]
-        if line.starts_with('[') && line.contains(']') {
-            let end_idx = line.find(']').unwrap();
-            let label = line[1..end_idx].trim();
-            
-            // Only treat it as a section header if the label is valid
-            if is_section_label(label) {
-                if !current_lines.is_empty() {
-                    sections.push((current_title.clone(), current_lines));
-                }
-                current_title = label.to_string();
-                current_lines = Vec::new();
-                
-                // Add the rest of the line to the body if there is any text after the ]
-                let remainder = line[end_idx + 1..].trim();
-                if !remainder.is_empty() {
-                    let cleaned = normalize_markdown_line(remainder);
-                    if !cleaned.is_empty() {
-                        current_lines.push(cleaned);
-                    }
-                }
-                continue;
-            }
-        }
-
-        let cleaned = normalize_markdown_line(line);
-        if !cleaned.is_empty() {
-            current_lines.push(cleaned);
-        }
-    }
-
-    if !current_lines.is_empty() {
-        sections.push((current_title, current_lines));
-    }
-
-    sections
-}
 
 fn split_example(sentence: &str) -> (String, Option<String>) {
     if let Some((target, meaning)) = sentence.split_once("||") {
@@ -256,7 +166,7 @@ pub fn Lesson(goal: String) -> Element {
         }
     };
 
-    let sections = parse_lesson_sections(&lesson_data.content);
+
 
     rsx! {
         div { class: "min-h-screen bg-white dark:bg-slate-900 sm:bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 px-0 sm:px-6 py-0 sm:py-8 font-sans pb-24 sm:pb-8",
@@ -301,41 +211,8 @@ pub fn Lesson(goal: String) -> Element {
 
                 div { class: "grid grid-cols-1 lg:grid-cols-12 gap-6",
                     div { class: "lg:col-span-8 space-y-6",
-                        if sections.is_empty() {
-                            div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",
-                                h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4",
-                                    "Penjelasan Materi"
-                                }
-                                p { class: "text-slate-600/30 dark:text-slate-400 leading-relaxed whitespace-pre-wrap",
-                                    "{lesson_data.content}"
-                                }
-                            }
-                        } else {
-                            for (section_title, section_lines) in sections {
-                                div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm hover:shadow-md transition-shadow",
-                                    h2 { class: "text-xl font-bold text-teal-600 dark:text-teal-400 mb-4",
-                                        "{section_title}"
-                                    }
-                                    div { class: "space-y-3",
-                                        for line in section_lines {
-                                            if line.chars().next().map(|c| c.is_ascii_digit()).unwrap_or(false)
-                                                && line.contains('.')
-                                            {
-                                                p { class: "text-sm font-bold text-slate-800 dark:text-slate-200 pt-2",
-                                                    "{line}"
-                                                }
-                                            } else {
-                                                div { class: "flex items-start gap-3",
-                                                    span { class: "mt-2 w-1.5 h-1.5 rounded-full bg-teal-500 shrink-0" }
-                                                    p { class: "text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium",
-                                                        "{line}"
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                        div { class: "bg-white dark:bg-slate-900 border border-slate-200/30 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm prose dark:prose-invert max-w-none prose-teal",
+                            dangerous_inner_html: "{lesson_data.content}"
                         }
 
                         div { class: "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm",

@@ -31,8 +31,8 @@ fn build_exam_prompt(language: &str, level: &str, topics_str: &str) -> String {
         6) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
            - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).\n\
-           - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio.\n\
-           - untuk question_type='text', listen_text boleh string kosong.\n\
+           - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio. WAJIB format HTML (contoh: gunakan <br><br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.\n\
+           - untuk question_type='text', listen_text boleh string kosong, dan question WAJIB format HTML (misal paragraf cerita panjang gunakan <br><br>).\n\
         7) Explanation Bahasa Indonesia wajib komprehensif, minimal 3 kalimat mendalam tentang aturan grammar/kosakata mengapa opsi lain salah.\n\
         8) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '{}'. Explanation tetap dalam Bahasa Indonesia.",
         language, language, level, target_level, topics, language

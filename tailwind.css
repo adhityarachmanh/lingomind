@@ -1,3 +1,51 @@
 @import "tailwindcss";
 
 @variant dark (&:where(.dark, .dark *));
+
+@layer components {
+    .prose {
+        @apply text-base text-slate-700 dark:text-slate-300 leading-relaxed;
+    }
+    
+    .prose h1, .prose h2, .prose h3 {
+        @apply text-slate-900 dark:text-slate-100 font-extrabold tracking-tight mt-8 mb-4;
+    }
+    
+    .prose h3 {
+        @apply text-xl flex items-center gap-2 text-teal-800 dark:text-teal-300;
+    }
+    
+    .prose h3::before {
+        content: '';
+        @apply block w-1.5 h-5 bg-amber-500 rounded-full shrink-0;
+    }
+    
+    .prose p {
+        @apply mb-5 text-[15px] sm:text-base;
+    }
+    
+    .prose ul {
+        @apply space-y-3 my-5 list-none pl-0;
+    }
+    
+    .prose li {
+        @apply relative pl-6;
+    }
+    
+    .prose li::before {
+        content: '❖';
+        @apply absolute left-0 top-0 text-amber-500 font-bold text-sm leading-6;
+    }
+    
+    .prose b, .prose strong {
+        @apply font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-[0.95em];
+    }
+    
+    .prose i, .prose em {
+        @apply text-teal-700 dark:text-teal-400 italic;
+    }
+    
+    .prose hr {
+        @apply my-8 border-t border-slate-200 dark:border-slate-800 border-dashed;
+    }
+}

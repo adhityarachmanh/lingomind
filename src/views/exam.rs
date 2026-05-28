@@ -585,7 +585,6 @@ pub fn Exam(level: String) -> Element {
     let current_q = exam_container.questions[current_question_idx()].clone();
     let is_listening_question = current_q.question_type.eq_ignore_ascii_case("listening");
     let tts_question = question_audio_text(&current_q);
-    let question_lines = super::format_question_for_display(&current_q.question);
     
     let tts_lang_code = langs
         .iter()
@@ -644,13 +643,9 @@ pub fn Exam(level: String) -> Element {
 
                     // Question lines
                     div { class: "flex flex-col gap-4 mb-8",
-                        h2 { class: "text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-200 leading-loose space-y-3",
-                            for line in question_lines {
-                                p { class: if line.starts_with("A:") || line.starts_with("B:") || line.starts_with("C:")
-    || line.starts_with("D:") || line.starts_with("E:") { "text-slate-700 dark:text-slate-300 font-bold mt-2" } else if line.starts_with('\'') || line.starts_with('"') { "text-amber-700 dark:text-amber-500 italic font-medium p-4 bg-amber-50/50 dark:bg-amber-900/10 rounded-xl border border-amber-100/50 dark:border-amber-900/30" } else { "text-slate-800 dark:text-slate-200" },
-                                    "{line}"
-                                }
-                            }
+                        div { 
+                            class: "text-lg sm:text-xl font-medium text-slate-800 dark:text-slate-200 leading-loose prose dark:prose-invert max-w-none",
+                            dangerous_inner_html: "{current_q.question.clone()}"
                         }
                     }
 

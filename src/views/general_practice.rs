@@ -279,7 +279,6 @@ pub fn GeneralPractice() -> Element {
     let question_text = current.question.clone();
     let is_listening_question = current.question_type.eq_ignore_ascii_case("listening");
     let tts_question = question_audio_text(&current);
-    let question_lines = super::format_question_for_display(&current.question);
     let tts_lang_code = langs
         .iter()
         .find(|course| course.id.eq_ignore_ascii_case(&language))
@@ -335,13 +334,9 @@ pub fn GeneralPractice() -> Element {
 
                     // Question lines
                     div { class: "flex flex-col gap-4 mb-6",
-                        h2 { class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed space-y-2",
-                            for line in question_lines {
-                                p { class: if line.starts_with("A:") || line.starts_with("B:") || line.starts_with("C:")
-    || line.starts_with("D:") || line.starts_with("E:") { "text-slate-700 dark:text-slate-300 font-bold" } else if line.starts_with('\'') || line.starts_with('"') { "text-amber-700 italic font-medium" } else { "text-slate-800 dark:text-slate-200" },
-                                    "{line}"
-                                }
-                            }
+                        div { 
+                            class: "text-lg sm:text-xl font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed prose dark:prose-invert max-w-none",
+                            dangerous_inner_html: "{current.question.clone()}"
                         }
                     }
 
