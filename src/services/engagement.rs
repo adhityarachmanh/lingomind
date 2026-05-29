@@ -241,13 +241,16 @@ pub async fn refill_hearts_with_coins_server(email: String) -> Result<(), Server
         if let Some(row) = row_opt {
             let coins: i32 = row.get("coins");
             let hearts: i32 = row.get("hearts");
-            
-            if hearts >= 5 {
+            let missing_hearts = 5 - hearts;
+            if missing_hearts <= 0 {
                 return Err(ServerFnError::new("Nyawa sudah penuh!"));
             }
             
-            if coins >= 300 {
-                sqlx::query("UPDATE user_engagement_stats SET coins = coins - 300, hearts = 5, last_heart_refill = NULL WHERE email = $1")
+            let cost = missing_hearts * 60;
+            
+            if coins >= cost {
+                sqlx::query("UPDATE user_engagement_stats SET coins = coins - $1, hearts = 5, last_heart_refill = NULL WHERE email = $2")
+                    .bind(cost)
                     .bind(&email)
                     .execute(&mut *tx)
                     .await
@@ -255,7 +258,7 @@ pub async fn refill_hearts_with_coins_server(email: String) -> Result<(), Server
                 tx.commit().await.map_err(|e| ServerFnError::new(e.to_string()))?;
                 return Ok(());
             } else {
-                return Err(ServerFnError::new("Koin tidak cukup! Butuh 300 Koin."));
+                return Err(ServerFnError::new(format!("Koin tidak cukup! Butuh {} Koin.", cost)));
             }
         }
         Err(ServerFnError::new("Data user tidak ditemukan."))

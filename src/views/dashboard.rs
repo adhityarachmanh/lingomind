@@ -1013,46 +1013,70 @@ pub fn Dashboard() -> Element {
                                 "Tutup"
                             }
                         } else {
-                            p { class: "text-slate-600 dark:text-slate-400 text-sm mb-4 text-center", "Nyawa kamu saat ini {es.hearts}/5. Kamu butuh nyawa untuk mengerjakan Kuis dan Ujian." }
-                            
-                            if !refill_status().is_empty() {
-                                p { class: "text-sm text-center mb-3 font-medium text-rose-500", "{refill_status}" }
-                            }
-                            
-                            div { class: "flex flex-col gap-3",
-                                {
-                                    let email_for_coin_refill = user.email.clone();
-                                    rsx! {
-                                        button {
-                                            class: "w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
-                                            onclick: move |_| {
-                                                let e = email_for_coin_refill.clone();
-                                                spawn(async move {
-                                                    match crate::services::engagement::refill_hearts_with_coins_server(e).await {
-                                                        Ok(_) => {
-                                                            hearts_modal_open.set(false);
-                                                        },
-                                                        Err(err) => refill_status.set(err.to_string()),
-                                                    }
-                                                });
-                                            },
-                                            "🪙 Beli Full Nyawa (300 Koin)"
+                            {
+                                let missing_hearts = 5 - es.hearts;
+                                let cost = missing_hearts * 60;
+                                let mut time_info = String::new();
+                                if let Some(last_refill) = es.last_heart_refill {
+                                    let next_refill = last_refill + chrono::Duration::hours(4);
+                                    let now = chrono::Utc::now();
+                                    if next_refill > now {
+                                        let diff = next_refill - now;
+                                        let hours = diff.num_hours();
+                                        let minutes = diff.num_minutes() % 60;
+                                        if hours > 0 {
+                                            time_info = format!(" (+1 Nyawa dalam {}j {}m)", hours, minutes);
+                                        } else {
+                                            time_info = format!(" (+1 Nyawa dalam {}m)", minutes);
                                         }
                                     }
                                 }
-                                {
-                                    let email_for_ad_refill = user.email.clone();
-                                    rsx! {
-                                        button {
-                                            class: "w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
-                                            onclick: move |_| {
-                                                let e = email_for_ad_refill.clone();
-                                                spawn(async move {
-                                                    let _ = crate::services::engagement::refill_hearts_with_ad_server(e).await;
-                                                    hearts_modal_open.set(false);
-                                                });
-                                            },
-                                            "📺 Tonton Iklan (Coming Soon)"
+                                
+                                rsx! {
+                                    p { class: "text-slate-600 dark:text-slate-400 text-sm mb-4 text-center", 
+                                        "Nyawa saat ini {es.hearts}/5.{time_info} Butuh nyawa untuk kuis." 
+                                    }
+                                    
+                                    if !refill_status().is_empty() {
+                                        p { class: "text-sm text-center mb-3 font-medium text-rose-500", "{refill_status}" }
+                                    }
+                                    
+                                    div { class: "flex flex-col gap-3",
+                                        {
+                                            let email_for_coin_refill = user.email.clone();
+                                            rsx! {
+                                                button {
+                                                    class: "w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
+                                                    onclick: move |_| {
+                                                        let e = email_for_coin_refill.clone();
+                                                        spawn(async move {
+                                                            match crate::services::engagement::refill_hearts_with_coins_server(e).await {
+                                                                Ok(_) => {
+                                                                    hearts_modal_open.set(false);
+                                                                },
+                                                                Err(err) => refill_status.set(err.to_string()),
+                                                            }
+                                                        });
+                                                    },
+                                                    "🪙 Beli Full Nyawa ({cost} Koin)"
+                                                }
+                                            }
+                                        }
+                                        {
+                                            let email_for_ad_refill = user.email.clone();
+                                            rsx! {
+                                                button {
+                                                    class: "w-full py-2.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
+                                                    onclick: move |_| {
+                                                        let e = email_for_ad_refill.clone();
+                                                        spawn(async move {
+                                                            let _ = crate::services::engagement::refill_hearts_with_ad_server(e).await;
+                                                            hearts_modal_open.set(false);
+                                                        });
+                                                    },
+                                                    "📺 Tonton Iklan (Coming Soon)"
+                                                }
+                                            }
                                         }
                                     }
                                 }
