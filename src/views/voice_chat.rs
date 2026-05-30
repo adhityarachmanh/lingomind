@@ -146,6 +146,13 @@ pub fn VoiceChat(goal: String) -> Element {
             .unwrap_or_else(|| "en-US-AriaNeural".to_string())
     });
 
+    let is_male_voice = use_memo(move || {
+        let voice = edge_tts_voice_memo().to_lowercase();
+        // Cek nama voice populer yang biasanya pria
+        let male_names = ["guy", "christopher", "eric", "roger", "steffan", "brian", "yunxi", "keita", "denis", "alvaro", "antonio", "emilio", "henri", "klaus", "conrad", "jorge", "bastian", "nicolas", "ryan", "andrew"];
+        male_names.iter().any(|&name| voice.contains(name))
+    });
+
     // Fungsi pemutar suara asisten AI
     let speak_response = move |text: String| {
         let normalized = sanitize_tts_text(&text);
@@ -604,29 +611,38 @@ pub fn VoiceChat(goal: String) -> Element {
                         "Partner Belajar Bahasa Asing"
                     }
 
-                    // Glowing Circle Avatar
+                    // Glowing Circle Avatar (Realistis)
                     div {
                         class: format!(
-                            "h-48 w-48 rounded-full border-[3px] flex items-center justify-center transition-all duration-700 shadow-xl relative {}",
+                            "h-48 w-48 rounded-full border-[4px] flex items-center justify-center transition-all duration-700 shadow-2xl relative overflow-hidden {}",
                             match current_status.as_str() {
-                                "menghubungkan" => {
-                                    "border-indigo-400 shadow-indigo-200 bg-indigo-50/30 dark:bg-indigo-900/30"
-                                }
-                                "mendengarkan" => {
-                                    "border-emerald-400 shadow-emerald-200 animate-pulse bg-emerald-50"
-                                }
-                                "berpikir" => {
-                                    "border-amber-400 shadow-amber-200 bg-amber-50/30 dark:bg-amber-900/30"
-                                }
-                                "berbicara" => {
-                                    "border-teal-400 shadow-teal-200 bg-teal-50/30 dark:bg-teal-900/30"
-                                }
-                                "muted" => {
-                                    "border-rose-400 shadow-rose-200 bg-rose-50/30 dark:bg-rose-900/30"
-                                }
+                                "menghubungkan" => "border-indigo-400 shadow-indigo-200",
+                                "mendengarkan" => "border-emerald-400 shadow-emerald-200 animate-pulse",
+                                "berpikir" => "border-amber-400 shadow-amber-200",
+                                "berbicara" => "border-teal-400 shadow-teal-200 scale-105",
+                                "muted" => "border-rose-400 shadow-rose-200 opacity-50",
                                 _ => "border-slate-200 dark:border-slate-700",
                             },
                         ),
+                        
+                        img {
+                            class: "w-full h-full object-cover",
+                            src: if current_status == "berbicara" {
+                                if is_male_voice() {
+                                    asset!("/assets/avatar_male_talking.gif")
+                                } else {
+                                    asset!("/assets/avatar_female_talking.gif")
+                                }
+                            } else {
+                                if is_male_voice() {
+                                    asset!("/assets/avatar_male_idle.png")
+                                } else {
+                                    asset!("/assets/avatar_female_idle.png")
+                                }
+                            },
+                            alt: "AI Tutor Avatar"
+                        }
+
                         // Gelombang ekstra jika sedang didengarkan/berbicara
                         if current_status == "mendengarkan" {
                             div { class: "absolute inset-0 rounded-full bg-emerald-400/20 animate-ping opacity-75" }
@@ -634,19 +650,26 @@ pub fn VoiceChat(goal: String) -> Element {
                         if current_status == "berbicara" {
                             div { class: "absolute inset-0 rounded-full bg-teal-400/20 animate-ping opacity-75" }
                         }
-
-                        // Icon asisten AI
-                        div { class: "flex flex-col items-center justify-center",
-                            span { class: "text-6xl drop-shadow-md",
-                                match current_status.as_str() {
-                                    "mendengarkan" => "🎙️",
-                                    "berpikir" => "⚡",
-                                    "berbicara" => "🤖",
-                                    "muted" => "🔇",
-                                    _ => "📞",
-                                }
+                        
+                        if current_status == "muted" {
+                            div { class: "absolute inset-0 bg-slate-900/60 flex items-center justify-center",
+                                span { class: "text-4xl", "🔇" }
                             }
                         }
+                    }
+
+                    // Subtitle AI di bawah avatar
+                    if !ai_caption().is_empty() {
+                        div { class: "mt-6 px-4 py-2 bg-teal-600 dark:bg-teal-700 text-white font-extrabold text-lg sm:text-xl rounded-2xl shadow-lg shadow-teal-500/30 text-center min-w-[80%] max-w-[100%] leading-snug tracking-wide border-2 border-teal-500 dark:border-teal-600 animate-[fade-in_0.3s_ease-out]",
+                            "{ai_caption}"
+                        }
+                    } else if current_status == "menghubungkan" || current_status == "berpikir" {
+                         div { class: "mt-6 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 font-medium text-sm rounded-2xl text-center min-w-[60%] animate-pulse",
+                            "..."
+                        }
+                    } else {
+                        // Empty spacer
+                        div { class: "mt-6 h-10" }
                     }
 
                     // Teks Status
@@ -683,16 +706,7 @@ pub fn VoiceChat(goal: String) -> Element {
                             }
                         }
                     }
-                    if !ai_caption().is_empty() {
-                        div { class: "flex flex-col gap-1 border-t border-slate-200/30 dark:border-slate-700 pt-3",
-                            span { class: "text-[10px] text-indigo-600 dark:text-indigo-400 uppercase tracking-widest font-black",
-                                "AI Merespons"
-                            }
-                            p { class: "text-slate-800 dark:text-slate-200 font-bold leading-relaxed",
-                                "{ai_caption}"
-                            }
-                        }
-                    }
+                    // (Subtitle AI sekarang diletakkan di bawah avatar, bukan di sini)
                     if !ai_feedback().is_empty() {
                         div { class: "mt-2 p-3 bg-amber-50/30 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-900/50 rounded-xl shadow-sm text-xs sm:text-sm text-amber-900 flex flex-col gap-1",
                             div { class: "flex items-center gap-1.5 font-bold text-amber-700",
