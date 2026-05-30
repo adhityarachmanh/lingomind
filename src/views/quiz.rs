@@ -185,9 +185,11 @@ fn classify_skill(question: &str, explanation: &str, question_type: &str) -> Str
 
     let q = question.to_lowercase();
     let e = explanation.to_lowercase();
-    if q.contains("listen") || q.contains("audio") || e.contains("listening") || e.contains("pronunciation") {
+    if q.contains("listen") || q.contains("audio") || e.contains("listening") || e.contains("pronunciation") || e.contains("pengucapan") || e.contains("pendengaran") {
         "listening".to_string()
-    } else if e.contains("vocabulary") || e.contains("word choice") || q.contains("meaning") || q.contains("synonym") {
+    } else if e.contains("vocabulary") || e.contains("word choice") || q.contains("meaning") || q.contains("synonym") 
+           || e.contains("kosakata") || e.contains("kosa kata") || e.contains("arti kata") || e.contains("sinonim") 
+           || q.contains("arti") || q.contains("makna") {
         "vocabulary".to_string()
     } else {
         "grammar".to_string()
