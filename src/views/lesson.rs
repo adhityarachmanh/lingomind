@@ -21,16 +21,7 @@ static LESSON_AUDIO_SEQ: AtomicU64 = AtomicU64::new(0);
 
 
 
-fn split_example(sentence: &str) -> (String, Option<String>) {
-    if let Some((target, meaning)) = sentence.split_once("||") {
-        let target_clean = target.trim().trim_matches('"').to_string();
-        let meaning_clean = meaning.trim().trim_matches('"').to_string();
-        return (target_clean, Some(meaning_clean));
-    }
 
-    let cleaned = sentence.trim().trim_matches('"').to_string();
-    (cleaned, None)
-}
 
 #[component]
 pub fn Lesson(goal: String) -> Element {
@@ -243,9 +234,20 @@ pub fn Lesson(goal: String) -> Element {
                                 "Contoh Penggunaan"
                             }
                             div { class: "space-y-4",
-                                for (idx, sentence) in lesson_data.example_sentences.iter().enumerate() {
+                                for (idx, sentence_obj) in lesson_data.example_sentences.iter().enumerate() {
                                     {
-                                        let (target, meaning) = split_example(sentence);
+                                        let (target, meaning) = match sentence_obj {
+                                            crate::models::lesson::ExampleSentence::Structured { target, meaning } => {
+                                                (target.clone(), Some(meaning.clone()))
+                                            },
+                                            crate::models::lesson::ExampleSentence::Legacy(s) => {
+                                                if let Some((t, m)) = s.split_once("||") {
+                                                    (t.trim().trim_matches('"').to_string(), Some(m.trim().trim_matches('"').to_string()))
+                                                } else {
+                                                    (s.trim().trim_matches('"').to_string(), None)
+                                                }
+                                            }
+                                        };
                                         rsx! {
                                             div { class: "bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl p-4 relative hover:border-amber-300 transition-colors group",
                                                 p { class: "text-[10px] font-bold uppercase tracking-wider text-amber-500 mb-2",

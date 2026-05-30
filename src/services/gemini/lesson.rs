@@ -33,7 +33,14 @@ async fn request_lesson_from_gemini(
                     },
                     "example_sentences": {
                         "type": "ARRAY",
-                        "items": { "type": "STRING" }
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "target": { "type": "STRING" },
+                                "meaning": { "type": "STRING" }
+                            },
+                            "required": ["target", "meaning"]
+                        }
                     }
                 },
                 "required": ["title", "content", "vocabulary", "example_sentences"]
@@ -170,7 +177,7 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
         \nKesalahan Umum\
         \nTips Praktik.\
         \n- vocabulary minimal 8 item. PENTING: field 'word' WAJIB diisi dengan kata dalam bahasa target ({}), sedangkan field 'meaning' WAJIB diisi terjemahannya dalam Bahasa Indonesia.\
-        \n- example_sentences minimal 8 kalimat. PENTING: format string WAJIB \"<kalimat bahasa {}> || <arti Indonesia>\". Posisi kiri sebelum || harus bahasa {}, dan posisi kanan setelah || harus bahasa Indonesia.\
+        \n- example_sentences minimal 8 kalimat. PENTING: field 'target' WAJIB diisi dengan kalimat dalam bahasa {}, sedangkan field 'meaning' WAJIB diisi terjemahannya dalam Bahasa Indonesia.\
         \n- hindari penjelasan terlalu umum.",
         language, language, language, level, goal, part_value, part_note, modifier_prompt, language, language, language
     );
@@ -183,7 +190,7 @@ pub async fn generate_lesson_server(email: String, language: String, level: Stri
             Perbaiki JSON materi berikut agar lebih kaya dan tetap satu topik.\n\
             Syarat: content detail untuk 10-15 menit belajar, minimal 700 karakter, field 'content' WAJIB menggunakan format HTML yang rapi (dengan tag <br>, <b>, <h3>), harus ada bagian Konsep Inti, Pola, Kesalahan Umum, Tips Praktik.\n\
             vocabulary minimal 8 (PENTING: field 'word' WAJIB bahasa {}, 'meaning' WAJIB bahasa Indonesia).\n\
-            example_sentences minimal 8 (PENTING: format \"kalimat bahasa {} || arti Indonesia\").\n\
+            example_sentences minimal 8 (PENTING: field 'target' WAJIB bahasa {}, 'meaning' WAJIB bahasa Indonesia).\n\
             Kembalikan JSON dengan schema yang sama, tanpa teks lain.\n\
             JSON awal:\n{}",
             language, language, language, language, serde_json::to_string(&lesson).unwrap_or_default()
