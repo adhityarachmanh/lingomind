@@ -322,7 +322,7 @@ fn build_quiz_prompt(language: &str, level: &str, goal: &str, weakness_context: 
         3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.\n\
         5) Variasikan tipe soal: grammar, vocabulary, contextual comprehension, dan listening.\n\
-        6) Minimal 2 soal harus bertipe listening.\n\
+        6) WAJIB sertakan minimal 2 soal bertipe listening dan minimal 1 soal khusus Vocabulary (terjemahan, sinonim, atau makna kata).\n\
         7) Pertahankan kosakata sesuai level CEFR.\n\
         8) Sertakan minimal 1 soal model cloze (isian) dengan placeholder '__'.\n\
         9) Gunakan field JSON ini dengan konsisten:\n\
@@ -662,7 +662,7 @@ fn build_general_practice_prompt(language: &str, level: &str) -> String {
         2) Setiap soal 4 opsi, hanya 1 benar.\n\
         3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.\n\
         4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.\n\
-        5) Minimal 2 soal harus bertipe listening.\n\
+        5) WAJIB sertakan minimal 2 soal bertipe listening dan minimal 1 soal khusus Vocabulary (terjemahan, sinonim, atau makna kata).\n\
         6) Pertahankan kosakata sesuai level CEFR.\n\
         7) Gunakan field JSON ini dengan konsisten:\n\
            - question_type: isi 'listening' atau 'text'.\n\
