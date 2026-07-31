@@ -6,8 +6,8 @@ out/
 next-env.d.ts
 
 # Env
-.env
-.env*.local
+.env*
+!.env.example
 
 # Prisma
 prisma/*.db

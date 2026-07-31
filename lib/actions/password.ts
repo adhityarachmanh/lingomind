@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { Prisma } from "@prisma/client";
 import { db } from "../db";
 import { isValidEmail, isValidPassword } from "../validation";
 import { sendMail } from "../mail";
@@ -14,7 +15,14 @@ export async function verifyEmailAction(token: string): Promise<ActionResult> {
   });
   if (!record) return { error: "Token verifikasi tidak valid atau sudah kedaluwarsa." };
 
-  await db.user.update({ where: { email: record.email }, data: { isVerified: true } });
+  try {
+    await db.user.update({ where: { email: record.email }, data: { isVerified: true } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2025") {
+      return { error: "Token verifikasi tidak valid atau sudah kedaluwarsa." };
+    }
+    throw err;
+  }
   await db.emailVerificationToken.deleteMany({ where: { email: record.email } });
 
   return { message: "Akun Anda berhasil diverifikasi! Silakan login." };

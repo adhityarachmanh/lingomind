@@ -328,7 +328,7 @@ const languages = [
     "buttonClass": "bg-blue-500 hover:bg-blue-600 text-white",
     "category": "Asia",
     "ttsLangCode": "fil-PH",
-    "edgeTtsVoice": "fi-FI-SelmaNeural"
+    "edgeTtsVoice": "fil-PH-AngeloNeural"
   },
   {
     "id": "Malay",
@@ -568,7 +568,7 @@ async function main() {
     create: {
       fullName: 'Admin LingoMind',
       email: 'admin@lingomind.com',
-      passwordHash: '$2b$12$OnM/nwU952Jy3CEojVOEcuzw.KDSUYN/DmKRsK38Tw.26S.J7dz.m',
+      passwordHash: '$2b$10$zlW71qZZbyjCUGGCSwEg.ubpNykB/7jMTZFyENN/q4AVEmT6klanq',
       role: 'admin',
       isVerified: true,
       preferredLanguage: 'English',
