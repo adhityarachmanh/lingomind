@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getDailyMission, getDueFlashcardCount, getEngagementStats, getLanguages } from "@/lib/dashboard";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import AiStatus from "@/components/AiStatus";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -43,6 +44,10 @@ export default async function DashboardPage() {
         <div className="w-full sm:w-64">
           <LanguageSwitcher initial={langId} languages={languages} />
         </div>
+      </div>
+
+      <div className="flex justify-end">
+        <AiStatus />
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
