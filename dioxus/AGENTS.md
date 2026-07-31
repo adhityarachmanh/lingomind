@@ -1,3 +1,5 @@
+> **LEGACY (referensi)** — Aplikasi Dioxus LingoMind. Tidak dikembangkan aktif; dipakai sebagai sumber perilaku & pesan error untuk migrasi Next.js di root repo. Baca `AGENTS.md` di root untuk panduan repo aktif.
+
 # LingoMind
 
 Dioxus **0.7.1 fullstack** language-learning app: same Rust code compiles to WASM client and native server. Backend: Neon PostgreSQL (sqlx), Gemini AI, SMTP email, cron jobs. UI strings and code comments are in **Indonesian** — keep new UI text/error messages in Indonesian to match.

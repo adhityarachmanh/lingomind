@@ -1,0 +1,21 @@
+# LingoMind
+
+Aplikasi belajar bahasa (Next.js App Router + Prisma + Neon + Tailwind). Migrasi dari Dioxus sedang berlangsung; aplikasi lama di `dioxus/`.
+
+## Menjalankan
+
+1. Salin `.env.example` → `.env`, isi `DATABASE_URL`, `AUTH_SECRET`, `OPENCODE_AI_*` (dan `SMTP_PASSWORD` bila mau email sungguhan).
+2. `npm install`
+3. `npm run db:generate` (client Prisma; migration sudah applied)
+4. `npm run db:seed` — 28 bahasa + admin default `admin@lingomind.com` (password `admin`; **ganti di produksi**) — hanya bila DB masih kosong
+5. `npm run dev` → http://localhost:3000
+
+## Verifikasi
+
+`npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run build`, `npx prisma migrate status`.
+
+**Catatan:** dev-server smoke (`npm run dev` → register → verifikasi email → login → dashboard tampil) **belum dijalankan** — smoke manual oleh user/controller. Akun admin default: `admin@lingomind.com` (password `admin`).
+
+## Status
+
+Fase 1 (auth + dashboard + AI SDK setup) selesai. Lihat `docs/superpowers/specs/` untuk rancangan fase.
