@@ -96,3 +96,8 @@ export interface SearchUserRow {
   total_quiz_completed: number; active_frame: string | null; active_title: string | null;
   active_name_color: string | null; rank: number; is_following: boolean;
 }
+export interface BattleItem {
+  id: number; challenger_email: string; challenged_email: string; language: string; goal: string;
+  status: string; my_score: number | null; opponent_score: number | null;
+  opponent_name: string; created_at: Date | null;
+}
