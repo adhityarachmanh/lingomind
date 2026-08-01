@@ -101,3 +101,6 @@ export interface BattleItem {
   status: string; my_score: number | null; opponent_score: number | null;
   opponent_name: string; created_at: Date | null;
 }
+export interface PetItem {
+  id: number; pet_type: string; stage: number; exp: number; emoji: string; label: string; is_active: boolean;
+}
