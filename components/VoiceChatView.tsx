@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getOrCreateChatSessionAction, sendChatMessageAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { splitKoreksi } from "@/lib/chat";
-import type { ChatMessageItem } from "@/lib/types";
 
 const PRESETS = [
   { key: "Cafe", title: "Kasir Kedai Kopi", desc: "Latihan memesan minuman secara verbal." },
@@ -31,7 +29,6 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   const router = useRouter();
   const [phase, setPhase] = useState<"picker" | "chat">(goal !== "Bebas" ? "chat" : "picker");
   const [status, setStatus] = useState<"menghubungkan" | "mendengarkan" | "berpikir" | "berbicara" | "muted">("menghubungkan");
-  const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [settingTitle, setSettingTitle] = useState<string | null>(null);
   const [userCaption, setUserCaption] = useState<string | null>(null);
@@ -48,9 +45,15 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   const sessionIdRef = useRef(sessionId);
   // eslint-disable-next-line react-hooks/refs
   sessionIdRef.current = sessionId;
-  const messagesRef = useRef(messages);
-  // eslint-disable-next-line react-hooks/refs
-  messagesRef.current = messages;
+  const mountedRef = useRef(true);
+  const timersRef = useRef<number[]>([]);
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
+
+  function schedule(fn: () => void, ms: number) {
+    const id = window.setTimeout(fn, ms);
+    timersRef.current.push(id);
+    return id;
+  }
 
   const { supported, listening, transcript, error: sttError, timedOut, start: startRec, stop: stopRec, setError: setSttError } = useSpeechRecognition(ttsLang);
 
@@ -60,10 +63,29 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     const u = new SpeechSynthesisUtterance(text);
     u.lang = ttsLang;
     u.rate = 1.0;
+    utteranceRef.current = u;
+    u.onend = () => {
+      if (utteranceRef.current !== u) return;
+      if (!mountedRef.current) return;
+      setStatus(isMutedRef.current ? "muted" : "mendengarkan");
+    };
+    u.onerror = () => {
+      if (utteranceRef.current !== u) return;
+      if (!mountedRef.current) return;
+      setStatus(isMutedRef.current ? "muted" : "mendengarkan");
+    };
     window.speechSynthesis.speak(u);
+    schedule(() => {
+      if (utteranceRef.current !== u) return;
+      if (!mountedRef.current) return;
+      if (statusRef.current === "berbicara") {
+        setStatus(isMutedRef.current ? "muted" : "mendengarkan");
+      }
+    }, 10000);
   }
 
   function stopSpeaking() {
+    utteranceRef.current = null;
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }
 
@@ -72,13 +94,13 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     setStatus("menghubungkan");
     setError(null);
     const res = await getOrCreateChatSessionAction(goal, setting);
+    if (!mountedRef.current) return;
     if ("error" in res) {
       setError(`Gagal memuat sesi panggilan: ${res.error}`);
       setStatus("muted");
       return;
     }
     setSessionId(res.sessionId);
-    setMessages(res.messages);
     setSettingTitle(title);
     const lastAi = [...res.messages].reverse().find((m) => m.sender === "ai");
     if (lastAi) {
@@ -87,7 +109,6 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
       setAiKoreksi(koreksi);
       setStatus("berbicara");
       speak(main);
-      window.setTimeout(() => setStatus(isMutedRef.current ? "muted" : "mendengarkan"), 3500);
     } else {
       setStatus(isMutedRef.current ? "muted" : "mendengarkan");
     }
@@ -118,12 +139,12 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     setSttError(null);
     sendChatMessageAction(sid, text)
       .then((res) => {
+        if (!mountedRef.current) return;
         if ("error" in res) {
           setError(`Gagal mengirim pesan suara: ${res.error}`);
           setStatus(isMutedRef.current ? "muted" : "mendengarkan");
           return;
         }
-        setMessages(res.messages);
         const lastAi = [...res.messages].reverse().find((m) => m.sender === "ai");
         if (lastAi) {
           const { main, koreksi } = splitKoreksi(lastAi.content);
@@ -131,12 +152,12 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
           setAiKoreksi(koreksi);
           setStatus("berbicara");
           speak(main);
-          window.setTimeout(() => setStatus(isMutedRef.current ? "muted" : "mendengarkan"), 4000);
         } else {
           setStatus(isMutedRef.current ? "muted" : "mendengarkan");
         }
       })
       .catch((e: unknown) => {
+        if (!mountedRef.current) return;
         setError(`Gagal mengirim pesan suara: ${e instanceof Error ? e.message : "Terjadi kesalahan."}`);
         setStatus(isMutedRef.current ? "muted" : "mendengarkan");
       });
@@ -155,15 +176,20 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
 
   useEffect(() => {
     if (timedOut) {
-      const t = window.setTimeout(() => setStatus(isMutedRef.current ? "muted" : "mendengarkan"), 1000);
-      return () => window.clearTimeout(t);
+      schedule(() => setStatus(isMutedRef.current ? "muted" : "mendengarkan"), 1000);
     }
   }, [timedOut]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (sttError) setError(sttError);
-  }, [sttError]);
+    return () => {
+      mountedRef.current = false;
+      timersRef.current.forEach((t) => window.clearTimeout(t));
+      timersRef.current = [];
+      stopRec();
+      stopSpeaking();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleMute() {
     const next = !isMuted;
@@ -178,13 +204,14 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   }
 
   function hangUp() {
+    timersRef.current.forEach((t) => window.clearTimeout(t));
+    timersRef.current = [];
     stopRec();
     stopSpeaking();
     if (goal !== "Bebas") {
       router.push("/roadmap");
     } else {
       setSessionId(null);
-      setMessages([]);
       setSettingTitle(null);
       setUserCaption(null);
       setAiCaption(null);
@@ -237,10 +264,10 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
 
   return (
     <div className="max-w-md mx-auto px-4 sm:px-6 py-8 flex flex-col items-center gap-6">
-      {error && (
+      {(error || sttError) && (
         <div className="w-full flex items-start justify-between gap-2 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-xs">
-          <span>{error}</span>
-          <button type="button" onClick={() => setError(null)} className="font-bold">×</button>
+          <span>{error ?? sttError}</span>
+          <button type="button" onClick={() => { setError(null); setSttError(null); }} className="font-bold">×</button>
         </div>
       )}
 

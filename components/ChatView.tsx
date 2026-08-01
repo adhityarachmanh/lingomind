@@ -84,6 +84,8 @@ export default function ChatView({ goal, language }: { goal: string; language: s
     const res = await sendChatMessageAction(sessionId, text).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal mengirim pesan." }));
     setSending(false);
     if ("error" in res) {
+      setMessages((m) => m.filter((msg) => !(msg.id === 0 && msg.content === text)));
+      setInput(text);
       setError(`Gagal mengirim pesan: ${res.error}`);
       return;
     }
