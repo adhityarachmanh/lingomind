@@ -48,6 +48,8 @@ export async function getEngagementStats(email: string): Promise<EngagementStats
     exam_retake_tickets: row.examRetakeTickets ?? 0,
     hearts,
     last_heart_refill: lastRefill,
+    last_active_date: row.lastActiveDate,
+    has_weekend_amulet: row.hasWeekendAmulet,
   };
 }
 

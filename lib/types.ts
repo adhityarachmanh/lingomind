@@ -7,6 +7,7 @@ export interface EngagementStats {
   total_points_earned: number; coins: number; streak_freezes: number;
   previous_streak: number; double_xp_until: Date | null; exam_retake_tickets: number;
   hearts: number; last_heart_refill: Date | null;
+  last_active_date: Date | null; has_weekend_amulet: boolean | null;
 }
 export interface DailyMission {
   lessons_completed: number; quizzes_completed: number; weakness_practices_completed: number;
