@@ -57,3 +57,7 @@ export interface BadgeItem {
   requirement_type: string; requirement_value: number;
 }
 export interface PronunciationEvaluation { score: number; feedback: string; word_results: WordResult[]; }
+export interface ShopItem {
+  id: number; name: string; description: string | null;
+  cost: number; effect_type: string; icon_name: string | null;
+}
