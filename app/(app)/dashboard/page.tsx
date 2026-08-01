@@ -8,6 +8,9 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AiStatus from "@/components/AiStatus";
 import HeartsRefillModal from "@/components/HeartsRefillModal";
 import ChestCard from "@/components/ChestCard";
+import SocialFeedSection from "@/components/SocialFeedSection";
+import BattleArenaSection from "@/components/BattleArenaSection";
+import PetCard from "@/components/PetCard";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -222,6 +225,10 @@ export default async function DashboardPage() {
           ))}
         </div>
       </section>
+
+      <SocialFeedSection />
+      <BattleArenaSection />
+      <PetCard />
     </div>
   );
 }

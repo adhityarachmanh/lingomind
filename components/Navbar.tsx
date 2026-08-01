@@ -31,6 +31,8 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className={tabClass(isDashboard)}>Beranda</Link>
             <Link href="/roadmap" className={tabClass(pathname === "/roadmap")}>Kurikulum</Link>
+            <Link href="/leaderboard" className={tabClass(pathname === "/leaderboard")}>Leaderboard</Link>
+            <Link href="/analytics" className={tabClass(pathname === "/analytics")}>Analisis</Link>
             <Link href="/shop" className={tabClass(pathname === "/shop")}>Toko</Link>
             <Link href="/guide" className={tabClass(pathname === "/guide")}>Panduan</Link>
             <div className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1">
