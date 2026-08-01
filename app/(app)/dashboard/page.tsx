@@ -3,8 +3,11 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getDailyMission, getDueFlashcardCount, getEngagementStats, getLanguages } from "@/lib/dashboard";
+import { getUserBadges } from "@/lib/badges";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AiStatus from "@/components/AiStatus";
+import HeartsRefillModal from "@/components/HeartsRefillModal";
+import ChestCard from "@/components/ChestCard";
 
 export default async function DashboardPage() {
   const session = await getSession();
@@ -19,10 +22,11 @@ export default async function DashboardPage() {
 
   const langId = languages.some((l) => l.id === profile.preferred_language) ? profile.preferred_language : "English";
 
-  const [curriculum, mission, dueCount] = await Promise.all([
+  const [curriculum, mission, dueCount, badges] = await Promise.all([
     getCurriculum(),
     getDailyMission(session.email, langId),
     getDueFlashcardCount(session.email, langId),
+    getUserBadges(session.email),
   ]);
 
   const currentLevel = profile.current_level[langId] ?? "A1.0";
@@ -65,7 +69,10 @@ export default async function DashboardPage() {
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nyawa</p>
           <p className="text-2xl font-black text-rose-500 mt-1">❤️ {stats?.hearts ?? 0}/5</p>
-          <p className="text-[11px] text-slate-400 mt-1">1 per 4 jam</p>
+          <div>
+            <p className="text-[11px] text-slate-400 mt-1">1 per 4 jam</p>
+            <HeartsRefillModal hearts={stats?.hearts ?? 5} coins={stats?.coins ?? 0} />
+          </div>
         </div>
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Skor</p>
@@ -145,6 +152,54 @@ export default async function DashboardPage() {
           </p>
         </section>
       </div>
+
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <h2 className="text-lg font-extrabold mb-3">📜 Quest Harian Bertingkat</h2>
+        <div className="grid sm:grid-cols-3 gap-3">
+          <ChestCard
+            icon="🪵" title="Peti Kayu" desc="Selesaikan 1 Kuis Apapun."
+            progress={`${mission.quizzes_completed}/1 Selesai`}
+            locked={mission.quizzes_completed < 1}
+            claimed={mission.tier1_claimed}
+            buttonLabel="Klaim 20 Koin!"
+            tier={1}
+          />
+          <ChestCard
+            icon="🥈" title="Peti Perak" desc="Jawab 50 pertanyaan dengan benar hari ini."
+            progress={`${mission.correct_answers_today}/50 Benar`}
+            locked={mission.correct_answers_today < 50}
+            claimed={mission.tier2_claimed}
+            buttonLabel="Klaim 50 Koin!"
+            tier={2}
+          />
+          <ChestCard
+            icon="🥇" title="Peti Emas" desc="Menangkan 3 PvP Battle hari ini."
+            progress={`${mission.pvp_wins_today}/3 Menang`}
+            locked={mission.pvp_wins_today < 3}
+            claimed={mission.tier3_claimed}
+            buttonLabel="Klaim 100 Koin + Bonus!"
+            tier={3}
+            highlight
+          />
+        </div>
+      </section>
+
+      {badges.length > 0 && (
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-extrabold mb-3">🏅 Badges / Lencana</h2>
+          <div className="space-y-2">
+            {badges.map((b) => (
+              <div key={b.id} className="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                <span className="w-8 h-8 rounded-full bg-teal-500/10 flex items-center justify-center">{b.icon_name}</span>
+                <div>
+                  <p className="font-bold text-sm">{b.name}</p>
+                  <p className="text-xs text-slate-400">{b.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
         <h2 className="text-lg font-extrabold mb-3">Kurikulum ({langId})</h2>
