@@ -30,3 +30,11 @@ export interface FlashcardItem {
   ease_factor: number; interval_days: number; repetition: number;
 }
 export interface NewFlashcard { language: string; front_text: string; back_text: string; }
+export interface VocabularyItem { word: string; meaning: string; }
+export interface ExampleSentence { target: string; meaning: string; }
+export interface LessonContainer {
+  title: string;
+  content: string;
+  vocabulary: VocabularyItem[];
+  example_sentences: ExampleSentence[];
+}
