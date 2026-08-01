@@ -104,3 +104,5 @@ export interface BattleItem {
 export interface PetItem {
   id: number; pet_type: string; stage: number; exp: number; emoji: string; label: string; is_active: boolean;
 }
+export interface WeaknessAnalyticsItem { topic: string; count_7d: number; count_30d: number; }
+export interface SkillProgressPoint { day: string; grammar: number; vocabulary: number; listening: number; }

@@ -65,3 +65,45 @@ export async function getPriorityWeakness(email: string, language: string): Prom
   });
   return rows[0]?.topic ?? null;
 }
+
+import type { SkillProgressPoint, WeaknessAnalyticsItem } from "./types";
+
+export async function getWeaknessAnalytics(email: string, language: string, limit: number): Promise<WeaknessAnalyticsItem[]> {
+  const safeLimit = limit <= 0 ? 8 : Math.min(limit, 20);
+  // Prisma groupBy tidak mendukung COUNT FILTER per rentang — ambil semua lalu hitung di JS
+  const since7 = new Date(Date.now() - 7 * 86400000);
+  const since30 = new Date(Date.now() - 30 * 86400000);
+  const logs = await db.weaknessLog.findMany({
+    where: { email, language },
+    select: { topic: true, createdAt: true },
+  });
+  const map = new Map<string, WeaknessAnalyticsItem>();
+  for (const l of logs) {
+    const item = map.get(l.topic) ?? { topic: l.topic, count_7d: 0, count_30d: 0 };
+    if (l.createdAt && l.createdAt >= since7) item.count_7d += 1;
+    if (l.createdAt && l.createdAt >= since30) item.count_30d += 1;
+    map.set(l.topic, item);
+  }
+  return [...map.values()]
+    .sort((a, b) => b.count_30d - a.count_30d || b.count_7d - a.count_7d)
+    .slice(0, safeLimit);
+}
+
+export async function getSkillProgress7d(email: string, language: string): Promise<SkillProgressPoint[]> {
+  const since = new Date(Date.now() - 7 * 86400000);
+  const logs = await db.skillProgressLog.findMany({
+    where: { email, language, createdAt: { gte: since } },
+    select: { skill: true, isCorrect: true, createdAt: true },
+  });
+  const map = new Map<string, SkillProgressPoint>();
+  for (const l of logs) {
+    if (!l.isCorrect || !l.createdAt) continue;
+    const day = l.createdAt.toISOString().slice(0, 10);
+    const item = map.get(day) ?? { day, grammar: 0, vocabulary: 0, listening: 0 };
+    if (l.skill === "grammar") item.grammar += 1;
+    else if (l.skill === "vocabulary") item.vocabulary += 1;
+    else if (l.skill === "listening") item.listening += 1;
+    map.set(day, item);
+  }
+  return [...map.values()].sort((a, b) => (a.day < b.day ? -1 : 1));
+}
