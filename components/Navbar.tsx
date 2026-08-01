@@ -43,7 +43,7 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
               className="w-8 h-8 rounded-full bg-teal-500 text-white text-xs font-black flex items-center justify-center hover:opacity-90 transition-opacity"
               title={full_name}
             >
-              {full_name.charAt(0).toUpperCase()}
+              {(full_name || "?").charAt(0).toUpperCase()}
             </Link>
             <form action={logoutAction}>
               <button type="submit" className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">

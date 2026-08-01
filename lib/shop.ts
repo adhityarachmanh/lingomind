@@ -77,12 +77,11 @@ export async function buyItem(email: string, itemId: number): Promise<string> {
         const repair = decideStreakRepair({
           lastActiveDate: s.lastActiveDate, currentStreak: s.currentStreak, previousStreak: s.previousStreak, now,
         });
-        if (repair.action === "restore") {
-          await tx.userEngagementStat.update({
-            where: { email },
-            data: { currentStreak: repair.currentStreak, lastActiveDate: repair.lastActiveDate },
-          });
-        }
+        if (repair.action !== "restore") throw new Error(repair.message);
+        await tx.userEngagementStat.update({
+          where: { email },
+          data: { currentStreak: repair.currentStreak, lastActiveDate: repair.lastActiveDate },
+        });
         return repair.message;
       }
       case "double_xp": {
@@ -140,7 +139,7 @@ export async function buyItem(email: string, itemId: number): Promise<string> {
           await tx.socialFeed.create({ data: { email, activityType: "pet_hatched", content: `Baru saja menetaskan ${item.name}!` } }).catch(() => {});
           return defaultMessage;
         }
-        return defaultMessage;
+        throw new Error("Efek item tidak dikenal.");
       }
     }
   });

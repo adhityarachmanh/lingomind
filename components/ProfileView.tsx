@@ -97,7 +97,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm text-center">
         <div className="flex flex-col items-center">
           <div className={frameClass}>
-            {profile.full_name.charAt(0).toUpperCase()}
+            {(profile.full_name || "?").charAt(0).toUpperCase()}
           </div>
           {FRAME_BADGE[profile.active_frame ?? ""] && (
             <span className="mt-2 px-2 py-0.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] font-black tracking-wider">
@@ -160,49 +160,43 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
             <h3 className="text-lg font-extrabold mb-4">Galeri Kosmetik</h3>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🖼️ Bingkai</p>
             <div className="flex flex-wrap gap-2 mb-4">
-              <button type="button" onClick={() => equip(equipFrameAction, "")} className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold">
-                {profile.active_frame === null ? "Dipakai" : "Pakai"} — Bawaan (Default)
-              </button>
-              {["gold", "diamond", "mythic"].map((f) => (
+              {["", ...profile.owned_frames].map((f) => (
                 <button
                   key={f}
                   type="button"
                   onClick={() => equip(equipFrameAction, f)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-bold ${profile.active_frame === f ? "border-teal-500 bg-teal-500/10 text-teal-600 dark:text-teal-400" : "border-slate-300"}`}
                 >
-                  {profile.active_frame === f ? "Dipakai" : "Pakai"} — {f === "gold" ? "VIP Gold" : f === "diamond" ? "Diamond 💎" : "Mythic 🌌"}
+                  {profile.active_frame === f ? "Dipakai" : "Pakai"} — {f === "" ? "Bawaan (Default)" : f === "gold" ? "VIP Gold" : f === "diamond" ? "Diamond 💎" : "Mythic 🌌"}
                 </button>
               ))}
             </div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🏅 Gelar</p>
             <div className="flex flex-wrap gap-2 mb-4">
-              <button type="button" onClick={() => equip(equipTitleAction, "")} className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold">
-                {profile.active_title === null ? "Dipakai" : "Pakai"} — Tanpa Gelar
-              </button>
-              {Object.entries(TITLE_BADGE).map(([key, t]) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => equip(equipTitleAction, key)}
-                  className={`px-3 py-1.5 rounded-lg border text-xs font-bold ${profile.active_title === key ? "border-teal-500 bg-teal-500/10" : "border-slate-300"}`}
-                >
-                  {profile.active_title === key ? "Dipakai" : "Pakai"} — {t.label}
-                </button>
-              ))}
+              {["", ...profile.owned_titles].map((key) => {
+                const t = key === "" ? null : TITLE_BADGE[key];
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => equip(equipTitleAction, key)}
+                    className={`px-3 py-1.5 rounded-lg border text-xs font-bold ${profile.active_title === key ? "border-teal-500 bg-teal-500/10" : "border-slate-300"}`}
+                  >
+                    {profile.active_title === key ? "Dipakai" : "Pakai"} — {key === "" ? "Tanpa Gelar" : t?.label ?? key}
+                  </button>
+                );
+              })}
             </div>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">✨ Warna Nama</p>
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => equip(equipColorAction, "")} className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold">
-                {profile.active_name_color === null ? "Dipakai" : "Pakai"} — Bawaan
-              </button>
-              {Object.entries(NAME_COLOR_CLASS).map(([key]) => (
+              {["", ...profile.owned_colors].map((key) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => equip(equipColorAction, key)}
                   className={`px-3 py-1.5 rounded-lg border text-xs font-bold ${profile.active_name_color === key ? "border-teal-500 bg-teal-500/10" : "border-slate-300"}`}
                 >
-                  {profile.active_name_color === key ? "Dipakai" : "Pakai"} — {key === "gold" ? "✨ Gold" : key === "crimson" ? "🔥 Crimson" : "⚡ Neon Blue"}
+                  {profile.active_name_color === key ? "Dipakai" : "Pakai"} — {key === "" ? "Bawaan" : key === "gold" ? "✨ Gold" : key === "crimson" ? "🔥 Crimson" : "⚡ Neon Blue"}
                 </button>
               ))}
             </div>

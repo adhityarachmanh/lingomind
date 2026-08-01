@@ -12,6 +12,17 @@ export async function getPublicProfileAction(email: string): Promise<PublicProfi
 
   const stats = await db.userEngagementStat.findUnique({ where: { email } });
   const badges = await getUserBadges(email);
+  const session = await getSession();
+
+  let ownedFrames: string[] = [];
+  let ownedTitles: string[] = [];
+  let ownedColors: string[] = [];
+  if (session && session.email.toLowerCase() === email.toLowerCase()) {
+    const inventory = await db.userInventory.findMany({ where: { email } });
+    ownedFrames = inventory.filter((i) => i.itemType.startsWith("profile_frame_")).map((i) => i.itemValue);
+    ownedTitles = inventory.filter((i) => i.itemType.startsWith("title_")).map((i) => i.itemValue);
+    ownedColors = inventory.filter((i) => i.itemType.startsWith("name_color_")).map((i) => i.itemValue);
+  }
 
   return {
     email: user.email,
@@ -24,7 +35,20 @@ export async function getPublicProfileAction(email: string): Promise<PublicProfi
     active_name_color: stats?.activeNameColor ?? null,
     joined_date: "Member",
     badges,
+    owned_frames: ownedFrames,
+    owned_titles: ownedTitles,
+    owned_colors: ownedColors,
   };
+}
+
+const FIELD_TO_ITEM_TYPE = {
+  activeFrame: "profile_frame_",
+  activeTitle: "title_",
+  activeNameColor: "name_color_",
+} as const;
+
+function itemTypeFor(field: keyof typeof FIELD_TO_ITEM_TYPE, value: string): string {
+  return `${FIELD_TO_ITEM_TYPE[field]}${value}`;
 }
 
 async function equip(
@@ -33,11 +57,21 @@ async function equip(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
-  await db.userEngagementStat.update({
-    where: { email: session.email },
-    data: { [field]: value === "" ? null : value },
-  });
-  return { message: "ok" };
+  try {
+    if (value !== "") {
+      const owned = await db.userInventory.findFirst({
+        where: { email: session.email, itemType: itemTypeFor(field, value), itemValue: value },
+      });
+      if (!owned) return { error: "Anda belum memiliki item ini." };
+    }
+    await db.userEngagementStat.update({
+      where: { email: session.email },
+      data: { [field]: value === "" ? null : value },
+    });
+    return { message: "ok" };
+  } catch {
+    return { error: "Gagal menyimpan kosmetik." };
+  }
 }
 
 export async function equipFrameAction(value: string): Promise<ActionResult> {

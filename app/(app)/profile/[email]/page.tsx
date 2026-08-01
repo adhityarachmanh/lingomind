@@ -6,6 +6,11 @@ export default async function ProfilePage({ params }: { params: Promise<{ email:
   const { email } = await params;
   const session = await getSession();
   if (!session) redirect("/login");
-  const target = decodeURIComponent(email);
+  let target: string;
+  try {
+    target = decodeURIComponent(email);
+  } catch {
+    redirect("/dashboard");
+  }
   return <ProfileView email={target} isOwn={session.email.toLowerCase() === target.toLowerCase()} />;
 }

@@ -46,7 +46,7 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 - Placement menyimpan hasil ke `user_language_progress` (bukan `users.current_level` — kolom itu legacy, sudah di-drop)
 - Badge hook: `evaluateAndAwardBadges(email)` dipanggil `.catch(() => {})` di akhir `updateEngagementAfterQuiz` (`lib/progress.ts`) — jangan pernah menggagalkan flow quiz
 - Seed (fase 4a): `npm run db:seed` — badges (3) + shop_items (18); verifikasi via `npm run db:check`
-- Dua format error koin berbeda — jangan dicampur: shop `Koin tidak cukup (butuh {cost}).` (`lib/shop.ts`) vs hearts `Koin tidak cukup! Butuh {n} Koin.` (`lib/actions/shop.ts`)
+- Dua format error koin berbeda — jangan dicampur: shop `Koin tidak cukup (butuh {cost}).` (`lib/shop.ts`) vs hearts `Koin tidak cukup! Butuh {n} Koin.` (`lib/shop.ts` — refillHearts)
 
 ## Status migrasi
 

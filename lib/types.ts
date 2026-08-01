@@ -72,4 +72,7 @@ export interface PublicProfile {
   active_name_color: string | null;
   joined_date: string;
   badges: BadgeItem[];
+  owned_frames: string[];
+  owned_titles: string[];
+  owned_colors: string[];
 }

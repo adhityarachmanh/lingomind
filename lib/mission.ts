@@ -109,23 +109,28 @@ export async function claimMissionReward(email: string, tier: number): Promise<s
   if (!decision.ok) throw new Error(decision.error ?? "Tier tidak valid");
 
   const claimedField = tier === 1 ? "tier1Claimed" : tier === 2 ? "tier2Claimed" : "tier3Claimed";
-  await db.userDailyMission.update({
-    where: { email_date: { email, date: today } },
-    data: { [claimedField]: true },
-  });
-  await db.userEngagementStat.update({ where: { email }, data: { coins: { increment: decision.rewardCoins ?? 0 } } });
 
-  let message = decision.message ?? "Berhasil!";
-  if (decision.bonus && tier === 3) {
-    const roll = Math.floor(Math.random() * 100) + 1;
-    const bonus = decideMissionMysteryRoll(roll);
-    if (bonus === "streak_freeze") {
-      await db.userEngagementStat.update({ where: { email }, data: { streakFreezes: { increment: 1 } } });
-      message = `${message} Bonus: 1 Streak Freeze!`;
-    } else {
-      await db.userEngagementStat.update({ where: { email }, data: { doubleXpUntil: new Date(Date.now() + 3600000) } });
-      message = `${message} Bonus: Double XP 1 Jam!`;
+  return db.$transaction(async (tx) => {
+    const updated = await tx.userDailyMission.updateMany({
+      where: { email, date: today, [claimedField]: false },
+      data: { [claimedField]: true },
+    });
+    if (updated.count === 0) throw new Error("sudah diklaim");
+
+    await tx.userEngagementStat.update({ where: { email }, data: { coins: { increment: decision.rewardCoins ?? 0 } } });
+
+    let message = decision.message ?? "Berhasil!";
+    if (decision.bonus && tier === 3) {
+      const roll = Math.floor(Math.random() * 100) + 1;
+      const bonus = decideMissionMysteryRoll(roll);
+      if (bonus === "streak_freeze") {
+        await tx.userEngagementStat.update({ where: { email }, data: { streakFreezes: { increment: 1 } } });
+        message = `${message} Bonus: 1 Streak Freeze!`;
+      } else {
+        await tx.userEngagementStat.update({ where: { email }, data: { doubleXpUntil: new Date(Date.now() + 3600000) } });
+        message = `${message} Bonus: Double XP 1 Jam!`;
+      }
     }
-  }
-  return message;
+    return message;
+  });
 }
