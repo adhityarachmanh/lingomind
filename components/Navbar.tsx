@@ -11,7 +11,7 @@ interface NavbarProps {
   email: string;
 }
 
-export default function Navbar({ score }: NavbarProps) {
+export default function Navbar({ full_name, score, email }: NavbarProps) {
   const pathname = usePathname();
   const isDashboard = pathname === "/dashboard";
   const tabClass = (active: boolean) =>
@@ -31,11 +31,20 @@ export default function Navbar({ score }: NavbarProps) {
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className={tabClass(isDashboard)}>Beranda</Link>
             <Link href="/roadmap" className={tabClass(pathname === "/roadmap")}>Kurikulum</Link>
+            <Link href="/shop" className={tabClass(pathname === "/shop")}>Toko</Link>
+            <Link href="/guide" className={tabClass(pathname === "/guide")}>Panduan</Link>
             <div className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1">
               <span>🔥</span>
               <span>{score} pts</span>
             </div>
             <ThemeToggle />
+            <Link
+              href={`/profile/${encodeURIComponent(email)}`}
+              className="w-8 h-8 rounded-full bg-teal-500 text-white text-xs font-black flex items-center justify-center hover:opacity-90 transition-opacity"
+              title={full_name}
+            >
+              {full_name.charAt(0).toUpperCase()}
+            </Link>
             <form action={logoutAction}>
               <button type="submit" className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">
                 Keluar
