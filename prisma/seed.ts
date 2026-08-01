@@ -579,6 +579,54 @@ async function main() {
 
   const adminCount = await db.user.count({ where: { email: 'admin@lingomind.com' } });
   console.log('admin user count:', adminCount);
+
+  // ---- Badges ----
+  const badges = [
+    { name: 'First Step', description: 'Menyelesaikan kuis pertama.', iconName: '🎯', requirementType: 'quiz_completed', requirementValue: 1 },
+    { name: 'Week Warrior', description: 'Mencapai 7 hari streak belajar.', iconName: '🔥', requirementType: 'streak', requirementValue: 7 },
+    { name: 'Rich Scholar', description: 'Mengumpulkan 100 koin.', iconName: '💰', requirementType: 'coins', requirementValue: 100 },
+  ];
+  let badgesUpserted = 0;
+  for (const b of badges) {
+    await db.badge.upsert({
+      where: { name: b.name },
+      create: b,
+      update: {},
+    });
+    badgesUpserted++;
+  }
+  console.log(`badges seeded/verified: ${badgesUpserted}`);
+
+  // ---- Shop items ----
+  const shopItems = [
+    { name: 'Streak Freeze', description: 'Menjaga streak tetap utuh jika kamu absen satu hari.', cost: 50, effectType: 'streak_freeze', iconName: '❄️' },
+    { name: 'Double XP Potion', description: 'Menggandakan perolehan XP selama 1 jam berikutnya.', cost: 100, effectType: 'double_xp', iconName: '🧪' },
+    { name: 'Weekend Amulet', description: 'Melindungi streak di akhir pekan.', cost: 80, effectType: 'weekend_amulet', iconName: '🛡️' },
+    { name: 'Gold Profile Frame', description: 'Bingkai profil emas eksklusif.', cost: 250, effectType: 'profile_frame_gold', iconName: '🖼️' },
+    { name: 'Mystery Box', description: 'Kotak misteri dengan hadiah acak!', cost: 50, effectType: 'mystery_box', iconName: '🎁' },
+    { name: 'Diamond Profile Frame', description: 'Bingkai profil berlian premium.', cost: 500, effectType: 'profile_frame_diamond', iconName: '💎' },
+    { name: 'Mythic Profile Frame', description: 'Bingkai profil mythic langka.', cost: 1000, effectType: 'profile_frame_mythic', iconName: '🌌' },
+    { name: 'Gelar: Polyglot', description: 'Gelar prestise Polyglot.', cost: 500, effectType: 'title_polyglot', iconName: '🎓' },
+    { name: 'Gelar: Sultan', description: 'Gelar prestise Sultan.', cost: 1000, effectType: 'title_sultan', iconName: '👑' },
+    { name: 'Gelar: Legend', description: 'Gelar prestise Legend.', cost: 2000, effectType: 'title_legend', iconName: '🌟' },
+    { name: 'Warna Nama: Gold', description: 'Warna nama emas.', cost: 800, effectType: 'name_color_gold', iconName: '✨' },
+    { name: 'Warna Nama: Crimson', description: 'Warna nama crimson.', cost: 800, effectType: 'name_color_crimson', iconName: '🔥' },
+    { name: 'Warna Nama: Neon Blue', description: 'Warna nama neon biru.', cost: 800, effectType: 'name_color_neon_blue', iconName: '⚡' },
+    { name: 'Streak Repair', description: 'Pulihkan streak yang hangus.', cost: 2000, effectType: 'streak_repair', iconName: '🩹' },
+    { name: 'Tiket Ujian Ulang', description: 'Buka gembok cooldown Exam agar bisa langsung mengambil ujian ulang.', cost: 1000, effectType: 'exam_retake', iconName: '🎫' },
+    { name: 'Telur Naga Api', description: 'Telur misterius naga api.', cost: 250, effectType: 'egg_dragon', iconName: '🥚' },
+    { name: 'Telur Burung Malam', description: 'Telur misterius burung malam.', cost: 250, effectType: 'egg_owl', iconName: '🥚' },
+    { name: 'Telur Serigala Es', description: 'Telur misterius serigala es.', cost: 250, effectType: 'egg_fenrir', iconName: '🥚' },
+  ];
+  let shopUpserted = 0;
+  for (const s of shopItems) {
+    const existing = await db.shopItem.findFirst({ where: { name: s.name } });
+    if (!existing) {
+      await db.shopItem.create({ data: s });
+    }
+    shopUpserted++;
+  }
+  console.log(`shop items seeded/verified: ${shopUpserted}`);
 }
 
 main()
