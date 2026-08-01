@@ -65,7 +65,7 @@ export function computeQuizOutcome(input: QuizOutcomeInput): { passed: boolean; 
   const requiredScore = input.ptsPerQuestion * 5;
   const passed = input.scoreGained >= requiredScore && input.playedTopicIdx === input.topicIdx;
   let newTopicIdx = input.topicIdx;
-  if (passed && input.topicIdx < input.topicsInLevel - 1) {
+  if (passed && input.topicIdx < input.topicsInLevel) {
     newTopicIdx += 1;
   }
   return { passed, newTopicIdx };

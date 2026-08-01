@@ -84,8 +84,12 @@ describe("computeQuizOutcome", () => {
     const r = computeQuizOutcome({ baseLevel: "A1", topicIdx: 2, topicsInLevel: 4, playedTopicIdx: 0, ptsPerQuestion: 10, scoreGained: 50 });
     expect(r.passed).toBe(false);
   });
-  it("passed di topik terakhir → topic_idx tidak overflow", () => {
+  it("passed di topik terakhir → topic_idx jadi 4 (sentinel semua topik selesai)", () => {
     const r = computeQuizOutcome({ baseLevel: "A1", topicIdx: 3, topicsInLevel: 4, playedTopicIdx: 3, ptsPerQuestion: 10, scoreGained: 50 });
-    expect(r).toEqual({ passed: true, newTopicIdx: 3 });
+    expect(r).toEqual({ passed: true, newTopicIdx: 4 });
+  });
+  it("topic_idx sudah 4 (sentinel) → re-pass tetap 4 (idempotent)", () => {
+    const r = computeQuizOutcome({ baseLevel: "A1", topicIdx: 4, topicsInLevel: 4, playedTopicIdx: 4, ptsPerQuestion: 10, scoreGained: 50 });
+    expect(r).toEqual({ passed: true, newTopicIdx: 4 });
   });
 });
