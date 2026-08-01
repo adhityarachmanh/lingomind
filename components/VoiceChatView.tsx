@@ -181,6 +181,7 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   }, [timedOut]);
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
       mountedRef.current = false;
       timersRef.current.forEach((t) => window.clearTimeout(t));
