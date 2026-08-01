@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAiJson } from "./parse";
+import { parseAiArray, parseAiJson } from "./parse";
 
 describe("parseAiJson", () => {
   it("JSON polos", () => {
@@ -19,5 +19,17 @@ describe("parseAiJson", () => {
   });
   it("kosong → null", () => {
     expect(parseAiJson("")).toBeNull();
+  });
+});
+
+describe("parseAiArray", () => {
+  it("array polos", () => {
+    expect(parseAiArray<string>('["a","b"]')).toEqual(["a", "b"]);
+  });
+  it("dibungkus prosa", () => {
+    expect(parseAiArray<string>('Hasil: ["a"] Sekian.')).toEqual(["a"]);
+  });
+  it("invalid → null", () => {
+    expect(parseAiArray('{bukan array}')).toBeNull();
   });
 });
