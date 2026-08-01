@@ -48,3 +48,6 @@ export interface QuizQuestion {
 }
 export interface QuizContainer { questions: QuizQuestion[]; }
 export interface ChatMessageItem { id: number; sender: "user" | "ai"; content: string; }
+export interface StoryQuestion { question_text: string; options: string[]; correct_answer: string; explanation: string; }
+export interface StorySegment { text: string; speaker: string | null; translation: string; question: StoryQuestion | null; }
+export interface StoryData { title: string; title_translation: string; segments: StorySegment[]; }
