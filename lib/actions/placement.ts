@@ -15,6 +15,9 @@ export async function evaluatePlacementAction(
   const profile = await getUserProfile(session.email);
   if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
 
+  const userCount = messages.filter((m) => m.role === "User").length;
+  if (userCount < 3) return { error: "Percakapan belum cukup. Jawab minimal 3 pertanyaan." };
+
   const language = profile.preferred_language;
   const prompt = buildPlacementPrompt(language, formatPlacementHistory(messages));
 

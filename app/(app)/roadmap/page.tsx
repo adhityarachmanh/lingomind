@@ -70,9 +70,9 @@ export default async function RoadmapPage() {
                 <RoadmapClient key={t.title} topic={t.title} unlocked={t.unlocked} current={t.current} />
               ))}
             </div>
-            {lv.unlocked && (
+            {lv.currentLevel && (
               <div className="mt-3">
-                {lv.currentLevel && activeTopicIdx < 4 ? (
+                {activeTopicIdx < 4 ? (
                   <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold">
                     🔒 Ujian Kenaikan Tingkat (Selesaikan semua topik)
                   </span>

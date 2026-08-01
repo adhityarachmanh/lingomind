@@ -3,6 +3,7 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { deductHeart, submitExamResult } from "../progress";
+import { getCurriculum } from "../dashboard";
 import { generateExam } from "../ai-content/exam";
 import { shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
@@ -21,7 +22,9 @@ async function requireLevel(sessionEmail: string, level: string): Promise<{ prof
   const current = profile.current_level[language] ?? "A1.0";
   const base = current.split(".")[0];
   const topicIdx = Number(current.split(".")[1] ?? 0);
-  if (base !== level || topicIdx < 4) {
+  const curriculum = await getCurriculum();
+  const topicsInLevel = curriculum.find((c) => c.level === level)?.topics.length ?? 4;
+  if (base !== level || topicIdx < topicsInLevel) {
     return { error: `Anda belum menyelesaikan semua topik di level ${level} untuk mengambil ujian ini.` };
   }
   return { profile, language };
@@ -57,13 +60,15 @@ export async function consumeRetakeTicketAction(level: string): Promise<ActionRe
 
   try {
     await db.$transaction(async (tx) => {
-      const stats = await tx.userEngagementStat.findUnique({ where: { email: session.email } });
-      if (!stats) throw new Error("Data user tidak ditemukan.");
-      if (stats.examRetakeTickets <= 0) throw new Error("Anda tidak memiliki tiket retake exam.");
-      await tx.userEngagementStat.update({
-        where: { email: session.email },
+      const updated = await tx.userEngagementStat.updateMany({
+        where: { email: session.email, examRetakeTickets: { gt: 0 } },
         data: { examRetakeTickets: { decrement: 1 } },
       });
+      if (updated.count === 0) {
+        const stats = await tx.userEngagementStat.findUnique({ where: { email: session.email } });
+        if (!stats) throw new Error("Data user tidak ditemukan.");
+        throw new Error("Anda tidak memiliki tiket retake exam.");
+      }
       await tx.userLanguageProgress.update({
         where: { email_languageId: { email: session.email, languageId: gate.language } },
         data: { examCooldownUntil: null },

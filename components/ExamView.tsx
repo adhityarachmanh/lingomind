@@ -40,6 +40,8 @@ export default function ExamView({
   const [correctCount, setCorrectCount] = useState(0);
   const [hearts, setHearts] = useState(initialHearts);
   const [loadingError, setLoadingError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [ticketPending, setTicketPending] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
 
   const loadExam = useCallback(async () => {
@@ -79,12 +81,18 @@ export default function ExamView({
   }, [level, reloadKey]);
 
   async function useTicket() {
-    const res = await consumeRetakeTicketAction(level);
-    if ("error" in res) {
-      setGateError(res.error ?? "Gagal menggunakan tiket.");
-      return;
+    if (ticketPending) return;
+    setTicketPending(true);
+    try {
+      const res = await consumeRetakeTicketAction(level);
+      if ("error" in res) {
+        setGateError(res.error ?? "Gagal menggunakan tiket.");
+        return;
+      }
+      setReloadKey((k) => k + 1);
+    } finally {
+      setTicketPending(false);
     }
-    setReloadKey((k) => k + 1);
   }
 
   function checkAnswer() {
@@ -105,13 +113,17 @@ export default function ExamView({
     const passed = correctCount >= passingScore;
     const score = correctCount * ptsPerQuestion;
     setPhase({ name: "result", passed, correct: correctCount, total, passingScore, score, submitting: true });
-    const res = await submitExamResultAction({ passed, score });
-    if ("error" in res) {
+    setSubmitError(null);
+    try {
+      const res = await submitExamResultAction({ passed, score });
+      if ("error" in res) {
+        setSubmitError(res.error);
+      }
+    } catch (e: unknown) {
+      setSubmitError(e instanceof Error ? e.message : "Gagal menyimpan hasil ujian.");
+    } finally {
       setPhase({ name: "result", passed, correct: correctCount, total, passingScore, score, submitting: false });
-      setGateError(res.error);
-      return;
     }
-    setPhase({ name: "result", passed, correct: correctCount, total, passingScore, score, submitting: false });
   }
 
   const question = quiz?.questions[idx];
@@ -155,7 +167,7 @@ export default function ExamView({
         <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">Anda baru saja gagal dalam ujian ini. Silakan istirahat dan pelajari kembali materi.</p>
         <p className="text-sm font-bold text-amber-600 dark:text-amber-400">Bisa diulang dalam: {phase.cooldownMessage}</p>
         {phase.tickets > 0 ? (
-          <button type="button" onClick={useTicket} className="mt-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold">
+          <button type="button" disabled={ticketPending} onClick={useTicket} className="mt-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-bold">
             Gunakan 1 Tiket
           </button>
         ) : (
@@ -211,6 +223,7 @@ export default function ExamView({
           </div>
         </div>
         <p className="text-xs text-slate-400">Batas kelulusan minimal {phase.passingScore} benar (75%).</p>
+        {submitError && <p className="text-xs text-rose-500 max-w-md">{submitError}</p>}
         {phase.submitting ? (
           <p className="text-sm font-bold text-slate-400">Menyimpan...</p>
         ) : (

@@ -45,14 +45,18 @@ export default function PlacementView({ language }: { language: string }) {
     if (evaluating) return;
     setEvaluating(true);
     setError(null);
-    const res = await evaluatePlacementAction(messages);
-    if ("error" in res) {
-      setError(res.error);
+    try {
+      const res = await evaluatePlacementAction(messages);
+      if ("error" in res) {
+        setError(res.error);
+        return;
+      }
+      setResult(res.level);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Gagal mengevaluasi. Silakan coba lagi.");
+    } finally {
       setEvaluating(false);
-      return;
     }
-    setResult(res.level);
-    setEvaluating(false);
   }
 
   if (result) {

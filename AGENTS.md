@@ -40,7 +40,7 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 - Fungsi murni (SM-2 di `flashcards.ts`, streak/outcome di `progress.ts`, validasi quiz, classifier `weakness.ts`, parser `ai-content/parse.ts`) diuji dengan vitest (`*.test.ts` di `lib/`)
 - TTS = Web Speech API (`components/SpeakButton.tsx`), bahasa dari `language.tts_lang_code` (fallback `en-US`)
 - Quiz AI: cache 5 varian acak per (language, level, goal, modifier) di `cached_quizzes` (`contentJson`), dipick acak sebelum generate baru
-- Pipeline AI generic: `generateQuizWithPrompt` (lesson/quiz/practice/exam) di `lib/ai-content/*`; placement inline di `lib/actions/placement.ts` via `generateText` (helper `buildPlacementPrompt`/`formatPlacementHistory`/`parseCefrLevel` di `lib/ai-content/placement.ts`) — prompt dikirim sebagai argumen; hasil dicek + di-retry otomatis
+- Pipeline AI generic: `generateQuizWithPrompt` (quiz/practice/exam) di `lib/ai-content/quiz.ts` dengan retry otomatis; lesson punya pipeline sendiri `generateLesson` di `lib/ai-content/lesson.ts`; placement inline di `lib/actions/placement.ts` via `generateText` (helper `buildPlacementPrompt`/`formatPlacementHistory`/`parseCefrLevel` di `lib/ai-content/placement.ts`) — prompt dikirim sebagai argumen; hasil dicek via `parseCefrLevel`, tanpa retry otomatis
 - Placement menyimpan hasil ke `user_language_progress` (bukan `users.current_level` — kolom itu legacy, sudah di-drop)
 
 ## Status migrasi
