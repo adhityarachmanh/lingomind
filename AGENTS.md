@@ -20,8 +20,8 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 ## Arsitektur
 
 - `app/(auth)/*` — login, register, verify-email, forgot/reset password (tanpa navbar)
-- `app/(app)/*` — area berlogin; layout melindungi via `getSession()` + `middleware.ts` juga melindungi `/dashboard`; routes: `/dashboard`, `/roadmap`, `/lesson/:goal`, `/quiz/:goal`, `/flashcard-review`
-- `lib/` — `db.ts` (Prisma singleton + driver adapter), `auth.ts` (JWT + `getSession()`), `profile.ts`, `mail.ts`, `dashboard.ts` (logika data), `validation.ts`, `ai.ts`, `progress.ts` (streak + quiz outcome), `mission.ts` (skor & misi harian), `flashcards.ts` (SM-2), `weakness.ts` (classifier skill/weakness), `sanitize.ts` (sanitize-html), `ai-content/` (`parse.ts`, `lesson.ts`, `quiz.ts` — pipeline AI); `lib/actions/*` = server actions (pengganti `#[server]` fn Dioxus) — termasuk `lesson.ts`, `quiz.ts`, `flashcard.ts`, `mission.ts`
+- `app/(app)/*` — area berlogin; layout melindungi via `getSession()` + `middleware.ts` juga melindungi `/dashboard`; routes: `/dashboard`, `/roadmap`, `/lesson/:goal`, `/quiz/:goal`, `/flashcard-review`, `/general-practice`, `/practice/:goal`, `/exam/:level`, `/placement`
+- `lib/` — `db.ts` (Prisma singleton + driver adapter), `auth.ts` (JWT + `getSession()`), `profile.ts`, `mail.ts`, `dashboard.ts` (logika data), `validation.ts`, `ai.ts`, `progress.ts` (streak + quiz outcome), `mission.ts` (skor & misi harian), `flashcards.ts` (SM-2), `weakness.ts` (classifier skill/weakness), `sanitize.ts` (sanitize-html), `ai-content/` (`parse.ts`, `lesson.ts`, `quiz.ts`, `exam.ts`, `placement.ts` — pipeline AI), `lib/actions/*` = server actions (pengganti `#[server]` fn Dioxus) — termasuk `lesson.ts`, `quiz.ts`, `flashcard.ts`, `mission.ts`, `practice.ts`, `exam.ts`, `placement.ts`
 - `prisma/schema.prisma` — skema ditulis manual; sumber kebenaran; nama model singular (`db.user`, `db.language`); tambah model per fase lewat migration baru
 - `dioxus/` — aplikasi lama utuh (Dioxus 0.7 + sqlx migrations di `dioxus/migrations/`). Sumber referensi perilaku & pesan error (Indonesia)
 
@@ -40,7 +40,9 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 - Fungsi murni (SM-2 di `flashcards.ts`, streak/outcome di `progress.ts`, validasi quiz, classifier `weakness.ts`, parser `ai-content/parse.ts`) diuji dengan vitest (`*.test.ts` di `lib/`)
 - TTS = Web Speech API (`components/SpeakButton.tsx`), bahasa dari `language.tts_lang_code` (fallback `en-US`)
 - Quiz AI: cache 5 varian acak per (language, level, goal, modifier) di `cached_quizzes` (`contentJson`), dipick acak sebelum generate baru
+- Pipeline AI generic: `generateQuizWithPrompt` (lesson/quiz/practice/exam) dan `generatePlacement` (placement) di `lib/ai-content/*` — prompt dikirim sebagai argumen; hasil dicek + di-retry otomatis
+- Placement menyimpan hasil ke `user_language_progress` (bukan `users.current_level` — kolom itu legacy, sudah di-drop)
 
 ## Status migrasi
 
-Fase 1 selesai: auth lengkap + dashboard ringkas + AI SDK setup. Fase 2a selesai: roadmap + lesson + quiz + flashcard (SM-2), streak/misi/hearts, pipeline AI (generate lesson/quiz + cache). Belum: practice/exam/placement (fase 2b), AI interaktif chat/voice/story + TTS backend (fase 3), gamifikasi (fase 4), admin (fase 5), cron + deploy Vercel + cutover (fase 6). Spec: `docs/superpowers/specs/2026-07-31-lingomind-nextjs-migration-phase1-design.md`.
+Fase 1 selesai: auth lengkap + dashboard ringkas + AI SDK setup. Fase 2a selesai: roadmap + lesson + quiz + flashcard (SM-2), streak/misi/hearts, pipeline AI (generate lesson/quiz + cache). Fase 2b selesai: practice/exam/placement (pipeline generic `generateQuizWithPrompt`, halaman `/general-practice`, `/practice/:goal`, `/exam/:level`, `/placement`, CTA di dashboard + tombol exam di roadmap). Belum: AI interaktif chat/voice/story + TTS backend (fase 3), gamifikasi (fase 4), admin (fase 5), cron + deploy Vercel + cutover (fase 6). Spec: `docs/superpowers/specs/2026-07-31-lingomind-nextjs-migration-phase1-design.md`.

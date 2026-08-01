@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
@@ -71,6 +72,24 @@ export default async function DashboardPage() {
           <p className="text-2xl font-black text-teal-600 dark:text-teal-400 mt-1">⭐ {profile.score}</p>
           <p className="text-[11px] text-slate-400 mt-1">{baseLevel}</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link href="/general-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">🎲</p>
+          <p className="font-extrabold mt-2">Latihan Acak</p>
+          <p className="text-xs text-slate-400 mt-1">+1 Nyawa ❤️ dan +15 Poin + Koin 🪙</p>
+        </Link>
+        <Link href="/practice/General" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">🎯</p>
+          <p className="font-extrabold mt-2">Latihan Kelemahan</p>
+          <p className="text-xs text-slate-400 mt-1">Fokus pada topik yang paling sering salah</p>
+        </Link>
+        <Link href="/placement" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">📝</p>
+          <p className="font-extrabold mt-2">Tes Penempatan</p>
+          <p className="text-xs text-slate-400 mt-1">Belum yakin dengan level Anda?</p>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

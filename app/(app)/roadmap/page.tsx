@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
@@ -69,12 +70,25 @@ export default async function RoadmapPage() {
                 <RoadmapClient key={t.title} topic={t.title} unlocked={t.unlocked} current={t.current} />
               ))}
             </div>
+            {lv.unlocked && (
+              <div className="mt-3">
+                {lv.currentLevel && activeTopicIdx < 4 ? (
+                  <span className="inline-block px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 text-xs font-bold">
+                    🔒 Ujian Kenaikan Tingkat (Selesaikan semua topik)
+                  </span>
+                ) : (
+                  <Link
+                    href={`/exam/${lv.level}`}
+                    className="inline-block px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 text-white text-xs font-bold hover:opacity-90 transition-opacity"
+                  >
+                    🎓 Ujian Kenaikan Tingkat
+                  </Link>
+                )}
+              </div>
+            )}
           </div>
         ))}
       </div>
-      <p className="text-xs text-slate-400 mt-8">
-        Ujian kenaikan tingkat, chat, dan mode suara akan tersedia di fase berikutnya.
-      </p>
     </div>
   );
 }
