@@ -61,3 +61,15 @@ export interface ShopItem {
   id: number; name: string; description: string | null;
   cost: number; effect_type: string; icon_name: string | null;
 }
+export interface PublicProfile {
+  email: string;
+  full_name: string;
+  score: number;
+  current_streak: number;
+  longest_streak: number;
+  active_frame: string | null;
+  active_title: string | null;
+  active_name_color: string | null;
+  joined_date: string;
+  badges: BadgeItem[];
+}
