@@ -101,7 +101,7 @@ export function buildQuizPrompt(language: string, level: string, goal: string, w
   return [
     `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
     `Buat 5 soal kuis pilihan ganda bahasa ${language} untuk level CEFR ${level} dengan topik pembelajaran/goal: '${goal}'.`,
-    "1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '${goal}'. HANYA fokus pada pembelajaran bahasa untuk topik ini! DILARANG KERAS membuat soal pengetahuan umum (trivia)!",
+    `1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '${goal}'. HANYA fokus pada pembelajaran bahasa untuk topik ini! DILARANG KERAS membuat soal pengetahuan umum (trivia)!`,
     "2) Setiap soal 4 opsi, hanya 1 benar.",
     "3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.",
     "4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik.",
