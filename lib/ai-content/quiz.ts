@@ -36,24 +36,24 @@ export function normalizeQuiz(container: QuizContainer): QuizContainer {
   };
 }
 
-export function validateQuizShape(questions: QuizQuestion[], expectedCount: number): string[] {
+export function validateQuizShape(questions: QuizQuestion[], expectedCount: number, label = "quiz"): string[] {
   const errs: string[] = [];
   if (questions.length !== expectedCount) {
-    errs.push(`Format quiz tidak valid: wajib ${expectedCount} pertanyaan.`);
+    errs.push(`Format ${label} tidak valid: wajib ${expectedCount} pertanyaan.`);
     return errs;
   }
   questions.forEach((qq, i) => {
     const n = i + 1;
-    if (!qq.question) errs.push(`Format quiz tidak valid: pertanyaan ke-${n} kosong.`);
-    if (!qq.explanation) errs.push(`Format quiz tidak valid: explanation pertanyaan ke-${n} kosong.`);
-    if (!qq.options || qq.options.length !== 4) errs.push(`Format quiz tidak valid: pertanyaan ke-${n} harus punya 4 opsi.`);
+    if (!qq.question) errs.push(`Format ${label} tidak valid: pertanyaan ke-${n} kosong.`);
+    if (!qq.explanation) errs.push(`Format ${label} tidak valid: explanation pertanyaan ke-${n} kosong.`);
+    if (!qq.options || qq.options.length !== 4) errs.push(`Format ${label} tidak valid: pertanyaan ke-${n} harus punya 4 opsi.`);
     else {
-      if (qq.options.some((o) => !o.trim())) errs.push(`Format quiz tidak valid: ada opsi kosong di pertanyaan ke-${n}.`);
-      if (new Set(qq.options).size !== 4) errs.push(`Format quiz tidak valid: ada opsi duplikat di pertanyaan ke-${n}.`);
+      if (qq.options.some((o) => !o.trim())) errs.push(`Format ${label} tidak valid: ada opsi kosong di pertanyaan ke-${n}.`);
+      if (new Set(qq.options).size !== 4) errs.push(`Format ${label} tidak valid: ada opsi duplikat di pertanyaan ke-${n}.`);
     }
-    if (!qq.correct_answer || !qq.options.includes(qq.correct_answer)) errs.push(`Format quiz tidak valid: kunci jawaban pertanyaan ke-${n} tidak cocok dengan opsi.`);
-    if (qq.question_type !== "text" && qq.question_type !== "listening") errs.push(`Format quiz tidak valid: question_type pertanyaan ke-${n} harus 'text' atau 'listening'.`);
-    if (qq.question_type === "listening" && (qq.listen_text ?? "").length < 6) errs.push(`Format quiz tidak valid: listen_text pertanyaan listening ke-${n} terlalu singkat/kosong.`);
+    if (!qq.correct_answer || !qq.options.includes(qq.correct_answer)) errs.push(`Format ${label} tidak valid: kunci jawaban pertanyaan ke-${n} tidak cocok dengan opsi.`);
+    if (qq.question_type !== "text" && qq.question_type !== "listening") errs.push(`Format ${label} tidak valid: question_type pertanyaan ke-${n} harus 'text' atau 'listening'.`);
+    if (qq.question_type === "listening" && (qq.listen_text ?? "").length < 6) errs.push(`Format ${label} tidak valid: listen_text pertanyaan listening ke-${n} terlalu singkat/kosong.`);
   });
   return errs;
 }
@@ -117,31 +117,96 @@ export function buildQuizPrompt(language: string, level: string, goal: string, w
   ].join("\n");
 }
 
+export function buildGeneralPracticePrompt(language: string, level: string): string {
+  return [
+    `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
+    "",
+    `Buat 5 soal kuis latihan acak (general practice) pilihan ganda bahasa ${language} untuk level CEFR ${level}.`,
+    "Wajib kualitas:",
+    `1) Ini adalah latihan acak kemampuan bahasa. HANYA uji kosakata (vocabulary), tata bahasa (grammar), dan pemahaman (comprehension) sesuai level ${level}. DILARANG KERAS membuat soal pengetahuan umum (trivia)!`,
+    "2) Setiap soal 4 opsi, hanya 1 benar.",
+    "3) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.",
+    "4) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.",
+    "5) WAJIB sertakan minimal 2 soal bertipe listening dan minimal 1 soal khusus Vocabulary (terjemahan, sinonim, atau makna kata).",
+    "6) Pertahankan kosakata sesuai level CEFR.",
+    "7) Gunakan field JSON ini dengan konsisten:",
+    "   - question_type: isi 'listening' atau 'text'.",
+    "   - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).",
+    "   - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text. WAJIB format HTML (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.",
+    "   - untuk question_type='text', listen_text boleh diisi string kosong, dan question WAJIB format HTML.",
+    `8) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '${language}'. Explanation tetap dalam Bahasa Indonesia.`,
+    "",
+    'Kembalikan HANYA JSON valid dengan bentuk: {"questions": [{"question": string, "question_type": "text"|"listening", "listen_text": string, "options": [string x4], "correct_answer": string, "explanation": string}]}',
+  ].join("\n");
+}
+
+export function buildWeaknessPrompt(
+  language: string,
+  level: string,
+  weaknessTopic: string,
+  weaknessContext: string
+): string {
+  const context = weaknessContext || "(belum ada catatan detail)";
+  return [
+    `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
+    "",
+    `Buat 3 soal latihan weakness-focused bahasa ${language} level CEFR ${level}.`,
+    `Topik kelemahan utama: ${weaknessTopic}.`,
+    `Data konteks kesalahan user terbaru: ${context}`,
+    "Aturan:",
+    "1) Semua soal harus fokus pada topik kelemahan di atas.",
+    "2) Kesulitan bertahap: soal 1 mudah, soal 2 menengah, soal 3 menengah+ (masih sesuai level).",
+    "3) Tiap soal 4 opsi, 1 kunci benar.",
+    "4) Minimal 1 soal harus bertipe listening yang tetap relevan dengan topik kelemahan.",
+    "5) Gunakan field JSON ini dengan konsisten:",
+    "   - question_type: isi 'listening' atau 'text'.",
+    "   - listen_text: wajib terisi untuk question_type='listening' (teks audio untuk TTS).",
+    "   - question: untuk listening, hanya instruksi/pertanyaan tanpa transcript audio. WAJIB format HTML (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.",
+    "   - untuk question_type='text', listen_text boleh string kosong, dan question WAJIB format HTML.",
+    `6) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '${language}'. Explanation tetap dalam Bahasa Indonesia.`,
+    "7) Explanation Bahasa Indonesia minimal 2 kalimat, jelaskan kenapa user biasanya salah.",
+    "8) Hindari opsi ambigu dan hindari pengulangan pola soal yang sama.",
+    "",
+    'Kembalikan HANYA JSON valid dengan bentuk: {"questions": [{"question": string, "question_type": "text"|"listening", "listen_text": string, "options": [string x4], "correct_answer": string, "explanation": string}]}',
+  ].join("\n");
+}
+
+export function buildWeaknessContext(notes: string[]): string {
+  const lines: string[] = [];
+  for (const note of notes) {
+    const normalized = note.replace(/\s+/g, " ").trim();
+    if (!normalized) continue;
+    const short = normalized.length > 140 ? normalized.slice(0, 140) : normalized;
+    lines.push(`- ${short}`);
+  }
+  return lines.join("\n");
+}
+
 function qualityScore(issues: string[]): number {
   return Math.max(0, 100 - issues.length * 10);
 }
 
-export async function generateQuiz(params: {
-  language: string;
-  level: string;
-  goal: string;
-  weaknessContext: string;
+export async function generateQuizWithPrompt(params: {
+  prompt: string;
+  expectedCount: number;
+  label: string;
+  weaknessFocus?: string;
 }): Promise<QuizContainer> {
-  const { language, level, goal, weaknessContext } = params;
-  let prompt = buildQuizPrompt(language, level, goal, weaknessContext);
+  const { prompt, expectedCount, label, weaknessFocus } = params;
+  let currentPrompt = prompt;
   let best: QuizContainer | null = null;
   let bestScore = 0;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const { text } = await generateText({ model, prompt, maxOutputTokens: 8192, temperature: 0.6 });
+    const { text } = await generateText({ model, prompt: currentPrompt, maxOutputTokens: 8192, temperature: 0.6 });
     const parsed = parseAiJson<QuizContainer>(text);
     if (!parsed) {
-      prompt += `\n\nRespons tidak valid (bukan JSON). Kembalikan HANYA JSON.`;
+      currentPrompt += `\n\nRespons tidak valid (bukan JSON). Kembalikan HANYA JSON.`;
       continue;
     }
     const normalized = normalizeQuiz(parsed);
-    const shapeErrors = validateQuizShape(normalized.questions, 5);
-    const issues = shapeErrors.length > 0 ? shapeErrors : qualityIssues(normalized.questions, 5);
+    const shapeErrors = validateQuizShape(normalized.questions, expectedCount, label);
+    const issues = shapeErrors.length > 0 ? shapeErrors : qualityIssues(normalized.questions, expectedCount, weaknessFocus);
     const score = qualityScore(issues);
     if (score > bestScore) {
       bestScore = score;
@@ -150,11 +215,24 @@ export async function generateQuiz(params: {
     if (issues.length === 0 || score >= 92) {
       return normalized;
     }
-    prompt += `\n\nRespons sebelumnya bermasalah: ${issues.join("; ")}. Perbaiki JSON sesuai syarat.`;
+    currentPrompt += `\n\nRespons sebelumnya bermasalah: ${issues.join("; ")}. Perbaiki JSON sesuai syarat.`;
   }
 
   if (best) return best;
-  throw new Error("Gagal menghasilkan quiz yang valid setelah beberapa percobaan.");
+  throw new Error(`Gagal menghasilkan ${label} yang valid setelah beberapa percobaan.`);
+}
+
+export async function generateQuiz(params: {
+  language: string;
+  level: string;
+  goal: string;
+  weaknessContext: string;
+}): Promise<QuizContainer> {
+  return generateQuizWithPrompt({
+    prompt: buildQuizPrompt(params.language, params.level, params.goal, params.weaknessContext),
+    expectedCount: 5,
+    label: "quiz",
+  });
 }
 
 export function shuffleOptions(container: QuizContainer): QuizContainer {

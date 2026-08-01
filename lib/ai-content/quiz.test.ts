@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeQuiz, qualityIssues, shuffleOptions, validateQuizShape } from "./quiz";
+import { buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, normalizeQuiz, qualityIssues, shuffleOptions, validateQuizShape } from "./quiz";
 import type { QuizQuestion } from "../types";
 
 function q(over: Partial<QuizQuestion> = {}): QuizQuestion {
@@ -92,5 +92,44 @@ describe("shuffleOptions", () => {
     const original = ["Paris", "London", "Rome", "Berlin"];
     const c = shuffleOptions({ questions: [q()] });
     expect([...c.questions[0].options].sort()).toEqual([...original].sort());
+  });
+});
+
+describe("buildGeneralPracticePrompt", () => {
+  it("memuat target bahasa dan level", () => {
+    const p = buildGeneralPracticePrompt("English", "A2");
+    expect(p).toContain("TARGET BAHASA SOAL: English");
+    expect(p).toContain("level CEFR A2");
+  });
+  it("melarang trivia", () => {
+    expect(buildGeneralPracticePrompt("English", "A1")).toContain("DILARANG KERAS membuat soal pengetahuan umum");
+  });
+});
+
+describe("buildWeaknessPrompt", () => {
+  it("memuat topik dan konteks", () => {
+    const p = buildWeaknessPrompt("English", "A1", "Grammar: Tense", "- Past tense keliru");
+    expect(p).toContain("Topik kelemahan utama: Grammar: Tense");
+    expect(p).toContain("Past tense keliru");
+  });
+  it("3 soal, minimal 1 listening", () => {
+    const p = buildWeaknessPrompt("English", "A1", "X", "");
+    expect(p).toContain("3 soal latihan weakness-focused");
+    expect(p).toContain("Minimal 1 soal harus bertipe listening");
+  });
+});
+
+describe("buildWeaknessContext", () => {
+  it("truncate 140 char", () => {
+    const long = "x".repeat(200);
+    const out = buildWeaknessContext([long]);
+    expect(out.length).toBeLessThanOrEqual(150); // "- " + 140 + possible
+    expect(out).toBe("- " + "x".repeat(140));
+  });
+  it("skip kosong + join newline", () => {
+    expect(buildWeaknessContext(["  a  b ", "", "c"])).toBe("- a b\n- c");
+  });
+  it("semua kosong → string kosong", () => {
+    expect(buildWeaknessContext(["", "  "])).toBe("");
   });
 });
