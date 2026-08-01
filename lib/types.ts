@@ -47,3 +47,4 @@ export interface QuizQuestion {
   explanation: string;
 }
 export interface QuizContainer { questions: QuizQuestion[]; }
+export interface ChatMessageItem { id: number; sender: "user" | "ai"; content: string; }
