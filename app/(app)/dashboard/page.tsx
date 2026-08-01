@@ -90,6 +90,21 @@ export default async function DashboardPage() {
           <p className="font-extrabold mt-2">Tes Penempatan</p>
           <p className="text-xs text-slate-400 mt-1">Belum yakin dengan level Anda?</p>
         </Link>
+        <Link href="/chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">💬</p>
+          <p className="font-extrabold mt-2">Chat AI</p>
+          <p className="text-xs text-slate-400 mt-1">Simulasi percakapan teks bebas.</p>
+        </Link>
+        <Link href="/voice-chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">🎙️</p>
+          <p className="font-extrabold mt-2">Live Voice AI</p>
+          <p className="text-xs text-slate-400 mt-1">Ngobrol langsung dengan suara.</p>
+        </Link>
+        <Link href="/pronunciation-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+          <p className="text-xl">🗣️</p>
+          <p className="font-extrabold mt-2">Speech Scoring</p>
+          <p className="text-xs text-slate-400 mt-1">Latih akurasi pronunciation.</p>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

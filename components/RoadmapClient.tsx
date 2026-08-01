@@ -53,6 +53,18 @@ export default function RoadmapClient({
               <Link href={`/quiz/${encodeURIComponent(topic)}`} className="block w-full px-4 py-3 rounded-xl border border-teal-500/60 text-teal-600 dark:text-teal-400 text-sm font-bold text-center">
                 📝 Latihan Kuis
               </Link>
+              <Link href={`/chat/${encodeURIComponent(topic)}`} className="block w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold text-center hover:border-teal-500/50 transition-colors">
+                💬 Chat Percakapan
+                <span className="block text-[11px] font-normal text-slate-400 mt-1">Simulasi chat interaktif berbasis teks dengan AI</span>
+              </Link>
+              <Link href={`/voice-chat/${encodeURIComponent(topic)}`} className="block w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold text-center hover:border-teal-500/50 transition-colors">
+                🎙️ Roleplay Suara
+                <span className="block text-[11px] font-normal text-slate-400 mt-1">Praktik berbicara langsung dengan AI</span>
+              </Link>
+              <Link href={`/story/${encodeURIComponent(topic)}`} className="block w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-bold text-center hover:border-teal-500/50 transition-colors">
+                🎧 Mode Story
+                <span className="block text-[11px] font-normal text-slate-400 mt-1">Cerita interaktif & mendengarkan</span>
+              </Link>
             </div>
             <button
               type="button"
