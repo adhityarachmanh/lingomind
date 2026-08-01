@@ -76,3 +76,13 @@ export interface PublicProfile {
   owned_titles: string[];
   owned_colors: string[];
 }
+export interface LeagueMemberRow {
+  email: string; full_name: string; league_score: number;
+  active_frame: string | null; active_title: string | null; active_name_color: string | null;
+  rank: number; zone: "promosi" | "degradasi" | "aman";
+}
+export interface LeaderboardRow {
+  email: string; full_name: string; score: number; current_streak: number;
+  total_quiz_completed: number; active_frame: string | null;
+  active_title: string | null; active_name_color: string | null; rank: number;
+}

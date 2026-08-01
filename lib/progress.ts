@@ -3,6 +3,7 @@ import { getUserProfile } from "./profile";
 import { getCurriculum } from "./dashboard";
 import { incrementMissionProgress } from "./mission";
 import { evaluateAndAwardBadges } from "./badges";
+import { weekStartOf } from "./leaderboard";
 import type { UserProfile } from "./types";
 
 export interface StreakInput {
@@ -136,6 +137,15 @@ export async function applyQuizResult(
       data: { score: { increment: actualDelta } },
     }),
   ]);
+
+  const weekStart = weekStartOf(new Date());
+  const groups = await db.leagueGroup.findMany({ where: { weekStartDate: weekStart }, select: { id: true } });
+  if (groups.length > 0) {
+    await db.userLeagueMember.updateMany({
+      where: { email, groupId: { in: groups.map((g) => g.id) } },
+      data: { leagueScore: { increment: actualDelta } },
+    }).catch(() => {});
+  }
 
   await incrementMissionProgress(email, "quiz");
   const updated = await getUserProfile(email);
