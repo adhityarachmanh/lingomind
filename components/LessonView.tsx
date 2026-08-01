@@ -29,14 +29,19 @@ export default function LessonView({
 
   useEffect(() => {
     let cancelled = false;
-    getLessonAction(goal, part).then((res) => {
-      if (cancelled) return;
-      if ("error" in res) {
-        setState({ status: "error", message: res.error });
-        return;
-      }
-      setState({ status: "ready", lesson: res.lesson });
-    });
+    getLessonAction(goal, part)
+      .then((res) => {
+        if (cancelled) return;
+        if ("error" in res) {
+          setState({ status: "error", message: res.error });
+          return;
+        }
+        setState({ status: "ready", lesson: res.lesson });
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setState({ status: "error", message: e instanceof Error ? e.message : "Gagal memuat materi." });
+      });
     return () => {
       cancelled = true;
     };

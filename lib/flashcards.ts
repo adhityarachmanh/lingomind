@@ -55,11 +55,11 @@ export async function getDueFlashcardCount(email: string, language: string): Pro
   return db.flashcard.count({ where: { email, language, dueAt: { lte: new Date() } } });
 }
 
-export async function reviewFlashcard(id: number, quality: number): Promise<void> {
+export async function reviewFlashcard(id: number, quality: number, email: string): Promise<void> {
   if (!Number.isInteger(quality) || quality < 0 || quality > 5) {
     throw new Error("Quality review harus 0..5.");
   }
-  const card = await db.flashcard.findUnique({ where: { id } });
+  const card = await db.flashcard.findFirst({ where: { id, email } });
   if (!card) throw new Error("Flashcard tidak ditemukan.");
 
   const next = sm2Next(card.easeFactor, card.intervalDays, card.repetition, quality);

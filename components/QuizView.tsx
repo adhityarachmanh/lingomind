@@ -48,16 +48,22 @@ export default function QuizView({
         setPhase({ name: "hearts", hearts: 0 });
       });
     } else {
-      getQuizAction(goal).then((res) => {
-        if (cancelled) return;
-        if ("error" in res) {
-          setError(res.error);
+      getQuizAction(goal)
+        .then((res) => {
+          if (cancelled) return;
+          if ("error" in res) {
+            setError(res.error);
+            setPhase({ name: "hearts", hearts: initialHearts });
+            return;
+          }
+          setQuiz(res.quiz);
+          setPhase({ name: "answering" });
+        })
+        .catch((e) => {
+          if (cancelled) return;
+          setError(e instanceof Error ? e.message : "Gagal memuat kuis.");
           setPhase({ name: "hearts", hearts: initialHearts });
-          return;
-        }
-        setQuiz(res.quiz);
-        setPhase({ name: "answering" });
-      });
+        });
     }
     return () => {
       cancelled = true;
@@ -96,7 +102,14 @@ export default function QuizView({
   async function finishQuiz() {
     if (submitting) return;
     setSubmitting(true);
-    const res = await submitQuizResultAction({ goal, language, score, correctCount });
+    let res;
+    try {
+      res = await submitQuizResultAction({ goal, language, score, correctCount });
+    } catch (e) {
+      setSubmitting(false);
+      setError(e instanceof Error ? e.message : "Gagal menyimpan skor.");
+      return;
+    }
     if ("error" in res) {
       setSubmitting(false);
       setError(res.error);

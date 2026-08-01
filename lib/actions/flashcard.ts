@@ -19,7 +19,7 @@ export async function reviewFlashcardAction(id: number, quality: number): Promis
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   try {
-    await reviewFlashcard(id, quality);
+    await reviewFlashcard(id, quality, session.email);
     return { message: "ok" };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menyimpan review flashcard." };

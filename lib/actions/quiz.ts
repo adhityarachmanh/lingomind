@@ -66,8 +66,9 @@ export async function recordAnswerAction(input: RecordAnswerInput): Promise<{ he
 
   const { language, question, selected, correct, explanation, questionType } = input;
 
+  const plainQuestion = question.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   await addFlashcards(session.email, [
-    { language, front_text: question, back_text: `Jawaban benar: ${correct} | Penjelasan: ${explanation}` },
+    { language, front_text: plainQuestion, back_text: `Jawaban benar: ${correct} | Penjelasan: ${explanation}` },
   ]);
 
   const isCorrect = selected === correct;
