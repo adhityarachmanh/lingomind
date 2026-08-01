@@ -25,3 +25,8 @@ export interface CurriculumLevel {
   level: string; title: string; description: string;
   base_reward_points: number; topics: string[];
 }
+export interface FlashcardItem {
+  id: number; email: string; language: string; front_text: string; back_text: string;
+  ease_factor: number; interval_days: number; repetition: number;
+}
+export interface NewFlashcard { language: string; front_text: string; back_text: string; }
