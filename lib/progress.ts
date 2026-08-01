@@ -2,6 +2,7 @@ import { db } from "./db";
 import { getUserProfile } from "./profile";
 import { getCurriculum } from "./dashboard";
 import { incrementMissionProgress } from "./mission";
+import { evaluateAndAwardBadges } from "./badges";
 import type { UserProfile } from "./types";
 
 export interface StreakInput {
@@ -167,34 +168,35 @@ export async function updateEngagementAfterQuiz(email: string, points: number): 
         hearts: 5,
       },
     });
-    return;
+  } else {
+    const streak = computeStreakAfterActivity(
+      {
+        currentStreak: stats.currentStreak,
+        previousStreak: stats.previousStreak,
+        longestStreak: stats.longestStreak,
+        lastActiveDate: stats.lastActiveDate,
+        streakFreezes: stats.streakFreezes,
+        hasWeekendAmulet: stats.hasWeekendAmulet,
+      },
+      now
+    );
+
+    await db.userEngagementStat.update({
+      where: { email },
+      data: {
+        currentStreak: streak.currentStreak,
+        previousStreak: streak.previousStreak,
+        longestStreak: streak.longestStreak,
+        streakFreezes: streak.streakFreezes,
+        lastActiveDate: streak.lastActiveDate,
+        totalQuizCompleted: { increment: 1 },
+        totalPointsEarned: { increment: pointsEarned },
+        coins: { increment: coinReward },
+      },
+    });
   }
 
-  const streak = computeStreakAfterActivity(
-    {
-      currentStreak: stats.currentStreak,
-      previousStreak: stats.previousStreak,
-      longestStreak: stats.longestStreak,
-      lastActiveDate: stats.lastActiveDate,
-      streakFreezes: stats.streakFreezes,
-      hasWeekendAmulet: stats.hasWeekendAmulet,
-    },
-    now
-  );
-
-  await db.userEngagementStat.update({
-    where: { email },
-    data: {
-      currentStreak: streak.currentStreak,
-      previousStreak: streak.previousStreak,
-      longestStreak: streak.longestStreak,
-      streakFreezes: streak.streakFreezes,
-      lastActiveDate: streak.lastActiveDate,
-      totalQuizCompleted: { increment: 1 },
-      totalPointsEarned: { increment: pointsEarned },
-      coins: { increment: coinReward },
-    },
-  });
+  await evaluateAndAwardBadges(email).catch(() => {});
 }
 
 export async function deductHeart(email: string): Promise<{ hearts: number }> {

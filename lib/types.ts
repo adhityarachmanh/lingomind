@@ -52,4 +52,8 @@ export interface StoryQuestion { question_text: string; options: string[]; corre
 export interface StorySegment { text: string; speaker: string | null; translation: string; question: StoryQuestion | null; }
 export interface StoryData { title: string; title_translation: string; segments: StorySegment[]; }
 export interface WordResult { word: string; status: "correct" | "incorrect" | "missing"; }
+export interface BadgeItem {
+  id: number; name: string; description: string; icon_name: string;
+  requirement_type: string; requirement_value: number;
+}
 export interface PronunciationEvaluation { score: number; feedback: string; word_results: WordResult[]; }
