@@ -75,11 +75,8 @@ export async function generateChatReply(params: {
   const { system, history, lastUserMessage, temperature } = params;
   const { text } = await generateText({
     model,
-    messages: [
-      { role: "system", content: system },
-      ...buildChatHistory(history),
-      { role: "user", content: lastUserMessage },
-    ],
+    instructions: system,
+    messages: [...buildChatHistory(history), { role: "user", content: lastUserMessage }],
     maxOutputTokens: 8192,
     temperature,
   });
