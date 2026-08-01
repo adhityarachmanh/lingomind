@@ -20,10 +20,14 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 ## Arsitektur
 
 - `app/(auth)/*` — login, register, verify-email, forgot/reset password (tanpa navbar)
-- `app/(app)/*` — area berlogin; layout melindungi via `getSession()` + `middleware.ts` juga melindungi `/dashboard`
-- `lib/` — `db.ts` (Prisma singleton + driver adapter), `auth.ts` (JWT + `getSession()`), `profile.ts`, `mail.ts`, `dashboard.ts` (logika data), `validation.ts`, `ai.ts`; `lib/actions/*` = server actions (pengganti `#[server]` fn Dioxus)
+- `app/(app)/*` — area berlogin; layout melindungi via `getSession()` + `middleware.ts` juga melindungi `/dashboard`; routes: `/dashboard`, `/roadmap`, `/lesson/:goal`, `/quiz/:goal`, `/flashcard-review`
+- `lib/` — `db.ts` (Prisma singleton + driver adapter), `auth.ts` (JWT + `getSession()`), `profile.ts`, `mail.ts`, `dashboard.ts` (logika data), `validation.ts`, `ai.ts`, `progress.ts` (streak + quiz outcome), `mission.ts` (skor & misi harian), `flashcards.ts` (SM-2), `weakness.ts` (classifier skill/weakness), `sanitize.ts` (sanitize-html), `ai-content/` (`parse.ts`, `lesson.ts`, `quiz.ts` — pipeline AI); `lib/actions/*` = server actions (pengganti `#[server]` fn Dioxus) — termasuk `lesson.ts`, `quiz.ts`, `flashcard.ts`, `mission.ts`
 - `prisma/schema.prisma` — skema ditulis manual; sumber kebenaran; nama model singular (`db.user`, `db.language`); tambah model per fase lewat migration baru
 - `dioxus/` — aplikasi lama utuh (Dioxus 0.7 + sqlx migrations di `dioxus/migrations/`). Sumber referensi perilaku & pesan error (Indonesia)
+
+## Catatan lingkungan
+
+- Node >= 22.12.0 (dibutuhkan `sanitize-html`)
 
 ## Konvensi
 
@@ -32,7 +36,11 @@ Aplikasi belajar bahasa. **Fase 1 migrasi dari Dioxus ke Next.js sedang berlangs
 - Dark mode: class `.dark` di `<html>`, key localStorage `lingomind_theme` (konsisten dengan aplikasi lama). Session localStorage lama TIDAK dipakai — user harus login ulang
 - Admin seed: `admin@lingomind.com` (password `admin`) — **ganti password di produksi**
 - Jangan commit `.env`; `test_smtp.rs` di `dioxus/` berisi password SMTP keras (rahasia)
+- HTML AI (lesson content, soal quiz) WAJIB lewat `sanitizeHtml()` (`lib/sanitize.ts`) sebelum `dangerouslySetInnerHTML`
+- Fungsi murni (SM-2 di `flashcards.ts`, streak/outcome di `progress.ts`, validasi quiz, classifier `weakness.ts`, parser `ai-content/parse.ts`) diuji dengan vitest (`*.test.ts` di `lib/`)
+- TTS = Web Speech API (`components/SpeakButton.tsx`), bahasa dari `language.tts_lang_code` (fallback `en-US`)
+- Quiz AI: cache 5 varian acak per (language, level, goal, modifier) di `cached_quizzes` (`contentJson`), dipick acak sebelum generate baru
 
 ## Status migrasi
 
-Fase 1 selesai: auth lengkap + dashboard ringkas + AI SDK setup. Belum: quiz/lesson/chat/story/TTS/pronunciation (fase 2-3), gamifikasi (fase 4), admin (fase 5), cron + deploy Vercel + cutover (fase 6). Spec: `docs/superpowers/specs/2026-07-31-lingomind-nextjs-migration-phase1-design.md`.
+Fase 1 selesai: auth lengkap + dashboard ringkas + AI SDK setup. Fase 2a selesai: roadmap + lesson + quiz + flashcard (SM-2), streak/misi/hearts, pipeline AI (generate lesson/quiz + cache). Belum: practice/exam/placement (fase 2b), AI interaktif chat/voice/story + TTS backend (fase 3), gamifikasi (fase 4), admin (fase 5), cron + deploy Vercel + cutover (fase 6). Spec: `docs/superpowers/specs/2026-07-31-lingomind-nextjs-migration-phase1-design.md`.
