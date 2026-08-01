@@ -38,3 +38,12 @@ export interface LessonContainer {
   vocabulary: VocabularyItem[];
   example_sentences: ExampleSentence[];
 }
+export interface QuizQuestion {
+  question: string;
+  question_type: string;
+  listen_text: string;
+  options: string[];
+  correct_answer: string;
+  explanation: string;
+}
+export interface QuizContainer { questions: QuizQuestion[]; }

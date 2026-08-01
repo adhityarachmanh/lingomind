@@ -1,0 +1,94 @@
+import { describe, expect, it } from "vitest";
+import { normalizeQuiz, qualityIssues, shuffleOptions, validateQuizShape } from "./quiz";
+import type { QuizQuestion } from "../types";
+
+function q(over: Partial<QuizQuestion> = {}): QuizQuestion {
+  return {
+    question: "What is the capital of France?",
+    question_type: "text",
+    listen_text: "",
+    options: ["Paris", "London", "Rome", "Berlin"],
+    correct_answer: "Paris",
+    explanation: "Ibukota Prancis adalah Paris. Ini pengetahuan dasar.",
+    ...over,
+  };
+}
+
+describe("normalizeQuiz", () => {
+  it("strip prefix opsi A) B. C: D)", () => {
+    const c = normalizeQuiz({ questions: [q({ options: ["A) Paris", "B) London", "C) Rome", "D) Berlin"] })] });
+    expect(c.questions[0].options[0]).toBe("Paris");
+  });
+  it("lowercase question_type", () => {
+    const c = normalizeQuiz({ questions: [q({ question_type: "LISTENING", listen_text: "audio" })] });
+    expect(c.questions[0].question_type).toBe("listening");
+  });
+  it("correct_answer yang sudah strip tetap cocok", () => {
+    const c = normalizeQuiz({ questions: [q({ options: ["A) Paris", "London", "Rome", "Berlin"], correct_answer: "A) Paris" })] });
+    expect(c.questions[0].correct_answer).toBe("Paris");
+  });
+  it("question text di-collapse whitespace", () => {
+    const c = normalizeQuiz({ questions: [q({ question: "Halo   dunia\n  apa kabar?" })] });
+    expect(c.questions[0].question).toBe("Halo dunia apa kabar?");
+  });
+});
+
+describe("validateQuizShape", () => {
+  it("valid → []", () => {
+    expect(validateQuizShape([q(), q(), q(), q(), q()], 5)).toEqual([]);
+  });
+  it("jumlah salah → error", () => {
+    const errs = validateQuizShape([q()], 5);
+    expect(errs[0]).toContain("Format quiz tidak valid: wajib 5 pertanyaan.");
+  });
+  it("opsi tidak 4 → error", () => {
+    const errs = validateQuizShape([q({ options: ["a", "b"] })], 1);
+    expect(errs.some((e) => e.includes("4 opsi"))).toBe(true);
+  });
+  it("correct_answer tidak cocok → error", () => {
+    const errs = validateQuizShape([q({ correct_answer: "Tidak Ada" })], 1);
+    expect(errs.some((e) => e.includes("kunci jawaban"))).toBe(true);
+  });
+  it("listening tanpa listen_text cukup → error", () => {
+    const errs = validateQuizShape([q({ question_type: "listening", listen_text: "abc" })], 1);
+    expect(errs.some((e) => e.includes("listen_text"))).toBe(true);
+  });
+});
+
+describe("qualityIssues", () => {
+  it("soal duplikat → issue", () => {
+    const issues = qualityIssues([q(), q(), q(), q(), q({ question: "What is the capital of France?" })], 5);
+    expect(issues.some((i) => i.includes("terduplikasi"))).toBe(true);
+  });
+  it("soal terlalu pendek → issue", () => {
+    const issues = qualityIssues([q({ question: "Hai?" })], 1);
+    expect(issues.some((i) => i.includes("terlalu pendek"))).toBe(true);
+  });
+  it("kurang dari 2 listening → issue", () => {
+    const issues = qualityIssues([q(), q(), q(), q(), q()], 5);
+    expect(issues.some((i) => i.includes("listening"))).toBe(true);
+  });
+  it("pola ambigu → issue", () => {
+    const issues = qualityIssues([q({ options: ["Paris", "London", "Rome", "Semua jawaban benar"] })], 1);
+    expect(issues.some((i) => i.includes("ambigu"))).toBe(true);
+  });
+  it("listening cukup & variasi skill → bersih", () => {
+    const list = q({ question_type: "listening", listen_text: "Dengarkan audio ini dan jawab", question: "Apa yang didengar?" });
+    const vocab = q({ question: "Sinonim dari kata 'happy' adalah?" });
+    const issues = qualityIssues([list, list, vocab, q(), q()], 5);
+    expect(issues).toEqual([]);
+  });
+});
+
+describe("shuffleOptions", () => {
+  it("opsi tetap 4 dan berisi jawaban benar", () => {
+    const c = shuffleOptions({ questions: [q()] });
+    expect(c.questions[0].options).toHaveLength(4);
+    expect(c.questions[0].options).toContain("Paris");
+  });
+  it("setiap elemen tetap ada (permutasi)", () => {
+    const original = ["Paris", "London", "Rome", "Berlin"];
+    const c = shuffleOptions({ questions: [q()] });
+    expect([...c.questions[0].options].sort()).toEqual([...original].sort());
+  });
+});
