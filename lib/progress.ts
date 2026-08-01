@@ -214,3 +214,99 @@ export async function deductHeart(email: string): Promise<{ hearts: number }> {
   });
   return { hearts };
 }
+
+export function computeAddHeart(currentHearts: number): number {
+  return Math.min(5, currentHearts + 1);
+}
+
+export async function addHeart(email: string): Promise<{ hearts: number }> {
+  const stats = await db.userEngagementStat.findUnique({ where: { email } });
+  if (!stats) throw new Error("Data user tidak ditemukan.");
+  if (stats.hearts >= 5) throw new Error("Nyawa sudah penuh!");
+  const hearts = computeAddHeart(stats.hearts);
+  await db.userEngagementStat.update({
+    where: { email },
+    data: { hearts, lastHeartRefill: hearts === 5 ? null : stats.lastHeartRefill },
+  });
+  return { hearts };
+}
+
+export interface ExamOutcomeInput {
+  correctCount: number;
+  total: number;
+  ptsPerQuestion: number;
+}
+
+export function computeExamOutcome(input: ExamOutcomeInput): { passingScore: number; passed: boolean; scoreGained: number } {
+  const passingScore = Math.ceil(input.total * 0.75);
+  return {
+    passingScore,
+    passed: input.correctCount >= passingScore,
+    scoreGained: input.correctCount * input.ptsPerQuestion,
+  };
+}
+
+export function nextLevelAfterExam(levels: string[], currentBase: string): string {
+  const idx = levels.indexOf(currentBase);
+  if (idx < 0 || idx >= levels.length - 1) return currentBase;
+  return levels[idx + 1];
+}
+
+const CEFR_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
+export async function submitExamResult(
+  email: string,
+  language: string,
+  passed: boolean,
+  scoreGained: number
+): Promise<UserProfile> {
+  const profile = await getUserProfile(email);
+  if (!profile) throw new Error("User tidak ditemukan");
+
+  await incrementMissionProgress(email, "quiz");
+
+  const currentLevel = profile.current_level[language] ?? "A1.0";
+  const oldBase = currentLevel.split(".")[0] || "A1";
+  const oldTopicIdx = Number(currentLevel.split(".")[1] ?? 0);
+
+  const stats = await db.userEngagementStat.findUnique({ where: { email } });
+  const multiplier = stats?.doubleXpUntil && stats.doubleXpUntil >= new Date() ? 2 : 1;
+  const actualScoreGained = scoreGained * multiplier;
+
+  const curriculum = await getCurriculum();
+  const levelData = curriculum.find((c) => c.level === oldBase);
+  const topicsInLevel = levelData?.topics.length ?? 4;
+
+  let newBase = oldBase;
+  let newTopicIdx = oldTopicIdx;
+  if (passed && oldTopicIdx >= topicsInLevel) {
+    newTopicIdx = 0;
+    newBase = nextLevelAfterExam(CEFR_ORDER, oldBase);
+  }
+
+  const now = new Date();
+  await db.$transaction([
+    db.userProgressLog.create({
+      data: {
+        email, language, activityType: "exam", topic: "Level Exam",
+        scoreGained: actualScoreGained, passed, baseLevel: oldBase, topicIdx: oldTopicIdx,
+      },
+    }),
+    db.userLanguageProgress.upsert({
+      where: { email_languageId: { email, languageId: language } },
+      create: {
+        email, languageId: language, baseLevel: newBase, topicIdx: newTopicIdx,
+        examCooldownUntil: passed ? null : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      },
+      update: {
+        baseLevel: newBase, topicIdx: newTopicIdx,
+        examCooldownUntil: passed ? null : new Date(now.getTime() + 24 * 60 * 60 * 1000),
+      },
+    }),
+    db.user.update({ where: { email }, data: { score: { increment: actualScoreGained } } }),
+  ]);
+
+  const updated = await getUserProfile(email);
+  if (!updated) throw new Error("User tidak ditemukan");
+  return updated;
+}

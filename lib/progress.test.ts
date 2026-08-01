@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeQuizOutcome, computeStreakAfterActivity } from "./progress";
+import {
+  computeAddHeart,
+  computeExamOutcome,
+  computeQuizOutcome,
+  computeStreakAfterActivity,
+  nextLevelAfterExam,
+} from "./progress";
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 
@@ -91,5 +97,34 @@ describe("computeQuizOutcome", () => {
   it("topic_idx sudah 4 (sentinel) → re-pass tetap 4 (idempotent)", () => {
     const r = computeQuizOutcome({ baseLevel: "A1", topicIdx: 4, topicsInLevel: 4, playedTopicIdx: 4, ptsPerQuestion: 10, scoreGained: 50 });
     expect(r).toEqual({ passed: true, newTopicIdx: 4 });
+  });
+});
+
+describe("computeAddHeart", () => {
+  it("naik satu, cap 5", () => {
+    expect(computeAddHeart(3)).toBe(4);
+    expect(computeAddHeart(5)).toBe(5);
+  });
+});
+
+describe("computeExamOutcome", () => {
+  it("8 soal, 6 benar → lulus (ceil 6), skor 6*pts", () => {
+    const r = computeExamOutcome({ correctCount: 6, total: 8, ptsPerQuestion: 10 });
+    expect(r).toEqual({ passingScore: 6, passed: true, scoreGained: 60 });
+  });
+  it("8 soal, 5 benar → tidak lulus", () => {
+    expect(computeExamOutcome({ correctCount: 5, total: 8, ptsPerQuestion: 10 }).passed).toBe(false);
+  });
+  it("4 soal, 3 benar → lulus", () => {
+    expect(computeExamOutcome({ correctCount: 3, total: 4, ptsPerQuestion: 20 }).passed).toBe(true);
+  });
+});
+
+describe("nextLevelAfterExam", () => {
+  it("naik ke level berikutnya", () => {
+    expect(nextLevelAfterExam(["A1", "A2", "B1", "B2", "C1", "C2"], "A1")).toBe("A2");
+  });
+  it("C2 tetap C2", () => {
+    expect(nextLevelAfterExam(["A1", "A2", "B1", "B2", "C1", "C2"], "C2")).toBe("C2");
   });
 });
