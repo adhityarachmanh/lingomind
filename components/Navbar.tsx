@@ -30,6 +30,7 @@ export default function Navbar({ score }: NavbarProps) {
 
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className={tabClass(isDashboard)}>Beranda</Link>
+            <Link href="/roadmap" className={tabClass(pathname === "/roadmap")}>Kurikulum</Link>
             <div className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1">
               <span>🔥</span>
               <span>{score} pts</span>
