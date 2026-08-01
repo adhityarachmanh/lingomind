@@ -74,8 +74,10 @@ describe("qualityIssues", () => {
   });
   it("listening cukup & variasi skill → bersih", () => {
     const list = q({ question_type: "listening", listen_text: "Dengarkan audio ini dan jawab", question: "Apa yang didengar?" });
-    const vocab = q({ question: "Sinonim dari kata 'happy' adalah?" });
-    const issues = qualityIssues([list, list, vocab, q(), q()], 5);
+    const list2 = q({ question_type: "listening", listen_text: "Dengarkan audio ini dan jawab", question: "Apa yang diucapkan orang itu?" });
+    const vocab = q({ question: "Sinonim dari kata 'happy' adalah?", correct_answer: "Joyful" });
+    const g2 = q({ question: "Pilih kata tanya yang tepat untuk menanyakan tempat:", correct_answer: "London" });
+    const issues = qualityIssues([list, list2, vocab, q(), g2], 5);
     expect(issues).toEqual([]);
   });
 });
