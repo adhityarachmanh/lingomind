@@ -4,6 +4,7 @@ import { getCurriculum } from "./dashboard";
 import { incrementMissionProgress } from "./mission";
 import { evaluateAndAwardBadges } from "./badges";
 import { weekStartOf } from "./leaderboard";
+import { decideStreakMilestone, logActivity } from "./social";
 import type { UserProfile } from "./types";
 
 export interface StreakInput {
@@ -162,6 +163,7 @@ export async function updateEngagementAfterQuiz(email: string, points: number): 
   const doubleXp = !!stats?.doubleXpUntil && stats.doubleXpUntil >= now;
   const pointsEarned = doubleXp ? points * 2 : points;
 
+  let finalStreak = 1;
   if (!stats) {
     await db.userEngagementStat.create({
       data: {
@@ -190,6 +192,7 @@ export async function updateEngagementAfterQuiz(email: string, points: number): 
       },
       now
     );
+    finalStreak = streak.currentStreak;
 
     await db.userEngagementStat.update({
       where: { email },
@@ -207,6 +210,10 @@ export async function updateEngagementAfterQuiz(email: string, points: number): 
   }
 
   await evaluateAndAwardBadges(email).catch(() => {});
+
+  if (decideStreakMilestone(finalStreak)) {
+    await logActivity(email, "streak_milestone", `Luar biasa! Berhasil mencapai ${finalStreak} hari beruntun belajar!`).catch(() => {});
+  }
 }
 
 export async function deductHeart(email: string): Promise<{ hearts: number }> {
@@ -293,7 +300,11 @@ export async function submitExamResult(
   let newTopicIdx = oldTopicIdx;
   if (passed && oldTopicIdx >= topicsInLevel) {
     newTopicIdx = 0;
-    newBase = nextLevelAfterExam(CEFR_ORDER, oldBase);
+    const nextBase = nextLevelAfterExam(CEFR_ORDER, oldBase);
+    if (nextBase !== oldBase) {
+      await logActivity(email, "level_up", `Berhasil naik ke Level ${nextBase} di bahasa ${language}!`).catch(() => {});
+    }
+    newBase = nextBase;
   }
 
   const now = new Date();

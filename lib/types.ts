@@ -86,3 +86,13 @@ export interface LeaderboardRow {
   total_quiz_completed: number; active_frame: string | null;
   active_title: string | null; active_name_color: string | null; rank: number;
 }
+export interface FeedItem {
+  id: number; email: string; full_name: string; emoji: string;
+  activity_type: string; content: string; likes_count: number;
+  created_at: string; has_liked: boolean;
+}
+export interface SearchUserRow {
+  email: string; full_name: string; score: number; current_streak: number;
+  total_quiz_completed: number; active_frame: string | null; active_title: string | null;
+  active_name_color: string | null; rank: number; is_following: boolean;
+}
