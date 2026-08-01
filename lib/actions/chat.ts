@@ -2,10 +2,38 @@
 
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
-import { fetchHistory, findOrCreateSession, normalizeSetting } from "../chat";
+import { normalizeSetting } from "../chat";
 import { buildOpeningPrompt, buildReplySystemPrompt, generateChatReply } from "../ai-content/chat";
 import { db } from "../db";
 import type { ChatMessageItem } from "../types";
+
+async function fetchHistory(sessionId: number, limit: number): Promise<ChatMessageItem[]> {
+  const rows = await db.chatMessage.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
+    take: limit,
+  });
+  return rows.map((m) => ({ id: m.id, sender: (m.sender as "user" | "ai") ?? "user", content: m.content }));
+}
+
+async function findOrCreateSession(
+  email: string,
+  language: string,
+  level: string,
+  goal: string,
+  setting: string
+): Promise<{ sessionId: number; messages: ChatMessageItem[] }> {
+  const existing = await db.chatSession.findFirst({
+    where: { email, language, level, goal, roleplaySetting: setting },
+  });
+  if (existing) {
+    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 120) };
+  }
+  const created = await db.chatSession.create({
+    data: { email, language, level, goal, roleplaySetting: setting },
+  });
+  return { sessionId: created.id, messages: [] };
+}
 
 export async function getOrCreateChatSessionAction(
   goal: string,
