@@ -38,6 +38,7 @@ export default function QuizView({
   const [hearts, setHearts] = useState(initialHearts);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +62,7 @@ export default function QuizView({
     return () => {
       cancelled = true;
     };
-  }, [goal, initialHearts]);
+  }, [goal, initialHearts, reloadKey]);
 
   const question = quiz?.questions[idx];
 
@@ -115,20 +116,41 @@ export default function QuizView({
     );
   }
 
-  if (phase.name === "hearts" && hearts <= 0) {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center px-6">
-        <p className="text-4xl">💔</p>
-        <p className="text-2xl font-black">Nyawa Kamu Habis!</p>
-        <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
-          Kamu butuh minimal 1 Nyawa untuk mengikuti kuis ini. Silakan kembali ke Beranda untuk mengisi ulang nyawa kamu.
-        </p>
-        {error && <p className="text-xs text-rose-500">{error}</p>}
-        <Link href="/dashboard" className="mt-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold">
-          Kembali ke Beranda
-        </Link>
-      </div>
-    );
+  if (phase.name === "hearts") {
+    if (error) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center px-6">
+          <p className="text-2xl font-black">Gagal Memuat Kuis</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">{error}</p>
+          <button
+            type="button"
+            onClick={() => {
+              setError(null);
+              setPhase({ name: "loading" });
+              setReloadKey((k) => k + 1);
+            }}
+            className="mt-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold"
+          >
+            Coba Lagi
+          </button>
+          <Link href="/dashboard" className="text-xs text-slate-400 hover:underline">Kembali ke Beranda</Link>
+        </div>
+      );
+    }
+    if (hearts <= 0) {
+      return (
+        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3 text-center px-6">
+          <p className="text-4xl">💔</p>
+          <p className="text-2xl font-black">Nyawa Kamu Habis!</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">
+            Kamu butuh minimal 1 Nyawa untuk mengikuti kuis ini. Silakan kembali ke Beranda untuk mengisi ulang nyawa kamu.
+          </p>
+          <Link href="/dashboard" className="mt-2 px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold">
+            Kembali ke Beranda
+          </Link>
+        </div>
+      );
+    }
   }
 
   if (phase.name === "finished") {
