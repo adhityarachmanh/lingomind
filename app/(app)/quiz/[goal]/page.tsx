@@ -4,8 +4,16 @@ import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getEngagementStats, getLanguages } from "@/lib/dashboard";
 import QuizView from "@/components/QuizView";
 
-export default async function QuizPage({ params }: { params: Promise<{ goal: string }> }) {
+export default async function QuizPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ goal: string }>;
+  searchParams: Promise<{ battle_id?: string }>;
+}) {
   const { goal } = await params;
+  const { battle_id } = await searchParams;
+  const battleId = battle_id ? parseInt(battle_id, 10) || undefined : undefined;
   const session = await getSession();
   if (!session) redirect("/login");
   const [profile, languages, curriculum, stats] = await Promise.all([
@@ -27,6 +35,7 @@ export default async function QuizPage({ params }: { params: Promise<{ goal: str
       ttsLang={ttsLang}
       initialHearts={stats?.hearts ?? 5}
       ptsPerQuestion={ptsPerQuestion}
+      battleId={battleId}
     />
   );
 }

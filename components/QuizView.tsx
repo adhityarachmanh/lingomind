@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getQuizAction, recordAnswerAction, submitQuizResultAction } from "@/lib/actions/quiz";
+import { submitBattleScoreAction } from "@/lib/actions/battle";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
 import type { QuizContainer } from "@/lib/types";
@@ -21,12 +22,14 @@ export default function QuizView({
   ttsLang,
   initialHearts,
   ptsPerQuestion,
+  battleId,
 }: {
   goal: string;
   language: string;
   ttsLang: string;
   initialHearts: number;
   ptsPerQuestion: number;
+  battleId?: number;
 }) {
   const [phase, setPhase] = useState<Phase>({ name: "loading" });
   const [quiz, setQuiz] = useState<QuizContainer | null>(null);
@@ -114,6 +117,9 @@ export default function QuizView({
       setSubmitting(false);
       setError(res.error);
       return;
+    }
+    if (battleId) {
+      await submitBattleScoreAction(battleId, score).catch(() => {});
     }
     const required = ptsPerQuestion * 5;
     setPhase({ name: "finished", passed: score >= required, score });
