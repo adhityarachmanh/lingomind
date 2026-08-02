@@ -4,7 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getPriorityWeakness, logWeakness } from "../weakness";
 import { addHeart, updateEngagementAfterQuiz } from "../progress";
-import { buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
+import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -34,7 +34,8 @@ async function cacheOrGenerate(params: {
   return quiz;
 }
 
-// General practice TETAP AI on-demand (cache dulu, generate bila belum ada): soal menantang di ambang atas level.
+// General practice 100% AI fresh: TANPA cache, soal digenerate baru setiap request
+// dengan tema acak (anti-monoton/anti-hafalan) di ambang atas level user.
 export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer; language: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -43,14 +44,12 @@ export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer;
 
   const language = profile.preferred_language;
   const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
+  const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
 
-  const quiz = await cacheOrGenerate({
-    language, level, goal: "general_practice", modifier: "normal",
-    generate: () => generateQuizWithPrompt({
-      prompt: buildGeneralPracticePrompt(language, level),
-      expectedCount: 5,
-      label: "general practice quiz",
-    }),
+  const quiz = await generateQuizWithPrompt({
+    prompt: buildGeneralPracticePrompt(language, level, theme),
+    expectedCount: 5,
+    label: "general practice quiz",
   });
   return { quiz: shuffleOptions(quiz), language };
 }

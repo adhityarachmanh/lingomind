@@ -13,7 +13,7 @@ import {
 import type { AdminLanguageItem, AdminLevelItem } from "../types";
 import type { ContentUnit } from "../admin";
 import { generateLesson } from "../ai-content/lesson";
-import { buildGeneralPracticePrompt, buildQuizPrompt, generateQuizWithPrompt } from "../ai-content/quiz";
+import { buildQuizPrompt, generateQuizWithPrompt } from "../ai-content/quiz";
 import { generateExam } from "../ai-content/exam";
 
 type AdminResult<T> = T | { error: string };
@@ -373,15 +373,6 @@ export async function generateContentChunkAction(input: {
       const quiz = await generateExam({ language: input.language, level: level.levelId, topicsStr });
       await db.cachedQuiz.create({
         data: { language: input.language, level: level.levelId, goal: "exam", modifier: "normal", contentJson: JSON.stringify(quiz) },
-      });
-    } else if (unit.goal === "general_practice") {
-      const quiz = await generateQuizWithPrompt({
-        prompt: buildGeneralPracticePrompt(input.language, level.levelId),
-        expectedCount: 5,
-        label: "general practice quiz",
-      });
-      await db.cachedQuiz.create({
-        data: { language: input.language, level: level.levelId, goal: "general_practice", modifier: "normal", contentJson: JSON.stringify(quiz) },
       });
     } else {
       const quiz = await generateQuizWithPrompt({

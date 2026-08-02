@@ -210,7 +210,6 @@ export function buildContentWorkList(topics: string[], opts: ContentWorkOptions)
   }
   for (let v = 1; v <= quizVariants; v++) {
     units.push({ kind: "quiz", goal: "exam", part: 0, modifier: "normal" });
-    units.push({ kind: "quiz", goal: "general_practice", part: 0, modifier: "normal" });
   }
   return units;
 }

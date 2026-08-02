@@ -117,7 +117,24 @@ export function buildQuizPrompt(language: string, level: string, goal: string, w
   ].join("\n");
 }
 
-export function buildGeneralPracticePrompt(language: string, level: string): string {
+// Tema acak untuk variasi general practice (anti-monoton / anti-hafalan).
+export const GENERAL_PRACTICE_THEMES = [
+  "kafe dan restoran",
+  "perjalanan dan transportasi",
+  "pekerjaan dan kantor",
+  "sekolah dan belajar",
+  "belanja dan pasar",
+  "kesehatan dan dokter",
+  "teknologi dan internet",
+  "cuaca dan musim",
+  "hobi dan waktu luang",
+  "keluarga dan rumah",
+] as const;
+
+export function buildGeneralPracticePrompt(language: string, level: string, theme?: string): string {
+  const themeLine = theme
+    ? `Konteks variasi (gunakan sebagai warna latar kosakata/skenario, tetap uji kemampuan umum level ${level}): '${theme}'.`
+    : "";
   return [
     `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
     "",
@@ -125,17 +142,18 @@ export function buildGeneralPracticePrompt(language: string, level: string): str
     "Wajib kualitas:",
     `1) Ini adalah latihan acak kemampuan bahasa. HANYA uji kosakata (vocabulary), tata bahasa (grammar), dan pemahaman (comprehension) sesuai level ${level}. DILARANG KERAS membuat soal pengetahuan umum (trivia)!`,
     "2) KESULITAN: soal WAJIB menantang, di ambang ATAS level CEFR ini (upper edge). Hindari soal yang bisa ditebak atau terlalu mudah/trivial untuk level tersebut. Gunakan kosakata yang lebih jarang namun masih dalam cakupan level, struktur kalimat yang lebih kompleks, dan opsi pengecoh (distractor) yang masuk akal dan mirip.",
-    "3) Setiap soal 4 opsi, hanya 1 benar.",
-    "4) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.",
-    "5) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.",
-    "6) WAJIB sertakan minimal 2 soal bertipe listening dan minimal 1 soal khusus Vocabulary (terjemahan, sinonim, atau makna kata).",
-    "7) Variasikan tipe: grammar (kontras pola), vocabulary, contextual comprehension, dan listening.",
+    "3) VARIASI: variasikan tema, struktur kalimat, tipe soal, dan topik antar soal dalam satu set. JANGAN mengulang pola soal yang sama persis dari set sebelumnya; gunakan sudut skenario berbeda setiap kali. Jangan memakai kata/kalimat yang sama persis di beberapa soal sekaligus.",
+    "4) Setiap soal 4 opsi, hanya 1 benar.",
+    "5) Jangan gunakan opsi 'semua benar', 'both A and B', atau trik ambigu.",
+    "6) Explanation wajib dalam Bahasa Indonesia minimal 2 kalimat singkat dan spesifik menjelaskan mengapa opsi tersebut benar.",
+    "7) WAJIB sertakan minimal 2 soal bertipe listening dan minimal 1 soal khusus Vocabulary (terjemahan, sinonim, atau makna kata).",
     "8) Gunakan field JSON ini dengan konsisten:",
     "   - question_type: isi 'listening' atau 'text'.",
     "   - listen_text: khusus listening, isi teks audio yang akan dibacakan TTS (kalimat/dialog pendek).",
     "   - question: untuk listening, isi instruksi/pertanyaan TANPA menyalin transcript listen_text. WAJIB format HTML (contoh: gunakan <br> untuk baris baru, <b> untuk tebal, <i> untuk miring). Jangan bungkus dengan tag root.",
     "   - untuk question_type='text', listen_text boleh diisi string kosong, dan question WAJIB format HTML.",
     `9) INGAT: Pertanyaan (question), opsi (options), kunci jawaban (correct_answer), dan listen_text WAJIB FULL dalam bahasa target '${language}'. Explanation tetap dalam Bahasa Indonesia.`,
+    themeLine,
     "",
     'Kembalikan HANYA JSON valid dengan bentuk: {"questions": [{"question": string, "question_type": "text"|"listening", "listen_text": string, "options": [string x4], "correct_answer": string, "explanation": string}]}',
   ].join("\n");
