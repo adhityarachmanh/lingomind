@@ -7,7 +7,7 @@ const CARDS = [
   { icon: "⚔️", title: "Mode Sosial & Beranda Feed", desc: "Tantang teman dan ikuti aktivitas belajar mereka." },
   { icon: "❤️", title: "Sistem Nyawa (Hearts)", desc: "Setiap jawaban salah mengurangi nyawa. Nyawa pulih otomatis tiap 4 jam." },
   { icon: "🐾", title: "Peliharaan Virtual (Pets)", desc: "Beli telur di Toko, rawat, dan saksikan peliharaan Anda tumbuh." },
-  { icon: "📱", title: "PWA & Mode Offline", desc: "Akses aplikasi dari perangkat apa pun kapan saja." },
+  { icon: "📱", title: "Akses Multi-Perangkat", desc: "Aplikasi web responsif yang bisa diakses dari perangkat apa pun dengan akun yang sama." },
 ];
 
 export default function GuidePage() {

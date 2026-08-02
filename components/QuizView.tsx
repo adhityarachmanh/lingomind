@@ -6,6 +6,7 @@ import { getQuizAction, recordAnswerAction, submitQuizResultAction } from "@/lib
 import { submitBattleScoreAction } from "@/lib/actions/battle";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
+import { playSfx } from "./playSfx";
 import type { QuizContainer } from "@/lib/types";
 
 type Phase =
@@ -95,9 +96,11 @@ export default function QuizView({
       .catch(() => {});
 
     if (isCorrect) {
+      playSfx("correct");
       setScore((s) => s + pts);
       setCorrectCount((c) => c + 1);
     } else {
+      playSfx("wrong");
       setHearts((h) => Math.max(0, h - 1));
     }
     setShowExplanation(true);
@@ -119,6 +122,7 @@ export default function QuizView({
       setError(res.error);
       return;
     }
+    playSfx("winner");
     if (battleId) {
       const bres = await submitBattleScoreAction(battleId, score).catch(() => null);
       if (bres?.message) setBattleMessage(bres.message);

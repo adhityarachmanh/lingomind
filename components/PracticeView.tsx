@@ -6,6 +6,7 @@ import { getGeneralPracticeAction, getWeaknessPracticeAction, logPracticeAnswerA
 import { incrementMissionAction } from "@/lib/actions/mission";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
+import { playSfx } from "./playSfx";
 import type { QuizContainer } from "@/lib/types";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
@@ -88,7 +89,10 @@ export default function PracticeView({
   function checkAnswer() {
     if (!question || !selected) return;
     const isCorrect = selected === question.correct_answer;
-    if (!isCorrect) {
+    if (isCorrect) {
+      playSfx("correct");
+    } else {
+      playSfx("wrong");
       setMistakes((m) => m + 1);
       if (mode === "weakness" && topic) {
         logPracticeAnswerAction({
@@ -112,9 +116,11 @@ export default function PracticeView({
         setSubmitting(false);
         return;
       }
+      playSfx("winner");
       setReward(mistakes === 0 ? "1 Nyawa ❤️ & 15 Poin + Koin 🪙" : "10 Poin + Koin 🪙");
     } else {
       await incrementMissionAction("weakness").catch(() => {});
+      playSfx("winner");
     }
     setSubmitting(false);
     setPhase("finished");

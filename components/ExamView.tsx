@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { checkExamCooldownAction, consumeRetakeTicketAction, deductExamHeartAction, getExamAction, submitExamResultAction } from "@/lib/actions/exam";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
+import { playSfx } from "./playSfx";
 import type { QuizContainer } from "@/lib/types";
 
 const OPTION_LETTERS = ["A", "B", "C", "D"];
@@ -99,8 +100,10 @@ export default function ExamView({
     if (!question || !selected) return;
     const isCorrect = selected === question.correct_answer;
     if (isCorrect) {
+      playSfx("correct");
       setCorrectCount((c) => c + 1);
     } else {
+      playSfx("wrong");
       setHearts((h) => Math.max(0, h - 1));
       deductExamHeartAction().catch(() => {});
     }
@@ -118,6 +121,10 @@ export default function ExamView({
       const res = await submitExamResultAction({ passed, score });
       if ("error" in res) {
         setSubmitError(res.error);
+      } else if (passed) {
+        playSfx("winner");
+      } else {
+        playSfx("wrong");
       }
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : "Gagal menyimpan hasil ujian.");

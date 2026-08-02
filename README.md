@@ -1,6 +1,6 @@
 # LingoMind
 
-Aplikasi belajar bahasa (Next.js App Router + Prisma + Neon + Tailwind). Migrasi dari Dioxus sedang berlangsung; aplikasi lama di `dioxus/`.
+Aplikasi belajar bahasa (Next.js App Router + Prisma + Neon + Tailwind + Vercel AI SDK). Migrasi dari Dioxus SELESAI.
 
 ## Menjalankan
 
@@ -14,8 +14,8 @@ Aplikasi belajar bahasa (Next.js App Router + Prisma + Neon + Tailwind). Migrasi
 
 `npm run lint`, `npx tsc --noEmit`, `npm test`, `npm run build`, `npx prisma migrate status`.
 
-**Catatan:** dev-server smoke (`npm run dev` → register → verifikasi email → login → dashboard tampil) **belum dijalankan** — smoke manual oleh user/controller. Akun admin default: `admin@lingomind.com` (password `admin`).
+Akun admin default: `admin@lingomind.com` (password `admin`).
 
 ## Status
 
-Fase 1 (auth + dashboard + AI SDK setup) selesai. Lihat `docs/superpowers/specs/` untuk rancangan fase.
+Fase 1–6 selesai (auth, kurikulum, AI interaktif, ekonomi & status, sosial & kompetisi, admin, cron reminder). Lihat `docs/superpowers/specs/` untuk rancangan fase.
