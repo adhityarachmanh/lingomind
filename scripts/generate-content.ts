@@ -14,7 +14,8 @@ import {
 } from "../lib/admin";
 
 const PARALLEL = 3;
-const REDRAW_MS = 500;
+const REDRAW_MS = 1000;
+const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju/ETA
 
 const args = process.argv.slice(2);
 const languages = args.filter((a) => !a.startsWith("--"));
@@ -62,6 +63,7 @@ async function generateLanguage(language: string): Promise<void> {
   let totalNow = 0;
   let startDone = 0;
   let doneInRun = 0; // unit selesai dalam run ini (realtime)
+  const completions: number[] = []; // timestamp tiap unit selesai (untuk laju/ETA jendela bergulir)
   const activeUnits = new Map<string, number>(); // label → mulai (ms)
   let lastRender = "";
 
@@ -92,15 +94,23 @@ async function generateLanguage(language: string): Promise<void> {
 
   // render realtime: 1 baris live (progress + ETA + laju + unit aktif + level berjalan),
   // ditulis di baris kursor dengan \r + \x1b[K — aman terhadap log error (baris bergeser ke bawah).
+  // Laju/ETA memakai jendela bergulir 3 menit agar stabil saat satu unit berjalan lama.
+  function rollingRate(now: number): number {
+    const cutoff = now - RATE_WINDOW_MS;
+    const recent = completions.filter((t) => t >= cutoff);
+    return recent.length / (RATE_WINDOW_MS / 60000);
+  }
+
   function render(): void {
     if (!isTTY) return;
-    const elapsed = Date.now() - startedAt;
+    const now = Date.now();
+    const elapsed = now - startedAt;
     const done = startDone + doneInRun;
     const pct = totalNow > 0 ? done / totalNow : 0;
-    const rate = done - startDone > 0 ? (done - startDone) / (elapsed / 60000) : 0;
+    const rate = rollingRate(now) || (done - startDone > 0 ? (done - startDone) / (elapsed / 60000) : 0);
     const etaMs = rate > 0 ? ((totalNow - done) / rate) * 60000 : 0;
     const active = [...activeUnits.entries()]
-      .map(([label, t]) => `${label} ${col(`[${fmtDuration(Date.now() - t)}]`, C.dim)}`)
+      .map(([label, t]) => `${label} ${col(`[${fmtDuration(now - t)}]`, C.dim)}`)
       .join(" · ");
     const currentLevel = levels.find((l) => l.done < l.total);
 
@@ -163,7 +173,8 @@ async function generateLanguage(language: string): Promise<void> {
       await Promise.all(
         units.map(async (unit) => {
           const label = unitLabel(unit);
-          activeUnits.set(label, Date.now());
+          const unitStart = Date.now();
+          activeUnits.set(label, unitStart);
           try {
             await generateOneContentUnit(language, unit, level.levelId);
             await db.failedContentUnit
@@ -172,6 +183,10 @@ async function generateLanguage(language: string): Promise<void> {
               })
               .catch(() => {});
             doneInRun++;
+            completions.push(Date.now());
+            const duration = fmtDuration(Date.now() - unitStart);
+            clearLine();
+            console.log(col(`  ✓ ${label} ${col(`[${duration}]`, C.dim)}`, C.green));
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
             clearLine();
