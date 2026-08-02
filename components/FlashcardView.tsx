@@ -102,7 +102,7 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
         <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${((idx + 1) / cards.length) * 100}%` }} />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm min-h-[200px] flex flex-col items-center justify-center gap-4 text-center">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm min-h-[200px] flex flex-col items-center justify-center gap-4 text-center">
         <div className="flex items-center gap-2">
           <SpeakButton text={card.front_text} lang={ttsLang} rate={0.9} />
         </div>
@@ -124,13 +124,13 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
       </div>
 
       <div className="grid grid-cols-3 gap-3 mt-6">
-        <button type="button" onClick={() => grade(2)} className="px-4 py-3 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold">
+        <button type="button" onClick={() => grade(2)} className="px-2 sm:px-4 py-3 rounded-xl text-xs sm:text-sm bg-rose-500 hover:bg-rose-600 text-white font-bold">
           🔴 Ulangi
         </button>
-        <button type="button" onClick={() => grade(4)} className="px-4 py-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold">
+        <button type="button" onClick={() => grade(4)} className="px-2 sm:px-4 py-3 rounded-xl text-xs sm:text-sm bg-amber-500 hover:bg-amber-600 text-white font-bold">
           🟡 Bagus
         </button>
-        <button type="button" onClick={() => grade(5)} className="px-4 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-bold">
+        <button type="button" onClick={() => grade(5)} className="px-2 sm:px-4 py-3 rounded-xl text-xs sm:text-sm bg-emerald-500 hover:bg-emerald-600 text-white font-bold">
           🟢 Mudah
         </button>
       </div>

@@ -189,7 +189,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
 
   // ---- chat ----
   return (
-    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 flex flex-col h-[calc(100vh-8rem)]">
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 flex flex-col h-[calc(100dvh-8rem)]">
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-lg font-extrabold">Simulasi Peran: {settingTitle}</h1>
@@ -198,7 +198,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
         <Link href="/dashboard" className="text-xs font-bold text-slate-400 hover:text-rose-500 transition-colors">Keluar Sesi</Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto space-y-3 pr-1">
         {messages.map((m, i) => {
           if (m.sender === "user") {
             return (

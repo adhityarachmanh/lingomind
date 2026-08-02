@@ -109,7 +109,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
           <p className="text-xs text-slate-400 mt-1">{profile.email}</p>
         </div>
 
-        <div className="grid grid-cols-3 gap-3 mt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-6">
           <div className="rounded-xl bg-indigo-500/10 p-3">
             <p className="text-xl font-black text-indigo-600 dark:text-indigo-400">{profile.score}</p>
             <p className="text-[11px] font-bold text-slate-400">Total Skor</p>

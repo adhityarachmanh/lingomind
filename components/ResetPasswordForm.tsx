@@ -32,8 +32,8 @@ export default function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6 font-sans">
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 dark:border-slate-700 text-center">
+    <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6 font-sans">
+      <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 dark:border-slate-700 text-center">
         <img src="/logo.png" alt="LingoMind Logo" className="w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800" />
         <h2 className="text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2">Reset Password</h2>
         <p className="text-slate-500 dark:text-slate-400 text-sm mb-6 font-medium">Masukkan kata sandi baru Anda di bawah ini.</p>

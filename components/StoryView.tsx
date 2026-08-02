@@ -109,7 +109,7 @@ export default function StoryView({ goal, language, ttsLang }: { goal: string; l
       </div>
 
       <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-xl font-extrabold">{story.title}</h1>
           <p className="text-sm italic text-slate-400">{story.title_translation}</p>
         </div>
