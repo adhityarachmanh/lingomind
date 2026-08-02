@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
 import { db } from "../db";
 import {
-  CONTENT_EXAM_VARIANTS, CONTENT_GENERAL_PRACTICE_VARIANTS, CONTENT_PARTS, CONTENT_QUIZ_VARIANTS,
+  CONTENT_PARTS,
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
@@ -251,9 +251,8 @@ export async function generateSpecificUnitAction(input: {
 
   const topics = await getTopicsAdmin(levelRow.id);
 
-  // bangun unit + cek target/cap
+  // bangun unit + cek duplikat lesson (quiz/varian tanpa batasan — bisa ditambah kapan pun)
   let unit: ContentUnit;
-  let targetVariantCap: number | null = null;
   if (input.kind === "lesson") {
     const part = Math.min(CONTENT_PARTS, Math.max(1, input.part ?? 1));
     const modifier = input.modifier && ["normal", "hard", "easy"].includes(input.modifier) ? input.modifier : "normal";
@@ -268,14 +267,7 @@ export async function generateSpecificUnitAction(input: {
     if (input.kind === "quiz") {
       if (!goal) return { error: "Goal (topik) wajib diisi untuk quiz." };
       if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
-      targetVariantCap = CONTENT_QUIZ_VARIANTS;
-    } else if (input.kind === "exam") {
-      targetVariantCap = CONTENT_EXAM_VARIANTS;
-    } else {
-      targetVariantCap = CONTENT_GENERAL_PRACTICE_VARIANTS;
     }
-    const count = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
-    if (count >= targetVariantCap) return { error: `Varian untuk konten ini sudah penuh (${targetVariantCap}).` };
     unit = { kind: "quiz", goal, part: 0, modifier: "normal" };
   }
 

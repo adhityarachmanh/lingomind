@@ -197,12 +197,13 @@ export interface ContentWorkOptions {
   generalPracticeVariants: number;
 }
 
-// Jumlah varian pre-gen per level: quiz topik 5, exam 5, general practice 15 (pool besar agar variasi banyak).
-export const CONTENT_EXAM_VARIANTS = 5;
-export const CONTENT_GENERAL_PRACTICE_VARIANTS = 15;
+// Target minimal per level: tiap unit konten cukup ADA 1 varian (bukan jumlah varian penuh).
+// Panel admin bisa menambah varian quiz tanpa batas (generateSpecificUnitAction tidak punya cap).
+export const CONTENT_EXAM_VARIANTS = 1;
+export const CONTENT_GENERAL_PRACTICE_VARIANTS = 1;
 export const CONTENT_PARTS = 3;
 export const CONTENT_LESSON_MODIFIERS = ["normal", "hard", "easy"] as const;
-export const CONTENT_QUIZ_VARIANTS = 5;
+export const CONTENT_QUIZ_VARIANTS = 1;
 
 // Work list deterministik untuk bulk pre-generation konten (language, level):
 // lesson per (goal, part, modifier) + quiz per (goal, modifier "normal") + exam + general_practice.
