@@ -5,6 +5,7 @@ import { getUserProfile } from "../profile";
 import { getPriorityWeakness, logWeakness } from "../weakness";
 import { addHeart, updateEngagementAfterQuiz } from "../progress";
 import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
+import { CONTENT_GENERAL_PRACTICE_VARIANTS } from "../admin";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -19,11 +20,12 @@ async function cacheOrGenerate(params: {
   level: string;
   goal: string;
   modifier: string;
+  targetVariants?: number;
   generate: () => Promise<QuizContainer>;
 }): Promise<QuizContainer> {
-  const { language, level, goal, modifier, generate } = params;
+  const { language, level, goal, modifier, targetVariants = 5, generate } = params;
   const variants = await db.cachedQuiz.findMany({ where: { language, level, goal, modifier } });
-  if (variants.length >= 5) {
+  if (variants.length >= targetVariants) {
     const parsed = parseAiJson<QuizContainer>(randomPick(variants).contentJson);
     if (parsed) return parsed;
   }
@@ -34,8 +36,8 @@ async function cacheOrGenerate(params: {
   return quiz;
 }
 
-// General practice 100% AI fresh: TANPA cache, soal digenerate baru setiap request
-// dengan tema acak (anti-monoton/anti-hafalan) di ambang atas level user.
+// General practice: pool pre-gen 15 varian per level (via panel admin) — user pick acak dari pool (instan,
+// tanpa biaya AI per kunjungan); jika pool belum penuh, di-generate sambil jalan (tema acak, ambang atas level).
 export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer; language: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -46,10 +48,14 @@ export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer;
   const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
   const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
 
-  const quiz = await generateQuizWithPrompt({
-    prompt: buildGeneralPracticePrompt(language, level, theme),
-    expectedCount: 5,
-    label: "general practice quiz",
+  const quiz = await cacheOrGenerate({
+    language, level, goal: "general_practice", modifier: "normal",
+    targetVariants: CONTENT_GENERAL_PRACTICE_VARIANTS,
+    generate: () => generateQuizWithPrompt({
+      prompt: buildGeneralPracticePrompt(language, level, theme),
+      expectedCount: 5,
+      label: "general practice quiz",
+    }),
   });
   return { quiz: shuffleOptions(quiz), language };
 }

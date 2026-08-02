@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
 import { db } from "../db";
 import {
-  buildContentWorkList, createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
+  buildContentWorkList, CONTENT_GENERAL_PRACTICE_VARIANTS, createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetUserProgressAdmin,
   updateAppConfigAdmin, updateLanguageAdmin, updateLevelAdmin, updateMissionConfigAdmin,
@@ -13,7 +13,7 @@ import {
 import type { AdminLanguageItem, AdminLevelItem } from "../types";
 import type { ContentUnit } from "../admin";
 import { generateLesson } from "../ai-content/lesson";
-import { buildQuizPrompt, generateQuizWithPrompt } from "../ai-content/quiz";
+import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildQuizPrompt, generateQuizWithPrompt } from "../ai-content/quiz";
 import { generateExam } from "../ai-content/exam";
 
 type AdminResult<T> = T | { error: string };
@@ -243,6 +243,7 @@ async function resolveLanguageContentStatus(language: string): Promise<LanguageC
       parts: CONTENT_PARTS,
       lessonModifiers: [...CONTENT_LESSON_MODIFIERS],
       quizVariants: CONTENT_QUIZ_VARIANTS,
+      generalPracticeVariants: CONTENT_GENERAL_PRACTICE_VARIANTS,
     });
 
     const goalMap = new Map<string, ContentGoalStatus>();
@@ -323,6 +324,7 @@ export async function generateContentChunkAction(input: {
     parts: CONTENT_PARTS,
     lessonModifiers: [...CONTENT_LESSON_MODIFIERS],
     quizVariants: CONTENT_QUIZ_VARIANTS,
+    generalPracticeVariants: CONTENT_GENERAL_PRACTICE_VARIANTS,
   });
 
   // unit pertama di level itu yang belum ada di cache
@@ -373,6 +375,17 @@ export async function generateContentChunkAction(input: {
       const quiz = await generateExam({ language: input.language, level: level.levelId, topicsStr });
       await db.cachedQuiz.create({
         data: { language: input.language, level: level.levelId, goal: "exam", modifier: "normal", contentJson: JSON.stringify(quiz) },
+      });
+    } else if (unit.goal === "general_practice") {
+      // pool general practice: tema acak tiap varian agar variasi besar
+      const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
+      const quiz = await generateQuizWithPrompt({
+        prompt: buildGeneralPracticePrompt(input.language, level.levelId, theme),
+        expectedCount: 5,
+        label: "general practice quiz",
+      });
+      await db.cachedQuiz.create({
+        data: { language: input.language, level: level.levelId, goal: "general_practice", modifier: "normal", contentJson: JSON.stringify(quiz) },
       });
     } else {
       const quiz = await generateQuizWithPrompt({

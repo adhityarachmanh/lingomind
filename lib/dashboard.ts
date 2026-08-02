@@ -1,10 +1,12 @@
 import { cache } from "react";
 import { db } from "./db";
+import { CONTENT_EXAM_VARIANTS, CONTENT_GENERAL_PRACTICE_VARIANTS } from "./admin";
 import type { CurriculumLevel, DailyMission, EngagementStats, LanguageCourse } from "./types";
 
-// Target konten per level (default bulk pre-generation: bagian 1-3, modifier normal+hard+easy, 5 varian quiz + 5 exam).
+// Target konten per level (default bulk pre-generation: bagian 1-3, modifier normal+hard+easy,
+// 5 varian quiz per goal + exam + pool general practice).
 export function computeLevelContentTargets(goalCount: number): { lessonTotal: number; quizTotal: number } {
-  return { lessonTotal: goalCount * 9, quizTotal: goalCount * 5 + 5 };
+  return { lessonTotal: goalCount * 9, quizTotal: goalCount * 5 + CONTENT_EXAM_VARIANTS + CONTENT_GENERAL_PRACTICE_VARIANTS };
 }
 
 // Level siap = lesson & quiz cache memenuhi target; level tanpa topik dianggap siap.

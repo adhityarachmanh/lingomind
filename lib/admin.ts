@@ -191,13 +191,18 @@ export interface ContentWorkOptions {
   parts: number;
   lessonModifiers: string[];
   quizVariants: number;
+  generalPracticeVariants: number;
 }
+
+// Jumlah varian pre-gen per level: quiz topik 5, exam 5, general practice 15 (pool besar agar variasi banyak).
+export const CONTENT_EXAM_VARIANTS = 5;
+export const CONTENT_GENERAL_PRACTICE_VARIANTS = 15;
 
 // Work list deterministik untuk bulk pre-generation konten (language, level):
 // lesson per (goal, part, modifier) + quiz per (goal, modifier "normal") + exam + general_practice.
 export function buildContentWorkList(topics: string[], opts: ContentWorkOptions): ContentUnit[] {
   const units: ContentUnit[] = [];
-  const { parts, lessonModifiers, quizVariants } = opts;
+  const { parts, lessonModifiers, quizVariants, generalPracticeVariants } = opts;
   for (const goal of topics) {
     for (const modifier of lessonModifiers) {
       for (let part = 1; part <= parts; part++) {
@@ -208,8 +213,11 @@ export function buildContentWorkList(topics: string[], opts: ContentWorkOptions)
       units.push({ kind: "quiz", goal, part: 0, modifier: "normal" });
     }
   }
-  for (let v = 1; v <= quizVariants; v++) {
+  for (let v = 1; v <= CONTENT_EXAM_VARIANTS; v++) {
     units.push({ kind: "quiz", goal: "exam", part: 0, modifier: "normal" });
+  }
+  for (let v = 1; v <= generalPracticeVariants; v++) {
+    units.push({ kind: "quiz", goal: "general_practice", part: 0, modifier: "normal" });
   }
   return units;
 }
