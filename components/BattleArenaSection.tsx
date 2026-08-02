@@ -7,7 +7,6 @@ import type { BattleItem } from "@/lib/types";
 
 export default function BattleArenaSection() {
   const [battles, setBattles] = useState<BattleItem[] | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -20,7 +19,7 @@ export default function BattleArenaSection() {
     return () => {
       cancelled = true;
     };
-  }, [reloadKey]);
+  }, []);
 
   if (battles === null) return null;
 

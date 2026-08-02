@@ -4,11 +4,11 @@ import type { FeedItem, SearchUserRow } from "./types";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export function formatFeedDate(date: Date): string {
-  const dd = String(date.getUTCDate()).padStart(2, "0");
-  const mon = MONTHS[date.getUTCMonth()];
-  const hh = String(date.getUTCHours()).padStart(2, "0");
-  const mm = String(date.getUTCMinutes()).padStart(2, "0");
-  return `${dd} ${mon} ${date.getUTCFullYear()}, ${hh}:${mm}`;
+  const dd = String(date.getDate()).padStart(2, "0");
+  const mon = MONTHS[date.getMonth()];
+  const hh = String(date.getHours()).padStart(2, "0");
+  const mm = String(date.getMinutes()).padStart(2, "0");
+  return `${dd} ${mon} ${date.getFullYear()}, ${hh}:${mm}`;
 }
 
 export function decideStreakMilestone(streak: number): boolean {

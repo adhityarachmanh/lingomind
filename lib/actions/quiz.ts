@@ -40,12 +40,11 @@ export async function getQuizAction(goal: string): Promise<{ quiz: QuizContainer
     ? topWeak.map((w) => `- ${w.topic} (${w.count}x)`).join("\n")
     : "";
 
-  const variantCount = await db.cachedQuiz.count({ where: { language, level, goal, modifier: "normal" } });
   const variants = await db.cachedQuiz.findMany({ where: { language, level, goal, modifier: "normal" } });
 
   let quiz: QuizContainer | null = null;
 
-  if (variantCount >= 5 && variants.length > 0) {
+  if (variants.length >= 5) {
     const picked = randomPick(variants);
     quiz = parseAiJson<QuizContainer>(picked.contentJson);
   }

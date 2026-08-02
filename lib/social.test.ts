@@ -3,11 +3,11 @@ import { decideStreakMilestone, formatFeedDate } from "./social";
 
 describe("formatFeedDate", () => {
   it("format legacy %d %b %Y, %H:%M", () => {
-    const d = new Date("2026-08-02T14:30:00Z");
+    const d = new Date(2026, 7, 2, 14, 30);
     expect(formatFeedDate(d)).toBe("02 Aug 2026, 14:30");
   });
   it("jam dua digit", () => {
-    const d = new Date("2026-01-05T09:05:00Z");
+    const d = new Date(2026, 0, 5, 9, 5);
     expect(formatFeedDate(d)).toBe("05 Jan 2026, 09:05");
   });
 });

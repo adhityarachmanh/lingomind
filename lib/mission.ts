@@ -1,10 +1,11 @@
+import { Prisma } from "@prisma/client";
 import { db } from "./db";
 
-const COLUMN_BY_ACTIVITY = {
-  lesson: "lessonsCompleted",
-  quiz: "quizzesCompleted",
-  weakness: "weaknessPracticesCompleted",
-  flashcard: "flashcardsReviewed",
+const COLUMN_MAP = {
+  lesson: "lessons_completed",
+  quiz: "quizzes_completed",
+  weakness: "weakness_practices_completed",
+  flashcard: "flashcards_reviewed",
 } as const;
 
 function todayLocal(): Date {
@@ -17,19 +18,17 @@ export async function incrementMissionProgress(
   email: string,
   activityType: "lesson" | "quiz" | "weakness" | "flashcard"
 ): Promise<void> {
-  const column = COLUMN_BY_ACTIVITY[activityType];
+  const today = todayLocal();
   await db.userDailyMission.upsert({
-    where: { email_date: { email, date: todayLocal() } },
-    create: { email, date: todayLocal() },
+    where: { email_date: { email, date: today } },
+    create: { email, date: today },
     update: {},
   });
-  // Prisma tidak bisa increment field dinamis; baca lalu set
-  const row = await db.userDailyMission.findUnique({ where: { email_date: { email, date: todayLocal() } } });
-  if (!row) return;
-  await db.userDailyMission.update({
-    where: { email_date: { email, date: todayLocal() } },
-    data: { [column]: (row[column] ?? 0) + 1 },
-  });
+  // identifier dinamis aman dari whitelist konstanta (bukan input user)
+  const col = COLUMN_MAP[activityType];
+  await db.$executeRaw(
+    Prisma.sql`UPDATE user_daily_missions SET ${Prisma.sql([col])} = ${Prisma.sql([col])} + 1 WHERE email = ${email} AND date = ${today}`
+  );
 }
 
 export async function incrementCorrectAnswers(email: string, count: number): Promise<void> {
@@ -40,12 +39,9 @@ export async function incrementCorrectAnswers(email: string, count: number): Pro
     create: { email, date: today },
     update: {},
   });
-  const row = await db.userDailyMission.findUnique({ where: { email_date: { email, date: today } } });
-  if (!row) return;
-  await db.userDailyMission.update({
-    where: { email_date: { email, date: today } },
-    data: { correctAnswersToday: (row.correctAnswersToday ?? 0) + count },
-  });
+  await db.$executeRaw(
+    Prisma.sql`UPDATE user_daily_missions SET correct_answers_today = correct_answers_today + ${count} WHERE email = ${email} AND date = ${today}`
+  );
 }
 
 export interface TierDecision {

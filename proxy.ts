@@ -14,7 +14,7 @@ async function verifyToken(token: string): Promise<boolean> {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get("lingomind_session")?.value;
   const hasSession = token ? await verifyToken(token) : false;
   const { pathname } = req.nextUrl;

@@ -56,6 +56,7 @@ export async function getOrCreateChatSessionAction(
 
   const { sessionId, messages } = await findOrCreateSession(session.email, language, level, goal, resolvedSetting);
 
+  let resultMessages = messages;
   if (messages.length === 0) {
     const isTopicBased = resolvedSetting === goal && goal !== "Bebas";
     const prompts = buildOpeningPrompt(language, level, goal, resolvedSetting, isTopicBased);
@@ -73,9 +74,10 @@ export async function getOrCreateChatSessionAction(
     await db.chatMessage.create({
       data: { sessionId, sender: "ai", content: opening },
     });
+    resultMessages = await fetchHistory(sessionId, 120);
   }
 
-  return { sessionId, messages: await fetchHistory(sessionId, 120), language, level };
+  return { sessionId, messages: resultMessages, language, level };
 }
 
 export async function sendChatMessageAction(
