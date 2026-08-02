@@ -1,17 +1,22 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import {
-  generateContentChunkAction,
+  generateSpecificUnitAction,
   getContentGenerationStatusAction,
   getLanguagesAdminAction,
+  getLevelsAdminAction,
+  getTopicsAdminAction,
   resetFailedContentUnitsAction,
 } from "@/lib/actions/admin";
 import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/admin";
 
-const CONTENT_PARTS = 3;
-const CONTENT_QUIZ_VARIANTS = 5;
-const CONTENT_MODIFIERS = ["normal", "hard", "easy"];
+const KIND_OPTIONS = [
+  { value: "lesson", label: "Lesson" },
+  { value: "quiz", label: "Quiz (1 varian)" },
+  { value: "exam", label: "Exam (1 varian)" },
+  { value: "general_practice", label: "General Practice (1 varian)" },
+] as const;
 
 function levelBadge(level: ContentLevelStatus): { label: string; cls: string } {
   if (level.done >= level.total) return { label: "Selesai", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
@@ -28,11 +33,17 @@ function goalBadge(goal: { done: number; total: number }): { label: string; cls:
 
 export default function AdminContentPanel() {
   const [languages, setLanguages] = useState<{ id: string; name: string }[]>([]);
+  const [levels, setLevels] = useState<{ id: string; title: string }[]>([]);
   const [languageId, setLanguageId] = useState("");
+  const [levelId, setLevelId] = useState("");
+  const [topics, setTopics] = useState<{ id: number; title: string }[]>([]);
+  const [goalId, setGoalId] = useState("");
+  const [kind, setKind] = useState<"lesson" | "quiz" | "exam" | "general_practice">("lesson");
+  const [lessonPart, setLessonPart] = useState("1");
+  const [lessonModifier, setLessonModifier] = useState("normal");
   const [status, setStatus] = useState<LanguageContentStatus | null>(null);
-  const [running, setRunning] = useState(false);
-  const runningRef = useRef(false);
   const [failedCount, setFailedCount] = useState(0);
+  const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -61,28 +72,22 @@ export default function AdminContentPanel() {
     setFailedCount(res.failedCount);
   }
 
-  async function resetFailedUnits() {
-    setError(null);
-    setMessage(null);
-    const res = await resetFailedContentUnitsAction(languageId).catch(() => ({ error: "Gagal mereset." }));
-    if ("error" in res) { setError(res.error); return; }
-    setMessage("Unit yang gagal direset — klik generate lagi untuk mencoba ulang.");
-    await refreshStatus();
-  }
-
   useEffect(() => {
     let cancelled = false;
-    getLanguagesAdminAction()
-      .then((res) => {
+    Promise.all([getLanguagesAdminAction(), getLevelsAdminAction()])
+      .then(([langs, lvls]) => {
         if (cancelled) return;
-        if ("error" in res) { setError(res.error); return; }
-        const langs = res.languages.map((l) => ({ id: l.id, name: l.name }));
-        setLanguages(langs);
-        // preferensi dari query param ?language= (bertahan saat refresh)
+        if ("error" in langs) { setError(langs.error); return; }
+        if ("error" in lvls) { setError(lvls.error); return; }
+        const langsList = langs.languages.map((l) => ({ id: l.id, name: l.name }));
+        const levelsList = lvls.levels.map((l) => ({ id: l.id, title: l.title }));
+        setLanguages(langsList);
+        setLevels(levelsList);
         const saved = readLanguageParam();
-        const initial = saved && langs.some((l) => l.id === saved) ? saved : langs[0]?.id ?? "";
+        const initial = saved && langsList.some((l) => l.id === saved) ? saved : langsList[0]?.id ?? "";
         setLanguageId(initial);
         if (initial && initial !== saved) writeLanguageParam(initial);
+        if (levelsList.length > 0) setLevelId(levelsList[0]?.id ?? "");
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -92,6 +97,23 @@ export default function AdminContentPanel() {
   }, []);
 
   useEffect(() => {
+    if (!levelId) return;
+    let cancelled = false;
+    getTopicsAdminAction(levelId)
+      .then((res) => {
+        if (cancelled) return;
+        if ("error" in res) { setError(res.error); return; }
+        setTopics(res.topics.map((t) => ({ id: t.id, title: t.title })));
+        setGoalId("");
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Gagal memuat topik.");
+      });
+    return () => { cancelled = true; };
+  }, [levelId]);
+
+  useEffect(() => {
     if (!languageId) return;
     let cancelled = false;
     getContentGenerationStatusAction({ language: languageId })
@@ -99,6 +121,7 @@ export default function AdminContentPanel() {
         if (cancelled) return;
         if ("error" in res) { setError(res.error); return; }
         setStatus(res.status);
+        setFailedCount(res.failedCount);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -107,61 +130,51 @@ export default function AdminContentPanel() {
     return () => { cancelled = true; };
   }, [languageId]);
 
-  async function startGeneration() {
-    if (runningRef.current || !languageId) return;
+  async function generateOne() {
+    if (generating || !languageId || !levelId) return;
     setError(null);
     setMessage(null);
-
-    const initial = await getContentGenerationStatusAction({ language: languageId }).catch(() => ({ error: "Gagal memeriksa status." }));
-    if ("error" in initial) { setError(initial.error); return; }
-    setStatus(initial.status);
-
-    runningRef.current = true;
-    setRunning(true);
-    let done = initial.status.done;
-    const total = initial.status.total;
-    while (runningRef.current && done < total) {
-      const res = await generateContentChunkAction({ language: languageId }).catch(() => ({ error: "Gagal generate konten." }));
-      if ("error" in res) {
-        setError(res.error);
-        runningRef.current = false;
-        setRunning(false);
-        return;
-      }
-      done = res.done;
-      setStatus((prev) => (prev ? { ...prev, done: res.done } : prev));
-      await new Promise((r) => setTimeout(r, 250));
-    }
-    runningRef.current = false;
-    setRunning(false);
+    setGenerating(true);
+    const res = await generateSpecificUnitAction({
+      language: languageId,
+      level: levelId,
+      kind,
+      goal: kind === "lesson" || kind === "quiz" ? goalId : undefined,
+      part: kind === "lesson" ? parseInt(lessonPart, 10) : undefined,
+      modifier: kind === "lesson" ? lessonModifier : undefined,
+    }).catch(() => ({ error: "Gagal generate konten." }));
+    setGenerating(false);
+    if ("error" in res) { setError(res.error); return; }
+    setMessage(`"${res.label}" berhasil digenerate!`);
     await refreshStatus();
-    if (done >= total) setMessage("Semua konten untuk bahasa ini selesai digenerate!");
   }
 
-  function stopGeneration() {
-    runningRef.current = false;
-    setRunning(false);
+  async function resetFailedUnits() {
+    setError(null);
+    setMessage(null);
+    const res = await resetFailedContentUnitsAction(languageId).catch(() => ({ error: "Gagal mereset." }));
+    if ("error" in res) { setError(res.error); return; }
+    setMessage("Unit yang gagal direset — klik generate lagi untuk mencoba ulang.");
+    await refreshStatus();
   }
 
-  const pct = status && status.total > 0 ? Math.round((status.done / status.total) * 100) : 0;
-  const runningLevel = status?.levels.find((l) => l.done < l.total);
+  const needsGoal = kind === "lesson" || kind === "quiz";
+  const goalOptions = topics.map((t) => t.title);
 
   return (
     <div className="space-y-6">
       <div className="bg-white border border-slate-200 rounded-lg p-5">
-        <h2 className="text-base font-bold text-slate-900">Bulk Pre-Generation Konten</h2>
+        <h2 className="text-base font-bold text-slate-900">Generate Konten Spesifik</h2>
         <p className="text-xs text-slate-500 mt-1">
-          Pilih bahasa lalu generate semua konten (semua level: bagian {CONTENT_PARTS}, modifier{" "}
-          {CONTENT_MODIFIERS.join(", ")}, {CONTENT_QUIZ_VARIANTS} varian quiz). Bahasa baru hanya muncul di
-          aplikasi setelah semua levelnya selesai. Proses idempotent — bisa dihentikan kapan saja dan dilanjutkan nanti.
-          Untuk generate penuh tanpa menunggu di tab: <code className="text-[11px] font-mono">npm run content:generate &lt;Bahasa&gt;</code> di terminal.
+          Generate 1 konten per waktu (incremental). Bahasa hanya muncul di aplikasi setelah SEMUA level lengkap.
+          Untuk generate massal: <code className="text-[11px] font-mono">npm run content:generate &lt;Bahasa&gt;</code> di terminal.
         </p>
 
         {error && <p className="mt-4 px-3 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold">{error}</p>}
         {message && <p className="mt-4 px-3 py-2 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold">{message}</p>}
 
-        <div className="mt-5 flex flex-wrap items-end gap-3">
-          <div className="w-64">
+        <div className="mt-5 grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bahasa</label>
             <select
               value={languageId}
@@ -173,26 +186,90 @@ export default function AdminContentPanel() {
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Level</label>
+            <select
+              value={levelId}
+              onChange={(e) => setLevelId(e.target.value)}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            >
+              {levels.map((l) => (
+                <option key={l.id} value={l.id}>{l.title}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Tipe Konten</label>
+            <select
+              value={kind}
+              onChange={(e) => setKind(e.target.value as typeof kind)}
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            >
+              {KIND_OPTIONS.map((k) => (
+                <option key={k.value} value={k.value}>{k.label}</option>
+              ))}
+            </select>
+          </div>
+          {needsGoal ? (
+            <div>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Goal (Topik)</label>
+              <select
+                value={goalId}
+                onChange={(e) => setGoalId(e.target.value)}
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="">— pilih topik —</option>
+                {goalOptions.map((g) => (
+                  <option key={g} value={g}>{g}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div />
+          )}
+          {kind === "lesson" && (
+            <>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bagian</label>
+                <select
+                  value={lessonPart}
+                  onChange={(e) => setLessonPart(e.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  {[1, 2, 3].map((n) => (
+                    <option key={n} value={n}>Bagian {n}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Modifier</label>
+                <select
+                  value={lessonModifier}
+                  onChange={(e) => setLessonModifier(e.target.value)}
+                  className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                >
+                  <option value="normal">Normal</option>
+                  <option value="hard">Sulit</option>
+                  <option value="easy">Mudah</option>
+                </select>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="mt-5 flex items-center gap-3">
           <button
             type="button"
-            onClick={startGeneration}
-            disabled={running || !languageId}
+            onClick={generateOne}
+            disabled={generating || !languageId || !levelId || (needsGoal && !goalId)}
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold"
           >
-            {running ? "Mengenerate..." : "Generate Semua Konten"}
-          </button>
-          <button
-            type="button"
-            onClick={stopGeneration}
-            disabled={!running}
-            className="px-4 py-2 rounded-md bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
-          >
-            Hentikan
+            {generating ? "Mengenerate..." : "Generate 1 Konten"}
           </button>
           <button
             type="button"
             onClick={refreshStatus}
-            disabled={running || !languageId}
+            disabled={generating || !languageId}
             className="px-4 py-2 rounded-md bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
           >
             Perbarui Status
@@ -201,37 +278,20 @@ export default function AdminContentPanel() {
             <button
               type="button"
               onClick={resetFailedUnits}
-              disabled={running}
+              disabled={generating}
               className="px-4 py-2 rounded-md bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
             >
               Reset Unit Gagal ({failedCount})
             </button>
           )}
         </div>
-
-        {status && (
-          <div className="mt-5">
-            <div className="flex items-center justify-between text-xs font-semibold text-slate-500 mb-1.5">
-              <span>
-                {status.done} / {status.total} unit
-                {runningLevel && ` · ${runningLevel.title}: ${runningLevel.done}/${runningLevel.total}`}
-              </span>
-              <span>{pct}%</span>
-            </div>
-            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-              <div className="h-full bg-blue-600 transition-all" style={{ width: `${pct}%` }} />
-            </div>
-            {status.total > 0 && status.done < status.total && (
-              <p className="text-[11px] text-slate-400 mt-1.5">
-                Estimasi sisa: {status.total - status.done} unit AI — bisa berlangsung lama, silakan dibiarkan berjalan.
-              </p>
-            )}
-          </div>
-        )}
       </div>
 
       {status && status.levels.length > 0 && (
         <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <h3 className="text-sm font-bold text-slate-900">Status Konten — {status.done}/{status.total} unit</h3>
+          </div>
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50 text-left">

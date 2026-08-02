@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
 import { db } from "../db";
 import {
+  CONTENT_EXAM_VARIANTS, CONTENT_GENERAL_PRACTICE_VARIANTS, CONTENT_PARTS, CONTENT_QUIZ_VARIANTS,
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
@@ -227,4 +228,62 @@ export async function resetFailedContentUnitsAction(language: string): Promise<A
   if (typeof g !== "string") return g;
   await resetFailedContentUnits(language);
   return { ok: true };
+}
+
+// Generate SATU unit konten spesifik (incremental 1-per-1, bukan bulk).
+export async function generateSpecificUnitAction(input: {
+  language: string;
+  level: string;
+  kind: "lesson" | "quiz" | "exam" | "general_practice";
+  goal?: string;
+  part?: number;
+  modifier?: string;
+}): Promise<AdminResult<{ ok: boolean; label: string }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+
+  const languages = await getLanguagesAdmin();
+  if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
+
+  const levels = await getLevelsAdmin();
+  const levelRow = levels.find((l) => l.id === input.level);
+  if (!levelRow) return { error: "Level tidak ditemukan." };
+
+  const topics = await getTopicsAdmin(levelRow.id);
+
+  // bangun unit + cek target/cap
+  let unit: ContentUnit;
+  let targetVariantCap: number | null = null;
+  if (input.kind === "lesson") {
+    const part = Math.min(CONTENT_PARTS, Math.max(1, input.part ?? 1));
+    const modifier = input.modifier && ["normal", "hard", "easy"].includes(input.modifier) ? input.modifier : "normal";
+    const goal = (input.goal ?? "").trim();
+    if (!goal) return { error: "Goal (topik) wajib diisi untuk lesson." };
+    if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
+    const existing = await db.cachedLesson.findFirst({ where: { language: input.language, level: input.level, goal, part, modifier } });
+    if (existing) return { error: "Konten ini sudah digenerate." };
+    unit = { kind: "lesson", goal, part, modifier };
+  } else {
+    const goal = input.kind === "exam" ? "exam" : input.kind === "general_practice" ? "general_practice" : (input.goal ?? "").trim();
+    if (input.kind === "quiz") {
+      if (!goal) return { error: "Goal (topik) wajib diisi untuk quiz." };
+      if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
+      targetVariantCap = CONTENT_QUIZ_VARIANTS;
+    } else if (input.kind === "exam") {
+      targetVariantCap = CONTENT_EXAM_VARIANTS;
+    } else {
+      targetVariantCap = CONTENT_GENERAL_PRACTICE_VARIANTS;
+    }
+    const count = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
+    if (count >= targetVariantCap) return { error: `Varian untuk konten ini sudah penuh (${targetVariantCap}).` };
+    unit = { kind: "quiz", goal, part: 0, modifier: "normal" };
+  }
+
+  const label = contentUnitLabel(unit, levelRow.title);
+  try {
+    await generateOneContentUnit(input.language, unit, input.level);
+  } catch (e) {
+    return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  }
+  return { ok: true, label };
 }
