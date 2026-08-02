@@ -61,6 +61,9 @@ async function generateQuiz(language: string): Promise<void> {
       targets.push({ levelId: lvl.levelId, levelTitle: lvl.title, goal: g.goal, count });
     }
   }
+  // Rata-ratakan: unit dengan varian PALING SEDIKIT diproses duluan — jika putus di tengah,
+  // run berikutnya melengkapi yang masih kurang (mis. 1/10 → 2/10) sebelum menaikkan yang sudah 2/10.
+  targets.sort((a, b) => a.count - b.count || a.levelTitle.localeCompare(b.levelTitle) || a.goal.localeCompare(b.goal));
 
   const pending = targets.filter((t) => t.count < CONTENT_QUIZ_MAX_VARIANTS);
   const full = targets.length - pending.length;
