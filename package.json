@@ -12,6 +12,7 @@
     "db:status": "prisma migrate status",
     "db:seed": "prisma db seed",
     "db:check": "tsx scripts/check-db.ts",
+    "content:generate": "tsx scripts/generate-content.ts",
     "test": "vitest run"
   },
   "dependencies": {
