@@ -4,7 +4,7 @@ import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
 import { db } from "../db";
 import {
-  CONTENT_PARTS,
+  CONTENT_PARTS, CONTENT_QUIZ_MAX_VARIANTS,
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
@@ -286,6 +286,12 @@ export async function generateQuizVariantAction(input: {
   if (goal !== "exam" && goal !== "general_practice") {
     const topics = await getTopicsAdmin(levelRow.id);
     if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
+  }
+
+  // batas varian: maksimal CONTENT_QUIZ_MAX_VARIANTS per goal
+  const count = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
+  if (count >= CONTENT_QUIZ_MAX_VARIANTS) {
+    return { error: `Varian quiz untuk konten ini sudah maksimal (${CONTENT_QUIZ_MAX_VARIANTS}).` };
   }
 
   const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };

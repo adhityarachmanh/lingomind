@@ -254,12 +254,13 @@ export interface ContentWorkOptions {
 }
 
 // Target minimal per level: lesson 3 bagian per goal (modifier normal), quiz 1 per goal, exam 1, general_practice 1.
-// Panel admin bisa menambah varian quiz tanpa batas (generateQuizVariantAction tidak punya cap).
+// Varian quiz boleh ditambah hingga CONTENT_QUIZ_MAX_VARIANTS (10) per goal (panel & action).
 export const CONTENT_EXAM_VARIANTS = 1;
 export const CONTENT_GENERAL_PRACTICE_VARIANTS = 1;
 export const CONTENT_PARTS = 3;
 export const CONTENT_LESSON_MODIFIERS = ["normal"] as const;
 export const CONTENT_QUIZ_VARIANTS = 1;
+export const CONTENT_QUIZ_MAX_VARIANTS = 10;
 
 // Work list deterministik untuk bulk pre-generation konten (language, level):
 // lesson per (goal, part, modifier) + quiz per (goal, modifier "normal") + exam + general_practice.
@@ -362,12 +363,15 @@ export async function resolveLanguageContentStatus(language: string): Promise<La
         isDone = lessonKeys.has(`${level.id}|${u.goal}|${u.part}|${u.modifier}`);
         if (isDone) g.lessonDone++;
       } else {
-        g.quizTotal++;
+        // display: varian aktual (cap CONTENT_QUIZ_MAX_VARIANTS) vs maks 10;
+        // kelengkapan unit (readiness) tetap dari posisi unit tunggal di work list
         const key = `${level.id}|${u.goal}|${u.modifier}`;
         const pos = (quizPos.get(key) ?? 0) + 1;
         quizPos.set(key, pos);
-        isDone = pos <= (quizCounts.get(key) ?? 0);
-        if (isDone) g.quizDone++;
+        const count = quizCounts.get(key) ?? 0;
+        isDone = pos <= count;
+        g.quizTotal = CONTENT_QUIZ_MAX_VARIANTS;
+        g.quizDone = Math.min(count, CONTENT_QUIZ_MAX_VARIANTS);
       }
       if (isDone) levelDone++;
     }

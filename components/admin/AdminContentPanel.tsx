@@ -220,8 +220,9 @@ export default function AdminContentPanel() {
                                 <button
                                   type="button"
                                   onClick={() => generateLesson(lvl.levelId, g.goal)}
-                                  disabled={!!busy}
-                                  className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-[11px] font-bold"
+                                  disabled={!!busy || g.lessonDone >= g.lessonTotal}
+                                  className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-bold"
+                                  title={g.lessonDone >= g.lessonTotal ? "Semua bagian lesson sudah digenerate" : undefined}
                                 >
                                   {lessonBusy ? "..." : "Lesson"}
                                 </button>
@@ -229,8 +230,9 @@ export default function AdminContentPanel() {
                               <button
                                 type="button"
                                 onClick={() => generateQuiz(lvl.levelId, g.goal)}
-                                disabled={!!busy}
-                                className="px-2.5 py-1 rounded-md bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed text-[11px] font-bold"
+                                disabled={!!busy || g.quizDone >= g.quizTotal}
+                                className="px-2.5 py-1 rounded-md bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-bold"
+                                title={g.quizDone >= g.quizTotal ? "Varian quiz sudah maksimal (10)" : undefined}
                               >
                                 {quizBusy ? "..." : "Quiz"}
                               </button>
