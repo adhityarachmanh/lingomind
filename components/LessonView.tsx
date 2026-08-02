@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLessonAction } from "@/lib/actions/lesson";
+import { getLessonAction, prefetchLessonAction } from "@/lib/actions/lesson";
 import { incrementMissionAction } from "@/lib/actions/mission";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
@@ -26,6 +26,14 @@ export default function LessonView({
   const [part, setPart] = useState(1);
   const [state, setState] = useState<State>({ status: "loading" });
   const [reloadKey, setReloadKey] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setElapsed((e) => e + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [part, reloadKey]);
 
   useEffect(() => {
     let cancelled = false;
@@ -37,6 +45,7 @@ export default function LessonView({
           return;
         }
         setState({ status: "ready", lesson: res.lesson });
+        prefetchLessonAction(goal, part).catch(() => {});
       })
       .catch((e) => {
         if (cancelled) return;
@@ -48,21 +57,35 @@ export default function LessonView({
   }, [goal, part, reloadKey]);
 
   function retry() {
+    setElapsed(0);
     setState({ status: "loading" });
     setReloadKey((k) => k + 1);
   }
 
   async function nextPart() {
+    setElapsed(0);
     setState({ status: "loading" });
     setPart((p) => p + 1);
     await incrementMissionAction("lesson").catch(() => {});
   }
 
   if (state.status === "loading" || state.status === "retrying") {
+    const stage = elapsed < 4 ? 0 : elapsed < 9 ? 1 : elapsed < 14 ? 2 : 3;
+    const stageLabels = ["Menyusun materi…", "Menyiapkan kosakata…", "Menyusun contoh kalimat…", "Hampir selesai…"];
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4 text-center px-6">
         <div className="animate-spin rounded-full h-10 w-10 border-4 border-teal-500 border-t-transparent" />
-        <p className="font-bold text-slate-700 dark:text-slate-300">Menyusun Materi Belajar...</p>
+        <p className="font-bold text-slate-700 dark:text-slate-300">{stageLabels[stage]}</p>
+        <div className="flex items-center gap-2">
+          {[0, 1, 2, 3].map((i) => (
+            <span
+              key={i}
+              className={`h-2.5 w-2.5 rounded-full ${
+                i < stage ? "bg-teal-500" : i === stage ? "bg-teal-500/60 animate-pulse" : "bg-slate-300 dark:bg-slate-700"
+              }`}
+            />
+          ))}
+        </div>
         <p className="text-sm text-slate-400">Merancang materi pelajaran khusus untuk Anda. Mohon tunggu beberapa saat.</p>
       </div>
     );
