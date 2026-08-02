@@ -6,6 +6,7 @@ import {
   generateContentChunkAction,
   getContentGenerationStatusAction,
   getLanguagesAdminAction,
+  resetFailedContentUnitsAction,
 } from "@/lib/actions/admin";
 import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/admin";
 
@@ -47,6 +48,7 @@ export default function AdminContentPanel() {
   const runningRef = useRef(false);
   const [job, setJob] = useState<JobInfo>({ status: null, error: null });
   const [bgPolling, setBgPolling] = useState(false);
+  const [failedCount, setFailedCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -73,6 +75,7 @@ export default function AdminContentPanel() {
     if ("error" in res) { setError(res.error); return; }
     setStatus(res.status);
     setJob({ status: res.job.status, error: res.job.error });
+    setFailedCount(res.failedCount);
     setBgPolling(res.job.status === "running");
   }
 
@@ -112,6 +115,15 @@ export default function AdminContentPanel() {
     setMessage(null);
     const res = await cancelContentGenerationAction(languageId).catch(() => ({ error: "Gagal membatalkan." }));
     if ("error" in res) { setError(res.error); return; }
+    await refreshStatus();
+  }
+
+  async function resetFailedUnits() {
+    setError(null);
+    setMessage(null);
+    const res = await resetFailedContentUnitsAction(languageId).catch(() => ({ error: "Gagal mereset." }));
+    if ("error" in res) { setError(res.error); return; }
+    setMessage("Unit yang gagal direset — klik generate lagi untuk mencoba ulang.");
     await refreshStatus();
   }
 
@@ -257,6 +269,16 @@ export default function AdminContentPanel() {
           >
             Perbarui Status
           </button>
+          {failedCount > 0 && (
+            <button
+              type="button"
+              onClick={resetFailedUnits}
+              disabled={bgPolling}
+              className="px-4 py-2 rounded-md bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+            >
+              Reset Unit Gagal ({failedCount})
+            </button>
+          )}
         </div>
 
         {status && (

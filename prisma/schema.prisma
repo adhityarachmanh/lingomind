@@ -186,6 +186,22 @@ model ContentGenerationJob {
   @@map("content_generation_jobs")
 }
 
+// Unit konten yang gagal di-generate AI berulang kali — di-skip agar tidak deadlock;
+// dihitung "belum siap" sampai berhasil digenerate (reset via panel admin).
+model FailedContentUnit {
+  id           Int      @id @default(autoincrement())
+  language     String   @db.VarChar(50)
+  level        String   @db.VarChar(10)
+  goal         String   @db.VarChar(100)
+  part         Int
+  modifier     String   @default("normal") @db.VarChar(50)
+  failures     Int      @default(1)
+  lastFailedAt DateTime @default(now())
+
+  @@unique([language, level, goal, part, modifier])
+  @@map("failed_content_units")
+}
+
 model Badge {
   id               Int    @id @default(autoincrement())
   name             String @unique @db.VarChar(255)

@@ -9,6 +9,16 @@ export function parseAiJson<T>(text: string): T | null {
   try {
     return JSON.parse(t) as T;
   } catch {
+    // repair: output mungkin terpotong oleh batas token — coba mundur dari penutup `}` terakhir
+    const last = t.lastIndexOf("}");
+    for (let i = last; i > Math.max(0, last - 800) && i > start; i--) {
+      if (t[i] !== "}") continue;
+      try {
+        return JSON.parse(t.slice(start, i + 1)) as T;
+      } catch {
+        // lanjut mundur
+      }
+    }
     return null;
   }
 }

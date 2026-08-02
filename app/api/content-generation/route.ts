@@ -49,9 +49,22 @@ async function runChunk(language: string): Promise<void> {
   try {
     // heartbeat: updatedAt segar sejak batch mulai → deteksi stale akurat jika chain mati
     await db.contentGenerationJob.update({ where: { id: job.id }, data: { updatedAt: new Date() } });
-    const { done, total } = await processContentBatch(language, BATCH_MS);
+    const { done, total, blocked } = await processContentBatch(language, BATCH_MS);
     if (done >= total) {
       await db.contentGenerationJob.update({ where: { id: job.id }, data: { status: "done", updatedAt: new Date() } });
+      return;
+    }
+    if (blocked) {
+      // sisa unit semuanya di-skip (gagal AI permanen) — hentikan chain agar tidak jalan selamanya
+      const failedCount = await db.failedContentUnit.count({ where: { language } });
+      await db.contentGenerationJob.update({
+        where: { id: job.id },
+        data: {
+          status: "failed",
+          error: `Ada ${failedCount} unit yang gagal AI berulang kali (di-skip). Klik "Reset Unit Gagal" di panel, lalu generate lagi.`,
+          updatedAt: new Date(),
+        },
+      });
       return;
     }
     await db.contentGenerationJob.update({ where: { id: job.id }, data: { updatedAt: new Date() } });

@@ -339,6 +339,7 @@ export async function resolveLanguageContentStatus(language: string): Promise<La
 }
 
 // Unit berikutnya yang belum ada di cache untuk (language, level) — atau null jika level selesai.
+// Unit yang gagal AI >= 3x di-skip (anti-deadlock) sampai direset via panel admin.
 export async function findNextUndoneUnit(language: string, levelId: string): Promise<ContentUnit | null> {
   const topics = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
   const units = buildContentWorkList(topics.map((t) => t.title), {
@@ -348,9 +349,10 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
     generalPracticeVariants: CONTENT_GENERAL_PRACTICE_VARIANTS,
   });
 
-  const [lessons, quizzes] = await Promise.all([
+  const [lessons, quizzes, failed] = await Promise.all([
     db.cachedLesson.findMany({ where: { language, level: levelId }, select: { goal: true, part: true, modifier: true } }),
     db.cachedQuiz.findMany({ where: { language, level: levelId }, select: { goal: true, modifier: true } }),
+    db.failedContentUnit.findMany({ where: { language, level: levelId, failures: { gte: 3 } } }),
   ]);
   const lessonKeys = new Set(lessons.map((l) => `${l.goal}|${l.part}|${l.modifier}`));
   const quizCounts = new Map<string, number>();
@@ -358,9 +360,11 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
     const key = `${q.goal}|${q.modifier}`;
     quizCounts.set(key, (quizCounts.get(key) ?? 0) + 1);
   }
+  const skippedKeys = new Set(failed.map((f) => `${f.goal}|${f.part}|${f.modifier}`));
 
   const quizPos = new Map<string, number>();
   for (const u of units) {
+    if (skippedKeys.has(`${u.goal}|${u.part}|${u.modifier}`)) continue;
     let isDone: boolean;
     if (u.kind === "lesson") {
       isDone = lessonKeys.has(`${u.goal}|${u.part}|${u.modifier}`);
@@ -417,37 +421,57 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
 // Margin pengaman: berhenti mulai unit baru agar selalu ada waktu untuk update status + chainNext
 // (function Vercel di-kill di batas durasi ~300s Hobby — jangan sampai chain putus kena kill).
 const BATCH_SAFETY_MS = 90_000;
-const MAX_CONSECUTIVE_FAILURES = 3;
+
+export async function getFailedContentUnitCount(language: string): Promise<number> {
+  return db.failedContentUnit.count({ where: { language } });
+}
+
+export async function resetFailedContentUnits(language: string): Promise<void> {
+  await db.failedContentUnit.deleteMany({ where: { language } });
+}
 
 // Proses batch unit dalam batas waktu (default 4,5 menit — aman di bawah limit 5 menit Hobby).
-// Unit yang gagal (mis. AI JSON tidak valid) TIDAK mematikan batch — dilanjutkan ke unit berikutnya;
-// batch baru berhenti bila kegagalan beruntun >= 3 atau sisa waktu < margin pengaman.
-export async function processContentBatch(language: string, maxMs = 270_000): Promise<{ done: number; total: number }> {
+// Unit yang gagal (mis. AI JSON tidak valid) TIDAK mematikan batch — dicatat di failed_content_units
+// (skip permanen setelah 3x gagal, anti-deadlock) dan batch lanjut ke unit berikutnya.
+// `blocked` = masih ada unit belum digenerate tapi semuanya di-skip (perlu reset unit gagal).
+export async function processContentBatch(
+  language: string,
+  maxMs = 270_000
+): Promise<{ done: number; total: number; blocked: boolean }> {
   const started = Date.now();
-  let consecutiveFailures = 0;
   while (Date.now() - started < maxMs - BATCH_SAFETY_MS) {
     const status = await resolveLanguageContentStatus(language);
-    if (status.done >= status.total) return { done: status.done, total: status.total };
+    if (status.done >= status.total) return { done: status.done, total: status.total, blocked: false };
     const level = status.levels.find((l) => l.done < l.total);
-    if (!level) return { done: status.done, total: status.total };
+    if (!level) return { done: status.done, total: status.total, blocked: false };
     const unit = await findNextUndoneUnit(language, level.levelId);
-    if (!unit) return { done: status.done, total: status.total };
+    if (!unit) {
+      // sisa unit yang belum digenerate semuanya di-skip (gagal AI permanen)
+      return { done: status.done, total: status.total, blocked: true };
+    }
     try {
       await generateOneContentUnit(language, unit, level.levelId);
-      consecutiveFailures = 0;
+      await db.failedContentUnit.deleteMany({
+        where: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier },
+      }).catch(() => {});
     } catch (e) {
-      consecutiveFailures++;
       const unitLabel = unit.kind === "lesson"
         ? `Lesson: ${unit.goal} — Bagian ${unit.part} (${unit.modifier})`
         : `Quiz: ${unit.goal}`;
-      console.error(`[content-generation] unit gagal (${consecutiveFailures}x): ${unitLabel} — ${e instanceof Error ? e.message : e}`);
-      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-        throw new Error(
-          `Gagal generate ${MAX_CONSECUTIVE_FAILURES} unit berturut-turut (terakhir: "${unitLabel}"): ${e instanceof Error ? e.message : "error tidak diketahui"}`
-        );
-      }
+      console.error(`[content-generation] unit gagal: ${unitLabel} — ${e instanceof Error ? e.message : e}`);
+      await db.failedContentUnit
+        .upsert({
+          where: {
+            language_level_goal_part_modifier: {
+              language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier,
+            },
+          },
+          create: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier, failures: 1, lastFailedAt: new Date() },
+          update: { failures: { increment: 1 }, lastFailedAt: new Date() },
+        })
+        .catch(() => {});
     }
   }
   const status = await resolveLanguageContentStatus(language);
-  return { done: status.done, total: status.total };
+  return { done: status.done, total: status.total, blocked: false };
 }

@@ -6,7 +6,7 @@ import { db } from "../db";
 import {
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
-  getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetUserProgressAdmin,
+  getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
   resolveLanguageContentStatus, updateAppConfigAdmin, updateLanguageAdmin, updateLevelAdmin, updateMissionConfigAdmin,
   updateShopItemAdmin, updateTopicAdmin, updateUserRoleAdmin, updateUserStatsAdmin,
 } from "../admin";
@@ -188,14 +188,15 @@ function contentUnitLabel(u: ContentUnit, levelTitle?: string): string {
 
 export async function getContentGenerationStatusAction(input: {
   language: string;
-}): Promise<AdminResult<{ ok: boolean; status: LanguageContentStatus; job: ContentJobInfo }>> {
+}): Promise<AdminResult<{ ok: boolean; status: LanguageContentStatus; job: ContentJobInfo; failedCount: number }>> {
   const g = await guard();
   if (typeof g !== "string") return g;
-  const [status, job] = await Promise.all([
+  const [status, job, failedCount] = await Promise.all([
     resolveLanguageContentStatus(input.language),
     db.contentGenerationJob.findFirst({ where: { language: input.language }, orderBy: { id: "desc" } }),
+    db.failedContentUnit.count({ where: { language: input.language } }),
   ]);
-  return { ok: true, status, job: { status: job?.status ?? null, error: job?.error ?? null } };
+  return { ok: true, status, job: { status: job?.status ?? null, error: job?.error ?? null }, failedCount };
 }
 
 export async function generateContentChunkAction(input: {
@@ -234,5 +235,12 @@ export async function cancelContentGenerationAction(language: string): Promise<A
     where: { language, status: "running" },
     data: { status: "cancelled", updatedAt: new Date() },
   });
+  return { ok: true };
+}
+
+export async function resetFailedContentUnitsAction(language: string): Promise<AdminResult<{ ok: boolean }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+  await resetFailedContentUnits(language);
   return { ok: true };
 }
