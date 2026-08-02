@@ -1,0 +1,85 @@
+import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
+import { requireAdmin } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { processContentBatch } from "@/lib/admin";
+
+// Background generation via Vercel Background Functions (after()):
+// tiap invokasi memproses batch unit sampai ~4,5 menit, lalu me-chain invokasi berikutnya
+// (POST resume dengan Bearer CRON_SECRET) hingga seluruh konten bahasa selesai.
+const BATCH_MS = 270_000;
+const STALE_MS = 10 * 60 * 1000;
+
+async function chainNext(language: string): Promise<void> {
+  const url = process.env.APP_URL || "http://localhost:3000";
+  const secret = process.env.CRON_SECRET ?? "";
+  try {
+    await fetch(`${url}/api/content-generation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
+      body: JSON.stringify({ language, resume: true }),
+    });
+  } catch {
+    // chain terputus (mis. timeout jaringan) — job tetap running;
+    // start berikutnya mendeteksi job stale dan menutupnya otomatis.
+  }
+}
+
+async function runChunk(language: string): Promise<void> {
+  const job = await db.contentGenerationJob.findFirst({
+    where: { language, status: "running" },
+    orderBy: { id: "desc" },
+  });
+  if (!job) return;
+  try {
+    const { done, total } = await processContentBatch(language, BATCH_MS);
+    if (done >= total) {
+      await db.contentGenerationJob.update({ where: { id: job.id }, data: { status: "done", updatedAt: new Date() } });
+      return;
+    }
+    await db.contentGenerationJob.update({ where: { id: job.id }, data: { updatedAt: new Date() } });
+    await chainNext(language);
+  } catch (e) {
+    await db.contentGenerationJob.update({
+      where: { id: job.id },
+      data: {
+        status: "failed",
+        error: e instanceof Error ? e.message : "error tidak diketahui",
+        updatedAt: new Date(),
+      },
+    });
+  }
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const body = await req.json().catch(() => null);
+  const language = typeof body?.language === "string" && body.language.trim() !== "" ? body.language.trim() : null;
+  if (!language) return NextResponse.json({ error: "Bahasa tidak valid." }, { status: 400 });
+
+  // Jalur resume internal (self-chain) — hanya dengan Bearer CRON_SECRET.
+  if (body?.resume === true) {
+    const secret = process.env.CRON_SECRET;
+    if (!secret || req.headers.get("authorization") !== `Bearer ${secret}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    after(() => runChunk(language));
+    return NextResponse.json({ ok: true, resume: true });
+  }
+
+  // Jalur start — guard admin (session cookie).
+  const admin = await requireAdmin();
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  // Job running yang stale (chain terputus) → tutup sebagai failed agar bisa mulai ulang.
+  await db.contentGenerationJob.updateMany({
+    where: { language, status: "running", updatedAt: { lt: new Date(Date.now() - STALE_MS) } },
+    data: { status: "failed", error: "Chain background terputus — mulai ulang.", updatedAt: new Date() },
+  });
+
+  const running = await db.contentGenerationJob.count({ where: { language, status: "running" } });
+  if (running > 0) return NextResponse.json({ error: "Generate sedang berjalan." }, { status: 409 });
+
+  await db.contentGenerationJob.create({ data: { language } });
+  after(() => runChunk(language));
+  return NextResponse.json({ ok: true });
+}

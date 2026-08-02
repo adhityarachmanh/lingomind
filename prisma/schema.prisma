@@ -174,6 +174,18 @@ model CachedQuiz {
   @@map("cached_quizzes")
 }
 
+model ContentGenerationJob {
+  id        Int      @id @default(autoincrement())
+  language  String   @db.VarChar(50)
+  status    String   @default("running") // running | done | failed | cancelled
+  error     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([language, status])
+  @@map("content_generation_jobs")
+}
+
 model Badge {
   id               Int    @id @default(autoincrement())
   name             String @unique @db.VarChar(255)

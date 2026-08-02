@@ -2,15 +2,29 @@
 
 import { Fragment, useEffect, useRef, useState } from "react";
 import {
+  cancelContentGenerationAction,
   generateContentChunkAction,
   getContentGenerationStatusAction,
   getLanguagesAdminAction,
 } from "@/lib/actions/admin";
-import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/actions/admin";
+import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/admin";
 
 const CONTENT_PARTS = 3;
 const CONTENT_QUIZ_VARIANTS = 5;
 const CONTENT_MODIFIERS = ["normal", "hard", "easy"];
+
+interface JobInfo {
+  status: string | null;
+  error: string | null;
+}
+
+function jobBadge(job: JobInfo): { label: string; cls: string } {
+  if (job.status === "running") return { label: "Berjalan di background…", cls: "bg-amber-50 text-amber-700 border-amber-200" };
+  if (job.status === "done") return { label: "Background selesai", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+  if (job.status === "failed") return { label: "Background gagal", cls: "bg-rose-50 text-rose-600 border-rose-200" };
+  if (job.status === "cancelled") return { label: "Background dibatalkan", cls: "bg-slate-50 text-slate-500 border-slate-200" };
+  return { label: "", cls: "" };
+}
 
 function levelBadge(level: ContentLevelStatus): { label: string; cls: string } {
   if (level.done >= level.total) return { label: "Selesai", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
@@ -31,6 +45,8 @@ export default function AdminContentPanel() {
   const [status, setStatus] = useState<LanguageContentStatus | null>(null);
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
+  const [job, setJob] = useState<JobInfo>({ status: null, error: null });
+  const [bgPolling, setBgPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -42,6 +58,47 @@ export default function AdminContentPanel() {
     const res = await getContentGenerationStatusAction({ language: languageId }).catch(() => ({ error: "Gagal memeriksa status." }));
     if ("error" in res) { setError(res.error); return; }
     setStatus(res.status);
+    setJob({ status: res.job.status, error: res.job.error });
+    setBgPolling(res.job.status === "running");
+  }
+
+  // Polling status saat job background berjalan (tab boleh ditutup — job jalan di Vercel).
+  useEffect(() => {
+    if (!bgPolling) return;
+    const timer = setInterval(() => {
+      refreshStatus();
+    }, 4000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bgPolling, languageId]);
+
+  async function startBackground() {
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/content-generation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: languageId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(typeof data?.error === "string" ? data.error : "Gagal memulai generate background.");
+        return;
+      }
+      setMessage("Generate berjalan di background — tab boleh ditutup. Progress tetap terlihat di sini.");
+      await refreshStatus();
+    } catch {
+      setError("Gagal memulai generate background.");
+    }
+  }
+
+  async function cancelBackground() {
+    setError(null);
+    setMessage(null);
+    const res = await cancelContentGenerationAction(languageId).catch(() => ({ error: "Gagal membatalkan." }));
+    if ("error" in res) { setError(res.error); return; }
+    await refreshStatus();
   }
 
   useEffect(() => {
@@ -143,11 +200,27 @@ export default function AdminContentPanel() {
           </div>
           <button
             type="button"
-            onClick={startGeneration}
-            disabled={running || !languageId}
+            onClick={startBackground}
+            disabled={running || bgPolling || !languageId}
             className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold"
           >
-            {running ? "Mengenerate..." : "Generate Semua Konten"}
+            Generate di Background
+          </button>
+          <button
+            type="button"
+            onClick={cancelBackground}
+            disabled={!bgPolling}
+            className="px-4 py-2 rounded-md bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+          >
+            Hentikan Background
+          </button>
+          <button
+            type="button"
+            onClick={startGeneration}
+            disabled={running || bgPolling || !languageId}
+            className="px-4 py-2 rounded-md bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+          >
+            {running ? "Mengenerate..." : "Generate Manual (tab terbuka)"}
           </button>
           <button
             type="button"
@@ -184,6 +257,17 @@ export default function AdminContentPanel() {
                 Estimasi sisa: {status.total - status.done} unit AI — bisa berlangsung lama, silakan dibiarkan berjalan.
               </p>
             )}
+            {job.status && (() => {
+              const badge = jobBadge(job);
+              return (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.cls}`}>{badge.label}</span>
+                  {job.status === "failed" && job.error && (
+                    <span className="text-[11px] text-rose-500">{job.error}</span>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
