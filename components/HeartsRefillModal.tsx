@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { refillHeartsAction } from "@/lib/actions/shop";
 
 export default function HeartsRefillModal({ hearts, coins }: { hearts: number; coins: number }) {
@@ -8,6 +8,15 @@ export default function HeartsRefillModal({ hearts, coins }: { hearts: number; c
   const [pending, setPending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [open]);
 
   const missing = Math.max(0, 5 - hearts);
   const cost = missing * 60;
@@ -39,7 +48,13 @@ export default function HeartsRefillModal({ hearts, coins }: { hearts: number; c
 
       {open && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4" onClick={() => setOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Isi Ulang Nyawa"
+            className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-lg font-extrabold mb-1">Isi Ulang Nyawa</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
               Nyawa saat ini: ❤️ {hearts}/5

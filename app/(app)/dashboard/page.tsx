@@ -4,6 +4,8 @@ import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getDailyMission, getDueFlashcardCount, getEngagementStats, getLanguages } from "@/lib/dashboard";
 import { getUserBadges } from "@/lib/badges";
+import { getTopWeaknesses } from "@/lib/weakness";
+import { db } from "@/lib/db";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import AiStatus from "@/components/AiStatus";
 import HeartsRefillModal from "@/components/HeartsRefillModal";
@@ -25,12 +27,35 @@ export default async function DashboardPage() {
 
   const langId = languages.some((l) => l.id === profile.preferred_language) ? profile.preferred_language : "English";
 
-  const [curriculum, mission, dueCount, badges] = await Promise.all([
+  const [curriculum, mission, dueCount, badges, topWeaknesses, dailyLogs] = await Promise.all([
     getCurriculum(),
     getDailyMission(session.email, langId),
     getDueFlashcardCount(session.email, langId),
     getUserBadges(session.email),
+    getTopWeaknesses(session.email, langId, 5),
+    db.userProgressLog.findMany({
+      where: { email: session.email, createdAt: { gte: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d; })() } },
+      select: { createdAt: true, scoreGained: true },
+    }),
   ]);
+
+  const byDay = new Map<string, number>();
+  for (const l of dailyLogs) {
+    if (!l.createdAt) continue;
+    const key = `${l.createdAt.getFullYear()}-${l.createdAt.getMonth() + 1}-${l.createdAt.getDate()}`;
+    byDay.set(key, (byDay.get(key) ?? 0) + l.scoreGained);
+  }
+  const dayLabels = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+  const skillPoints = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    skillPoints.push({ label: dayLabels[d.getDay()], value: byDay.get(key) ?? 0 });
+  }
+  const maxScore = Math.max(1, ...skillPoints.map((p) => p.value));
+  const weekTotal = skillPoints.reduce((s, p) => s + p.value, 0);
 
   const currentLevel = profile.current_level[langId] ?? "A1.0";
   const baseLevel = currentLevel.split(".")[0] ?? "A1";
@@ -153,6 +178,45 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-400 mt-4">
             Level {level?.title ?? baseLevel}: {level?.topics.join(" · ") ?? ""}
           </p>
+        </section>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-extrabold mb-3">📈 Skill Progress 7 Hari</h2>
+          <svg viewBox="0 0 280 96" className="w-full h-24" preserveAspectRatio="none" aria-hidden="true">
+            <polyline
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-teal-500"
+              points={skillPoints.map((p, i) => `${Math.round((i * 280) / 6)},${Math.round(92 - (p.value / maxScore) * 84)}`).join(" ")}
+            />
+          </svg>
+          <div className="grid grid-cols-7 mt-1 text-center text-[10px] font-semibold text-slate-400">
+            {skillPoints.map((p, i) => (
+              <span key={i}>{p.label}</span>
+            ))}
+          </div>
+          <p className="text-xs text-slate-400 mt-2">Total {weekTotal} poin minggu ini</p>
+        </section>
+
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+          <h2 className="text-lg font-extrabold mb-3">🎯 Kelemahan Teratas</h2>
+          {topWeaknesses.length === 0 ? (
+            <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada data kelemahan.</p>
+          ) : (
+            <ul className="space-y-2">
+              {topWeaknesses.map((w) => (
+                <li key={w.topic} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-700 p-3">
+                  <span className="text-sm font-bold">{w.topic}</span>
+                  <span className="text-[11px] font-bold text-rose-500 bg-rose-500/10 rounded-lg px-2 py-0.5">{w.count}x</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       </div>
 
