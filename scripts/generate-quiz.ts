@@ -61,21 +61,29 @@ async function generateQuiz(language: string): Promise<void> {
       targets.push({ levelId: lvl.levelId, levelTitle: lvl.title, goal: g.goal, count });
     }
   }
-  // Rata-ratakan: unit dengan varian PALING SEDIKIT diproses duluan — jika putus di tengah,
-  // run berikutnya melengkapi yang masih kurang (mis. 1/10 → 2/10) sebelum menaikkan yang sudah 2/10.
+  // Rata-ratakan: HANYA unit pada tier varian TERENDAH yang diproses (maks +1) —
+  // unit yang sudah lebih tinggi dibiarkan menunggu sampai yang lain menyusul,
+  // sehingga semua unit selalu merata (2/10 bersama sebelum ada yang 3/10).
   targets.sort((a, b) => a.count - b.count || a.levelTitle.localeCompare(b.levelTitle) || a.goal.localeCompare(b.goal));
-
   const pending = targets.filter((t) => t.count < CONTENT_QUIZ_MAX_VARIANTS);
+  const floor = pending.length > 0 ? pending[0]!.count : CONTENT_QUIZ_MAX_VARIANTS;
+  const toProcess = pending.filter((t) => t.count === floor);
+  const waiting = pending.length - toProcess.length;
   const full = targets.length - pending.length;
-  console.log(`Unit quiz: ${targets.length} (varian < ${CONTENT_QUIZ_MAX_VARIANTS}: ${pending.length}, sudah penuh: ${full})`);
+  console.log(
+    `Unit quiz: ${targets.length} (diproses: ${toProcess.length} di ${floor}/${CONTENT_QUIZ_MAX_VARIANTS}, menunggu: ${waiting}, penuh: ${full})`
+  );
   if (dryRun) {
-    for (const t of pending) {
+    for (const t of toProcess) {
       console.log(`  ${col(`${t.levelTitle} — Quiz: ${t.goal}`, C.dim)}: varian ${t.count}/${CONTENT_QUIZ_MAX_VARIANTS} → +1`);
+    }
+    if (waiting > 0) {
+      console.log(col(`  (${waiting} unit menunggu — sudah lebih tinggi dari tier ${floor}/${CONTENT_QUIZ_MAX_VARIANTS})`, C.yellow));
     }
     console.log(col("(dry-run — tidak ada generate)", C.dim));
     return;
   }
-  if (pending.length === 0) {
+  if (toProcess.length === 0) {
     console.log(col("Semua unit quiz sudah maksimal — tidak ada yang ditambahkan.", C.yellow));
     return;
   }
@@ -91,14 +99,14 @@ async function generateQuiz(language: string): Promise<void> {
     noTTYOutput: true,
     stream: process.stdout,
   });
-  bar.start(pending.length, 0, { level: "", active: "" });
+  bar.start(toProcess.length, 0, { level: "", active: "" });
 
   let added = 0;
   let failed = 0;
   const failedList: string[] = [];
 
   try {
-    for (const t of pending) {
+    for (const t of toProcess) {
       const label = `Quiz: ${t.goal}`;
       const unitStart = Date.now();
       bar.update(added, { level: t.levelTitle, active: label });
@@ -112,14 +120,14 @@ async function generateQuiz(language: string): Promise<void> {
         bar.stop();
         const logLine = `  ✓ ${label} [${duration}] (varian ${newCount}/${CONTENT_QUIZ_MAX_VARIANTS})`;
         console.log(col(logLine, C.green));
-        bar.start(pending.length, added, { level: "", active: "" });
+        bar.start(toProcess.length, added, { level: "", active: "" });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         bar.stop();
         console.error(col(`  ✗ ${label} — ${msg}`, C.red));
         failedList.push(`${t.levelTitle} — ${label}: ${msg}`);
         failed++;
-        bar.start(pending.length, added, { level: "", active: "" });
+        bar.start(toProcess.length, added, { level: "", active: "" });
       }
     }
     bar.stop();
