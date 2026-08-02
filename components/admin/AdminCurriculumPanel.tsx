@@ -160,20 +160,20 @@ export default function AdminCurriculumPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">📚 Kurikulum</h2>
+        <h2 className="text-base font-bold text-slate-900">📚 Kurikulum</h2>
       </div>
 
-      {status && <div className="px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
-      {error && <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
+      {status && <div className="px-4 py-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-semibold">{status}</div>}
+      {error && <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>}
 
       <div className="grid md:grid-cols-2 gap-6 items-start">
-        <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <section className="bg-white rounded-lg p-5 border border-slate-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-extrabold">Levels (CEFR)</h3>
+            <h3 className="text-base font-bold text-slate-900">Levels (CEFR)</h3>
             <button
               type="button"
               onClick={openCreateLevel}
-              className="px-3 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-xs font-bold"
+              className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold"
             >
               Tambah
             </button>
@@ -187,10 +187,10 @@ export default function AdminCurriculumPanel() {
               {levels.map((level) => (
                 <li key={level.id}>
                   <div
-                    className={`flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer border ${
+                    className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer border ${
                       selectedId === level.id
-                        ? "bg-teal-500/10 border-teal-500/50"
-                        : "border-transparent hover:bg-slate-100 dark:hover:bg-slate-800"
+                        ? "bg-blue-50 border-blue-200"
+                        : "border-transparent hover:bg-slate-50"
                     }`}
                     onClick={() => { setTopics(null); setSelectedId(level.id); }}
                   >
@@ -200,7 +200,7 @@ export default function AdminCurriculumPanel() {
                     <button
                       type="button"
                       onClick={(e) => { e.stopPropagation(); openEditLevel(level); }}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold"
+                      className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold"
                     >
                       Edit
                     </button>
@@ -211,16 +211,16 @@ export default function AdminCurriculumPanel() {
           )}
         </section>
 
-        <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <section className="bg-white rounded-lg p-5 border border-slate-200">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-extrabold">
-              Daftar Topik: <span className="text-teal-600 dark:text-teal-400">{selectedLevel?.title ?? ""}</span>
+            <h3 className="text-base font-bold text-slate-900">
+              Daftar Topik: <span className="text-blue-700">{selectedLevel?.title ?? ""}</span>
             </h3>
             <button
               type="button"
               onClick={openCreateTopic}
               disabled={!selectedId}
-              className="px-3 py-1.5 rounded-lg bg-teal-500 hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold"
+              className="px-3 py-1.5 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-semibold"
             >
               Tambah Topik
             </button>
@@ -235,13 +235,13 @@ export default function AdminCurriculumPanel() {
             <ul className="space-y-2">
               {topics.map((topic) => (
                 <li key={topic.id}>
-                  <div className="flex items-center gap-3 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-3 px-3 py-2 rounded-md border border-slate-200">
                     <span className="text-xs font-bold text-slate-400 w-8">{topic.order_index}</span>
                     <span className="font-semibold text-sm flex-1">{topic.title}</span>
                     <button
                       type="button"
                       onClick={() => openEditTopic(topic)}
-                      className="px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold"
+                      className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold"
                     >
                       Edit
                     </button>
@@ -255,16 +255,16 @@ export default function AdminCurriculumPanel() {
 
       {(creatingLevel || editingLevel) && (
         <Modal title={editingLevel ? "Edit Level Pembelajaran" : "Tambah Level Pembelajaran"} onClose={closeLevelModal}>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Kode</label>
-          <input value={levelForm.id} disabled={!!editingLevel} onChange={(e) => setLevelForm((f) => ({ ...f, id: e.target.value }))} placeholder="e.g. A1" className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Nama</label>
-          <input value={levelForm.title} onChange={(e) => setLevelForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Beginner" className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Base Reward</label>
-          <input type="number" value={levelForm.base_reward_points} onChange={(e) => setLevelForm((f) => ({ ...f, base_reward_points: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Order Index</label>
-          <input type="number" value={levelForm.order_index} onChange={(e) => setLevelForm((f) => ({ ...f, order_index: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Deskripsi</label>
-          <textarea value={levelForm.description} onChange={(e) => setLevelForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 resize-none" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Kode</label>
+          <input value={levelForm.id} disabled={!!editingLevel} onChange={(e) => setLevelForm((f) => ({ ...f, id: e.target.value }))} placeholder="e.g. A1" className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Nama</label>
+          <input value={levelForm.title} onChange={(e) => setLevelForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Beginner" className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Base Reward</label>
+          <input type="number" value={levelForm.base_reward_points} onChange={(e) => setLevelForm((f) => ({ ...f, base_reward_points: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Order Index</label>
+          <input type="number" value={levelForm.order_index} onChange={(e) => setLevelForm((f) => ({ ...f, order_index: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Deskripsi</label>
+          <textarea value={levelForm.description} onChange={(e) => setLevelForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none" />
           <ModalFooter
             onCancel={closeLevelModal}
             onSave={saveLevel}
@@ -275,12 +275,12 @@ export default function AdminCurriculumPanel() {
 
       {(creatingTopic || editingTopic) && (
         <Modal title={editingTopic ? "Edit Topik" : "Tambah Topik"} onClose={closeTopicModal}>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Level</label>
-          <input value={selectedLevel?.title ?? ""} disabled className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Nama Topik</label>
-          <input value={topicForm.title} onChange={(e) => setTopicForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Greetings &amp; Introductions" className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Order Index</label>
-          <input type="number" value={topicForm.order_index} onChange={(e) => setTopicForm((f) => ({ ...f, order_index: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Level</label>
+          <input value={selectedLevel?.title ?? ""} disabled className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Nama Topik</label>
+          <input value={topicForm.title} onChange={(e) => setTopicForm((f) => ({ ...f, title: e.target.value }))} placeholder="e.g. Greetings &amp; Introductions" className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Order Index</label>
+          <input type="number" value={topicForm.order_index} onChange={(e) => setTopicForm((f) => ({ ...f, order_index: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           <ModalFooter onCancel={closeTopicModal} onSave={saveTopic} disabled={topicForm.title.trim().length === 0} />
         </Modal>
       )}

@@ -50,47 +50,47 @@ export default function ChangePasswordModal({ onClose }: { onClose: () => void }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Ganti Password"
-        className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 w-full max-w-md shadow-xl"
+        className="bg-white border border-slate-200 rounded-lg p-5 w-full max-w-md shadow-xs"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
-          <p className="text-lg font-black">🔑 Ganti Password</p>
-          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-sm font-bold">✕</button>
+          <p className="text-base font-bold text-slate-900">🔑 Ganti Password</p>
+          <button type="button" onClick={onClose} className="text-slate-400 hover:text-slate-600 text-sm font-semibold">✕</button>
         </div>
         {error && (
-          <p className="mb-4 p-3 bg-rose-50 dark:bg-rose-900/30 border border-rose-300 dark:border-rose-700 rounded-lg text-rose-600 dark:text-rose-400 text-xs font-semibold">{error}</p>
+          <p className="mb-4 p-3 bg-rose-50 border border-rose-200 rounded-md text-rose-600 text-xs font-semibold">{error}</p>
         )}
         {success && (
-          <p className="mb-4 p-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-300 dark:border-emerald-700 rounded-lg text-emerald-600 dark:text-emerald-400 text-xs font-semibold">{success}</p>
+          <p className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-600 text-xs font-semibold">{success}</p>
         )}
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Password Lama</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password Lama</label>
             <input type="password" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} disabled={pending}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Password Baru</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Password Baru</label>
             <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} disabled={pending}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50" />
           </div>
           <div>
-            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Konfirmasi Password Baru</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Konfirmasi Password Baru</label>
             <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} disabled={pending}
-              className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm bg-white dark:bg-slate-800 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 disabled:opacity-50" />
           </div>
           <div className="flex gap-3 pt-1">
             <button type="submit" disabled={pending}
-              className="flex-1 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-bold">
+              className="flex-1 px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-sm font-semibold">
               {pending ? "Memproses..." : "Simpan"}
             </button>
             <button type="button" onClick={onClose} disabled={pending}
-              className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-800">
+              className="px-4 py-2 rounded-md border border-slate-300 text-slate-600 text-sm font-semibold hover:bg-slate-50">
               Batal
             </button>
           </div>

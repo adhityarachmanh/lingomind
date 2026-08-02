@@ -72,7 +72,7 @@ export default function AdminConfigPanel() {
 
   if (error && (!appConfigs || !missionConfigs)) {
     return (
-      <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">
+      <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">
         {error}
         <button type="button" onClick={() => { setError(null); setReloadKey((k) => k + 1); }} className="ml-2 text-xs font-bold underline">
           Coba Lagi
@@ -87,29 +87,29 @@ export default function AdminConfigPanel() {
 
   return (
     <div className="space-y-6">
-      {status && <div className="px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
-      {error && <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
+      {status && <div className="px-4 py-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-semibold">{status}</div>}
+      {error && <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>}
 
-      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <h2 className="text-lg font-extrabold mb-4">⚙️ Sistem Konfigurasi Utama</h2>
+      <section className="bg-white rounded-lg p-5 border border-slate-200">
+        <h2 className="text-base font-bold text-slate-900 mb-4">⚙️ Sistem Konfigurasi Utama</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <tr className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50">
                 <th className="text-left py-2 px-3">Key</th>
                 <th className="text-left py-2 px-3">Value</th>
                 <th className="text-left py-2 px-3">Deskripsi</th>
                 <th className="text-left py-2 px-3">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody>
               {appConfigs.map((c) => (
-                <tr key={c.key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <tr key={c.key} className="hover:bg-slate-50 border-b border-slate-100">
                   <td className="py-2 px-3 font-bold">{c.key}</td>
                   <td className="py-2 px-3">{c.value}</td>
                   <td className="py-2 px-3 text-xs text-slate-400">{c.description}</td>
                   <td className="py-2 px-3">
-                    <button type="button" onClick={() => { setEditingApp(c); setAppValue(c.value); }} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                    <button type="button" onClick={() => { setEditingApp(c); setAppValue(c.value); }} className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold">
                       Edit
                     </button>
                   </td>
@@ -120,12 +120,12 @@ export default function AdminConfigPanel() {
         </div>
       </section>
 
-      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <h2 className="text-lg font-extrabold mb-4">🎯 Konfigurasi Misi Harian</h2>
+      <section className="bg-white rounded-lg p-5 border border-slate-200">
+        <h2 className="text-base font-bold text-slate-900 mb-4">🎯 Konfigurasi Misi Harian</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <tr className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50">
                 <th className="text-left py-2 px-3">Nama</th>
                 <th className="text-left py-2 px-3">Lesson</th>
                 <th className="text-left py-2 px-3">Quiz</th>
@@ -135,9 +135,9 @@ export default function AdminConfigPanel() {
                 <th className="text-left py-2 px-3">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody>
               {missionConfigs.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <tr key={c.id} className="hover:bg-slate-50 border-b border-slate-100">
                   <td className="py-2 px-3 font-bold">{c.name}</td>
                   <td className="py-2 px-3">{c.lesson_target}</td>
                   <td className="py-2 px-3">{c.quiz_target}</td>
@@ -152,7 +152,7 @@ export default function AdminConfigPanel() {
                         weakness: String(c.weakness_target), fcMin: String(c.flashcard_target_min),
                         fcMax: String(c.flashcard_target_max),
                       });
-                    }} className="px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold">
+                    }} className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-semibold">
                       Edit
                     </button>
                   </td>
@@ -165,11 +165,11 @@ export default function AdminConfigPanel() {
 
       {editingApp && (
         <Modal title="Edit Konfigurasi" onClose={() => setEditingApp(null)}>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Key</label>
-          <input value={editingApp.key} disabled className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm disabled:opacity-60" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Key</label>
+          <input value={editingApp.key} disabled className="w-full bg-slate-100 border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 disabled:opacity-60" />
           <p className="text-xs text-slate-400 mt-2">{editingApp.description}</p>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Value</label>
-          <input value={appValue} onChange={(e) => setAppValue(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Value</label>
+          <input value={appValue} onChange={(e) => setAppValue(e.target.value)} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           <ModalFooter onCancel={() => setEditingApp(null)} onSave={saveApp} />
         </Modal>
       )}
@@ -182,9 +182,9 @@ export default function AdminConfigPanel() {
             ["fcMin", "Flashcard Target Min"], ["fcMax", "Flashcard Target Max"],
           ] as const).map(([key, label]) => (
             <div key={key} className="mb-3">
-              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">{label}</label>
               <input type="number" value={missionForm[key] ?? ""} onChange={(e) => setMissionForm((f) => ({ ...f, [key]: e.target.value }))}
-                className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20" />
+                className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
             </div>
           ))}
           <ModalFooter onCancel={() => setEditingMission(null)} onSave={saveMission} />

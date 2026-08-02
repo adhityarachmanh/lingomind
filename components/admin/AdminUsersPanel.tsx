@@ -89,7 +89,7 @@ export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) 
 
   if (error && !users) {
     return (
-      <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">
+      <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">
         {error}
         <button type="button" onClick={() => { setError(null); setReloadKey((k) => k + 1); }} className="ml-2 text-xs font-bold underline">
           Coba Lagi
@@ -104,21 +104,21 @@ export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) 
 
   return (
     <div className="space-y-6">
-      {status && <div className="px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
-      {error && <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
+      {status && <div className="px-4 py-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-semibold">{status}</div>}
+      {error && <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>}
 
-      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
-        <h2 className="text-lg font-extrabold mb-4">👥 Manajemen Pengguna</h2>
+      <section className="bg-white rounded-lg p-5 border border-slate-200">
+        <h2 className="text-base font-bold text-slate-900 mb-4">👥 Manajemen Pengguna</h2>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Cari email atau nama..."
-          className="w-full mb-4 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+          className="w-full mb-4 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
         />
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <tr className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50">
                 <th className="text-left py-2 px-3">Email</th>
                 <th className="text-left py-2 px-3">Nama</th>
                 <th className="text-left py-2 px-3">Role</th>
@@ -129,18 +129,18 @@ export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) 
                 <th className="text-left py-2 px-3">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody>
               {filtered.length === 0 && (
                 <tr>
                   <td colSpan={8} className="py-6 text-center text-slate-400 text-sm">Tidak ada pengguna yang cocok.</td>
                 </tr>
               )}
               {filtered.map((u) => (
-                <tr key={u.email} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <tr key={u.email} className="hover:bg-slate-50 border-b border-slate-100">
                   <td className="py-2 px-3 font-bold">{u.email}</td>
                   <td className="py-2 px-3">{u.full_name || "—"}</td>
                   <td className="py-2 px-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${u.role === "admin" ? "bg-rose-500/10 text-rose-600 dark:text-rose-400" : "bg-slate-500/10 text-slate-600 dark:text-slate-300"}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${u.role === "admin" ? "bg-rose-50 text-rose-600" : "bg-slate-100 text-slate-600"}`}>
                       {u.role ?? "user"}
                     </span>
                   </td>
@@ -150,13 +150,13 @@ export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) 
                   <td className="py-2 px-3">{u.streak_days}</td>
                   <td className="py-2 px-3">
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => openEdit(u)} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                      <button type="button" onClick={() => openEdit(u)} className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold">
                         Edit Stats
                       </button>
-                      <button type="button" onClick={() => reset(u)} className="px-3 py-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold">
+                      <button type="button" onClick={() => reset(u)} className="px-2.5 py-1 rounded-md bg-rose-50 text-rose-600 hover:bg-rose-100 text-xs font-semibold">
                         Reset
                       </button>
-                      <button type="button" onClick={() => toggleRole(u)} className="px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold">
+                      <button type="button" onClick={() => toggleRole(u)} className="px-2.5 py-1 rounded-md bg-amber-50 text-amber-600 hover:bg-amber-100 text-xs font-semibold">
                         {u.role === "admin" ? "Cabut Admin" : "Jadikan Admin"}
                       </button>
                     </div>
@@ -170,17 +170,17 @@ export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) 
 
       {editing && (
         <Modal title="Edit Statistik Pengguna" onClose={() => setEditing(null)}>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Email</label>
-          <input value={editing.email} disabled className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm disabled:opacity-60" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Email</label>
+          <input value={editing.email} disabled className="w-full bg-slate-100 border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-900 disabled:opacity-60" />
           <div className="mt-4 mb-3">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Koin</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Koin</label>
             <input type="number" value={coins} onChange={(e) => setCoins(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           </div>
           <div className="mb-3">
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Streak</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Streak</label>
             <input type="number" value={streak} onChange={(e) => setStreak(e.target.value)}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+              className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
           </div>
           <ModalFooter onCancel={() => setEditing(null)} onSave={saveStats} />
         </Modal>

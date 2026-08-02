@@ -92,7 +92,7 @@ export default function AdminShopPanel() {
 
   if (error && !items) {
     return (
-      <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">
+      <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">
         {error}
         <button type="button" onClick={() => { setError(null); setReloadKey((k) => k + 1); }} className="ml-2 text-xs font-bold underline">
           Coba Lagi
@@ -108,24 +108,24 @@ export default function AdminShopPanel() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-extrabold">🛒 Katalog Toko</h2>
+        <h2 className="text-base font-bold text-slate-900">🛒 Katalog Toko</h2>
         <button
           type="button"
           onClick={openCreate}
-          className="px-4 py-2 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold"
+          className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
         >
           Tambah Item
         </button>
       </div>
 
-      {status && <div className="px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
-      {error && <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
+      {status && <div className="px-4 py-3 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-600 text-sm font-semibold">{status}</div>}
+      {error && <div className="px-4 py-3 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-sm">{error}</div>}
 
-      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+      <section className="bg-white rounded-lg p-5 border border-slate-200">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+              <tr className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50">
                 <th className="text-left py-2 px-3">Ikon</th>
                 <th className="text-left py-2 px-3">Nama</th>
                 <th className="text-left py-2 px-3">Harga</th>
@@ -134,16 +134,16 @@ export default function AdminShopPanel() {
                 <th className="text-left py-2 px-3">Aksi</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+            <tbody>
               {items.map((item) => (
-                <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <tr key={item.id} className="hover:bg-slate-50 border-b border-slate-100">
                   <td className="py-2 px-3 text-xl">{item.icon_name ?? "🎁"}</td>
                   <td className="py-2 px-3 font-bold">{item.name}</td>
                   <td className="py-2 px-3">🪙 {item.cost}</td>
                   <td className="py-2 px-3">{item.effect_type}</td>
                   <td className="py-2 px-3 text-xs text-slate-400">{item.description}</td>
                   <td className="py-2 px-3">
-                    <button type="button" onClick={() => openEdit(item)} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                    <button type="button" onClick={() => openEdit(item)} className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-semibold">
                       Edit
                     </button>
                   </td>
@@ -161,16 +161,16 @@ export default function AdminShopPanel() {
 
       {(creating || editing) && (
         <Modal title={editing ? "Edit Item Toko" : "Tambah Item Toko"} onClose={closeModal}>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Ikon</label>
-          <input value={form.icon_name} onChange={(e) => setForm((f) => ({ ...f, icon_name: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Harga (Koin)</label>
-          <input type="number" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Nama</label>
-          <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Tipe Efek</label>
-          <input value={form.effect_type} onChange={(e) => setForm((f) => ({ ...f, effect_type: e.target.value }))} placeholder="e.g. shield, streak_freeze, double_xp" className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm placeholder:text-slate-400 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Deskripsi</label>
-          <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 resize-none" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">Ikon</label>
+          <input value={form.icon_name} onChange={(e) => setForm((f) => ({ ...f, icon_name: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Harga (Koin)</label>
+          <input type="number" value={form.cost} onChange={(e) => setForm((f) => ({ ...f, cost: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Nama</label>
+          <input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Tipe Efek</label>
+          <input value={form.effect_type} onChange={(e) => setForm((f) => ({ ...f, effect_type: e.target.value }))} placeholder="e.g. shield, streak_freeze, double_xp" className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mt-4 mb-1">Deskripsi</label>
+          <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} rows={3} className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 resize-none" />
           <ModalFooter onCancel={closeModal} onSave={save} disabled={form.name.trim().length === 0} />
         </Modal>
       )}
