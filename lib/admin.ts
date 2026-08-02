@@ -246,11 +246,11 @@ export interface ContentWorkOptions {
   generalPracticeVariants: number;
 }
 
-// Target minimal per level: lesson 5 bagian per goal (modifier normal), quiz 1 per goal, exam 1, general_practice 1.
+// Target minimal per level: lesson 3 bagian per goal (modifier normal), quiz 1 per goal, exam 1, general_practice 1.
 // Panel admin bisa menambah varian quiz tanpa batas (generateQuizVariantAction tidak punya cap).
 export const CONTENT_EXAM_VARIANTS = 1;
 export const CONTENT_GENERAL_PRACTICE_VARIANTS = 1;
-export const CONTENT_PARTS = 5;
+export const CONTENT_PARTS = 3;
 export const CONTENT_LESSON_MODIFIERS = ["normal"] as const;
 export const CONTENT_QUIZ_VARIANTS = 1;
 

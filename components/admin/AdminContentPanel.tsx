@@ -11,8 +11,6 @@ import {
 } from "@/lib/actions/admin";
 import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/admin";
 
-const LESSON_PARTS = 5;
-
 function levelBadge(level: ContentLevelStatus): { label: string; cls: string } {
   if (level.done >= level.total) return { label: "Selesai", cls: "bg-emerald-50 text-emerald-700 border-emerald-200" };
   if (level.done > 0) return { label: "Parsial", cls: "bg-amber-50 text-amber-700 border-amber-200" };
@@ -35,7 +33,6 @@ export default function AdminContentPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
 
   // Sinkronkan bahasa terpilih ke query param ?language= agar bertahan saat halaman direfresh.
   function readLanguageParam(): string | null {
@@ -200,18 +197,16 @@ export default function AdminContentPanel() {
                 <th className="px-4 py-2.5 font-bold">Lesson</th>
                 <th className="px-4 py-2.5 font-bold">Quiz</th>
                 <th className="px-4 py-2.5 font-bold">Status</th>
-                <th className="px-4 py-2.5" />
               </tr>
             </thead>
             <tbody>
               {status.levels.map((lvl) => {
                 const badge = levelBadge(lvl);
-                const isOpen = expanded === lvl.levelId;
                 const isSpecial = (goal: string) => goal === "exam" || goal === "general_practice";
                 return (
                   <Fragment key={lvl.levelId}>
                     <tr className="border-t border-slate-200 bg-slate-50/60">
-                      <td colSpan={6} className="px-4 py-2 font-bold text-slate-800">{lvl.title} · {badge.label}</td>
+                      <td colSpan={5} className="px-4 py-2 font-bold text-slate-800">{lvl.title} · {badge.label}</td>
                     </tr>
                     {lvl.goals.map((g) => {
                       const gb = goalBadge(g);
@@ -249,27 +244,9 @@ export default function AdminContentPanel() {
                           <td className="px-4 py-2">
                             <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${gb.cls}`}>{gb.label}</span>
                           </td>
-                          <td className="px-4 py-2 text-right">
-                            {isOpen && (
-                              <span className="text-[11px] text-slate-400">
-                                Lesson {g.lessonDone}/{isSpecial(g.goal) ? 0 : LESSON_PARTS} · Quiz {g.quizDone}
-                              </span>
-                            )}
-                          </td>
                         </tr>
                       );
                     })}
-                    <tr className="border-t border-slate-100">
-                      <td colSpan={6} className="px-4 py-1.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setExpanded(isOpen ? null : lvl.levelId)}
-                          className="text-xs font-semibold text-blue-600 hover:text-blue-700"
-                        >
-                          {isOpen ? "Tutup Detail" : "Lihat Detail"}
-                        </button>
-                      </td>
-                    </tr>
                   </Fragment>
                 );
               })}

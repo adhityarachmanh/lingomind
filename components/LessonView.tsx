@@ -12,7 +12,7 @@ type State =
   | { status: "loading" }
   | { status: "retrying" }
   | { status: "error"; message: string }
-  | { status: "ready"; lesson: LessonContainer };
+  | { status: "ready"; lesson: LessonContainer; totalParts: number };
 
 export default function LessonView({
   goal,
@@ -44,7 +44,7 @@ export default function LessonView({
           setState({ status: "error", message: res.error });
           return;
         }
-        setState({ status: "ready", lesson: res.lesson });
+        setState({ status: "ready", lesson: res.lesson, totalParts: res.totalParts ?? 3 });
       })
       .catch((e) => {
         if (cancelled) return;
@@ -106,6 +106,7 @@ export default function LessonView({
   }
 
   const { lesson } = state;
+  const isLastPart = part >= state.totalParts;
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
       <div className="flex items-center justify-between mb-4">
@@ -156,13 +157,22 @@ export default function LessonView({
             Jika sudah paham materinya, lanjutkan ke quiz untuk evaluasi.
           </p>
           <div className="mt-4 space-y-2">
-            <button
-              type="button"
-              onClick={nextPart}
-              className="w-full px-4 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold"
-            >
-              Lesson Selanjutnya
-            </button>
+            {isLastPart ? (
+              <Link
+                href={`/quiz/${encodeURIComponent(goal)}`}
+                className="block w-full px-4 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold text-center"
+              >
+                Mulai Quiz
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={nextPart}
+                className="w-full px-4 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold"
+              >
+                Lesson Selanjutnya
+              </button>
+            )}
             <Link
               href={`/quiz/${encodeURIComponent(goal)}`}
               className="block w-full px-4 py-3 rounded-xl border border-teal-500/60 text-teal-600 dark:text-teal-400 text-sm font-bold text-center"

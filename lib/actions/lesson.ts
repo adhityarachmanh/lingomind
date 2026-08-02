@@ -4,6 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getEngagementStats } from "../dashboard";
 import { parseAiJson } from "../ai-content/parse";
+import { CONTENT_PARTS } from "../admin";
 import { db } from "../db";
 import type { LessonContainer } from "../types";
 
@@ -27,7 +28,7 @@ async function resolveLessonContext(session: { email: string }) {
 export async function getLessonAction(
   goal: string,
   part: number
-): Promise<{ lesson: LessonContainer; language: string } | { error: string }> {
+): Promise<{ lesson: LessonContainer; language: string; totalParts: number } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
 
@@ -50,7 +51,7 @@ export async function getLessonAction(
   if (cached) {
     const parsed = parseAiJson<LessonContainer>(cached.contentJson);
     if (parsed && parsed.title && parsed.content) {
-      return { lesson: parsed, language };
+      return { lesson: parsed, language, totalParts: CONTENT_PARTS };
     }
   }
 
