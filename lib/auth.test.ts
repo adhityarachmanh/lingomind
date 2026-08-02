@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createSessionToken, verifySessionToken } from "./auth";
+import { createSessionToken, isAdminRole, verifySessionToken } from "./auth";
 
 process.env.AUTH_SECRET = "test-secret-0123456789abcdef";
 
@@ -18,5 +18,21 @@ describe("session token", () => {
   });
   it("menolak sampah", async () => {
     expect(await verifySessionToken("not-a-jwt")).toBeNull();
+  });
+});
+
+describe("isAdminRole", () => {
+  it("admin → true", () => {
+    expect(isAdminRole("admin")).toBe(true);
+  });
+  it("user → false", () => {
+    expect(isAdminRole("user")).toBe(false);
+  });
+  it("null/undefined → false", () => {
+    expect(isAdminRole(null)).toBe(false);
+    expect(isAdminRole(undefined)).toBe(false);
+  });
+  it("string lain → false", () => {
+    expect(isAdminRole("moderator")).toBe(false);
   });
 });

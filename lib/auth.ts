@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { db } from "./db";
 
 export interface SessionUser {
   email: string;
@@ -62,4 +63,16 @@ export async function getSession(): Promise<SessionUser | null> {
   const token = store.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   return verifySessionToken(token);
+}
+
+export function isAdminRole(role: string | null | undefined): boolean {
+  return role === "admin";
+}
+
+export async function requireAdmin(): Promise<{ email: string } | null> {
+  const session = await getSession();
+  if (!session) return null;
+  const user = await db.user.findUnique({ where: { email: session.email } });
+  if (!user || !isAdminRole(user.role)) return null;
+  return { email: session.email };
 }
