@@ -51,6 +51,20 @@ export default function AdminContentPanel() {
   const [message, setMessage] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Sinkronkan bahasa terpilih ke query param ?language= agar bertahan saat halaman direfresh.
+  function readLanguageParam(): string | null {
+    if (typeof window === "undefined") return null;
+    const lang = new URLSearchParams(window.location.search).get("language");
+    return lang && lang.trim() !== "" ? lang.trim() : null;
+  }
+
+  function writeLanguageParam(language: string) {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("language", language);
+    window.history.replaceState(null, "", url.toString());
+  }
+
   async function refreshStatus() {
     if (!languageId) return;
     setError(null);
@@ -107,8 +121,13 @@ export default function AdminContentPanel() {
       .then((res) => {
         if (cancelled) return;
         if ("error" in res) { setError(res.error); return; }
-        setLanguages(res.languages.map((l) => ({ id: l.id, name: l.name })));
-        if (res.languages.length > 0) setLanguageId(res.languages[0]?.id ?? "");
+        const langs = res.languages.map((l) => ({ id: l.id, name: l.name }));
+        setLanguages(langs);
+        // preferensi dari query param ?language= (bertahan saat refresh)
+        const saved = readLanguageParam();
+        const initial = saved && langs.some((l) => l.id === saved) ? saved : langs[0]?.id ?? "";
+        setLanguageId(initial);
+        if (initial && initial !== saved) writeLanguageParam(initial);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -190,7 +209,7 @@ export default function AdminContentPanel() {
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">Bahasa</label>
             <select
               value={languageId}
-              onChange={(e) => setLanguageId(e.target.value)}
+              onChange={(e) => { setLanguageId(e.target.value); writeLanguageParam(e.target.value); }}
               className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             >
               {languages.map((l) => (
