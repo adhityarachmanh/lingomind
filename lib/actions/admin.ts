@@ -175,11 +175,6 @@ export async function changeAdminPasswordAction(input: { currentPassword: string
 }
 
 
-export interface ContentJobInfo {
-  status: string | null;
-  error: string | null;
-}
-
 function contentUnitLabel(u: ContentUnit, levelTitle?: string): string {
   const prefix = levelTitle ? `${levelTitle} — ` : "";
   if (u.kind === "lesson") return `${prefix}Lesson: ${u.goal} — Bagian ${u.part} (${u.modifier})`;
@@ -188,15 +183,14 @@ function contentUnitLabel(u: ContentUnit, levelTitle?: string): string {
 
 export async function getContentGenerationStatusAction(input: {
   language: string;
-}): Promise<AdminResult<{ ok: boolean; status: LanguageContentStatus; job: ContentJobInfo; failedCount: number }>> {
+}): Promise<AdminResult<{ ok: boolean; status: LanguageContentStatus; failedCount: number }>> {
   const g = await guard();
   if (typeof g !== "string") return g;
-  const [status, job, failedCount] = await Promise.all([
+  const [status, failedCount] = await Promise.all([
     resolveLanguageContentStatus(input.language),
-    db.contentGenerationJob.findFirst({ where: { language: input.language }, orderBy: { id: "desc" } }),
     db.failedContentUnit.count({ where: { language: input.language } }),
   ]);
-  return { ok: true, status, job: { status: job?.status ?? null, error: job?.error ?? null }, failedCount };
+  return { ok: true, status, failedCount };
 }
 
 export async function generateContentChunkAction(input: {
@@ -226,16 +220,6 @@ export async function generateContentChunkAction(input: {
   }
 
   return { ok: true, done: status.done + 1, total: status.total, label, generated: true };
-}
-
-export async function cancelContentGenerationAction(language: string): Promise<AdminResult<{ ok: boolean }>> {
-  const g = await guard();
-  if (typeof g !== "string") return g;
-  await db.contentGenerationJob.updateMany({
-    where: { language, status: "running" },
-    data: { status: "cancelled", updatedAt: new Date() },
-  });
-  return { ok: true };
 }
 
 export async function resetFailedContentUnitsAction(language: string): Promise<AdminResult<{ ok: boolean }>> {
