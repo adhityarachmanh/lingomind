@@ -8,20 +8,35 @@ import { processContentBatch } from "@/lib/admin";
 // tiap invokasi memproses batch unit sampai ~4,5 menit, lalu me-chain invokasi berikutnya
 // (POST resume dengan Bearer CRON_SECRET) hingga seluruh konten bahasa selesai.
 const BATCH_MS = 270_000;
-const STALE_MS = 10 * 60 * 1000;
+const STALE_MS = 8 * 60 * 1000;
 
 async function chainNext(language: string): Promise<void> {
   const url = process.env.APP_URL || "http://localhost:3000";
   const secret = process.env.CRON_SECRET ?? "";
   try {
-    await fetch(`${url}/api/content-generation`, {
+    const res = await fetch(`${url}/api/content-generation`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${secret}` },
       body: JSON.stringify({ language, resume: true }),
     });
+    if (!res.ok) {
+      // Tandai job failed agar user TAHU chain putus (jangan sembunyi) dan bisa mulai ulang.
+      const data = await res.json().catch(() => null);
+      const detail = typeof data?.error === "string" ? data.error : `HTTP ${res.status}`;
+      const hint =
+        res.status === 401
+          ? " (pastikan CRON_SECRET terisi di Vercel env dan sama nilainya)"
+          : "";
+      await db.contentGenerationJob.updateMany({
+        where: { language, status: "running" },
+        data: { status: "failed", error: `Chain terputus: ${detail}${hint}`, updatedAt: new Date() },
+      });
+    }
   } catch {
-    // chain terputus (mis. timeout jaringan) — job tetap running;
-    // start berikutnya mendeteksi job stale dan menutupnya otomatis.
+    await db.contentGenerationJob.updateMany({
+      where: { language, status: "running" },
+      data: { status: "failed", error: "Chain terputus (jaringan) — klik Generate di Background untuk melanjutkan.", updatedAt: new Date() },
+    });
   }
 }
 
@@ -32,6 +47,8 @@ async function runChunk(language: string): Promise<void> {
   });
   if (!job) return;
   try {
+    // heartbeat: updatedAt segar sejak batch mulai → deteksi stale akurat jika chain mati
+    await db.contentGenerationJob.update({ where: { id: job.id }, data: { updatedAt: new Date() } });
     const { done, total } = await processContentBatch(language, BATCH_MS);
     if (done >= total) {
       await db.contentGenerationJob.update({ where: { id: job.id }, data: { status: "done", updatedAt: new Date() } });
