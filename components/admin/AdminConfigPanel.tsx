@@ -1,3 +1,184 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  getAppConfigsAdminAction, getMissionConfigsAdminAction,
+  updateAppConfigAdminAction, updateMissionConfigAdminAction,
+} from "@/lib/actions/admin";
+import { Modal, ModalFooter } from "./ui";
+
+interface AppConfigRow { key: string; value: string; description: string | null; }
+interface MissionConfigRow {
+  id: number; name: string; lesson_target: number; quiz_target: number;
+  weakness_target: number; flashcard_target_min: number; flashcard_target_max: number;
+}
+
 export default function AdminConfigPanel() {
-  return null;
+  const [appConfigs, setAppConfigs] = useState<AppConfigRow[] | null>(null);
+  const [missionConfigs, setMissionConfigs] = useState<MissionConfigRow[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [editingApp, setEditingApp] = useState<AppConfigRow | null>(null);
+  const [editingMission, setEditingMission] = useState<MissionConfigRow | null>(null);
+  const [appValue, setAppValue] = useState("");
+  const [missionForm, setMissionForm] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([getAppConfigsAdminAction(), getMissionConfigsAdminAction()])
+      .then(([a, m]) => {
+        if (cancelled) return;
+        if ("error" in a) { setError(a.error); return; }
+        if ("error" in m) { setError(m.error); return; }
+        setAppConfigs(a.configs);
+        setMissionConfigs(m.configs);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "Gagal memuat konfigurasi.");
+      });
+    return () => { cancelled = true; };
+  }, [reloadKey]);
+
+  async function saveApp() {
+    if (!editingApp) return;
+    setStatus(null);
+    const res = await updateAppConfigAdminAction({ key: editingApp.key, value: appValue }).catch(() => ({ error: "Gagal menyimpan." }));
+    if ("error" in res) { setError(res.error); return; }
+    setStatus("Konfigurasi diperbarui!");
+    setEditingApp(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  async function saveMission() {
+    if (!editingMission) return;
+    const toNum = (v: string, fallback: number) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : fallback; };
+    const input = {
+      id: editingMission.id,
+      lessonTarget: toNum(missionForm.lesson, editingMission.lesson_target),
+      quizTarget: toNum(missionForm.quiz, editingMission.quiz_target),
+      weaknessTarget: toNum(missionForm.weakness, editingMission.weakness_target),
+      flashcardTargetMin: toNum(missionForm.fcMin, editingMission.flashcard_target_min),
+      flashcardTargetMax: toNum(missionForm.fcMax, editingMission.flashcard_target_max),
+    };
+    setStatus(null);
+    const res = await updateMissionConfigAdminAction(input).catch(() => ({ error: "Gagal menyimpan." }));
+    if ("error" in res) { setError(res.error); return; }
+    setStatus("Misi harian diperbarui!");
+    setEditingMission(null);
+    setReloadKey((k) => k + 1);
+  }
+
+  if (!appConfigs || !missionConfigs) {
+    return <div className="text-sm text-slate-400">Memuat konfigurasi...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      {status && <div className="px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
+      {error && <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
+
+      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h2 className="text-lg font-extrabold mb-4">⚙️ Sistem Konfigurasi Utama</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                <th className="text-left py-2 px-3">Key</th>
+                <th className="text-left py-2 px-3">Value</th>
+                <th className="text-left py-2 px-3">Deskripsi</th>
+                <th className="text-left py-2 px-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              {appConfigs.map((c) => (
+                <tr key={c.key} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <td className="py-2 px-3 font-bold">{c.key}</td>
+                  <td className="py-2 px-3">{c.value}</td>
+                  <td className="py-2 px-3 text-xs text-slate-400">{c.description}</td>
+                  <td className="py-2 px-3">
+                    <button type="button" onClick={() => { setEditingApp(c); setAppValue(c.value); }} className="px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="bg-white dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm">
+        <h2 className="text-lg font-extrabold mb-4">🎯 Konfigurasi Misi Harian</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-xs uppercase text-slate-400 border-b border-slate-200 dark:border-slate-700">
+                <th className="text-left py-2 px-3">Nama</th>
+                <th className="text-left py-2 px-3">Lesson</th>
+                <th className="text-left py-2 px-3">Quiz</th>
+                <th className="text-left py-2 px-3">Weakness</th>
+                <th className="text-left py-2 px-3">FC Min</th>
+                <th className="text-left py-2 px-3">FC Max</th>
+                <th className="text-left py-2 px-3">Aksi</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+              {missionConfigs.map((c) => (
+                <tr key={c.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <td className="py-2 px-3 font-bold">{c.name}</td>
+                  <td className="py-2 px-3">{c.lesson_target}</td>
+                  <td className="py-2 px-3">{c.quiz_target}</td>
+                  <td className="py-2 px-3">{c.weakness_target}</td>
+                  <td className="py-2 px-3">{c.flashcard_target_min}</td>
+                  <td className="py-2 px-3">{c.flashcard_target_max}</td>
+                  <td className="py-2 px-3">
+                    <button type="button" onClick={() => {
+                      setEditingMission(c);
+                      setMissionForm({
+                        lesson: String(c.lesson_target), quiz: String(c.quiz_target),
+                        weakness: String(c.weakness_target), fcMin: String(c.flashcard_target_min),
+                        fcMax: String(c.flashcard_target_max),
+                      });
+                    }} className="px-3 py-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-bold">
+                      Edit
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      {editingApp && (
+        <Modal title="Edit Konfigurasi" onClose={() => setEditingApp(null)}>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Key</label>
+          <input value={editingApp.key} disabled className="w-full bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm disabled:opacity-60" />
+          <p className="text-xs text-slate-400 mt-2">{editingApp.description}</p>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mt-4 mb-1">Value</label>
+          <input value={appValue} onChange={(e) => setAppValue(e.target.value)} className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20" />
+          <ModalFooter onCancel={() => setEditingApp(null)} onSave={saveApp} />
+        </Modal>
+      )}
+
+      {editingMission && (
+        <Modal title="Edit Misi Harian" onClose={() => setEditingMission(null)}>
+          <p className="text-xs font-bold text-slate-400 mb-3">{editingMission.name}</p>
+          {([
+            ["lesson", "Target Lesson"], ["quiz", "Target Quiz"], ["weakness", "Target Weakness"],
+            ["fcMin", "Flashcard Target Min"], ["fcMax", "Flashcard Target Max"],
+          ] as const).map(([key, label]) => (
+            <div key={key} className="mb-3">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">{label}</label>
+              <input type="number" value={missionForm[key] ?? ""} onChange={(e) => setMissionForm((f) => ({ ...f, [key]: e.target.value }))}
+                className="w-full bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20" />
+            </div>
+          ))}
+          <ModalFooter onCancel={() => setEditingMission(null)} onSave={saveMission} />
+        </Modal>
+      )}
+    </div>
+  );
 }
