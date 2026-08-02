@@ -13,6 +13,7 @@
     "db:seed": "prisma db seed",
     "db:check": "tsx scripts/check-db.ts",
     "content:generate": "tsx scripts/generate-content.ts",
+    "content:quiz": "tsx scripts/generate-quiz.ts",
     "test": "vitest run"
   },
   "dependencies": {
