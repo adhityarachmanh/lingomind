@@ -120,6 +120,11 @@ export async function submitExamResultAction(input: { passed: boolean; score: nu
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const profile = await getUserProfile(session.email);
   if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
-  const updated = await submitExamResult(session.email, profile.preferred_language, input.passed, input.score);
+  const language = profile.preferred_language;
+  const baseLevel = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
+  const curriculum = await getCurriculum();
+  const pts = curriculum.find((c) => c.level === baseLevel)?.base_reward_points ?? 10;
+  const clampedScore = Math.min(Math.max(0, input.score), 8 * pts);
+  const updated = await submitExamResult(session.email, language, input.passed, clampedScore);
   return { profile: updated };
 }

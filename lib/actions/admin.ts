@@ -1,6 +1,8 @@
 "use server";
 
+import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
+import { db } from "../db";
 import {
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
@@ -156,4 +158,17 @@ export async function updateMissionConfigAdminAction(input: { id: number; lesson
 export async function checkAdminRoleAction(): Promise<{ isAdmin: boolean } | { error: string }> {
   const admin = await requireAdmin();
   return { isAdmin: admin !== null };
+}
+
+export async function changeAdminPasswordAction(input: { currentPassword: string; newPassword: string }): Promise<{ ok: boolean } | { error: string }> {
+  const admin = await requireAdmin();
+  if (!admin) return { error: "Akses ditolak." };
+  const user = await db.user.findUnique({ where: { email: admin.email } });
+  if (!user || !user.passwordHash) return { error: "Akses ditolak." };
+  const match = await bcrypt.compare(input.currentPassword, user.passwordHash);
+  if (!match) return { error: "Password lama salah." };
+  if (input.newPassword.trim().length < 6) return { error: "Password baru minimal harus berukuran 6 karakter." };
+  const passwordHash = await bcrypt.hash(input.newPassword, 10);
+  await db.user.update({ where: { email: admin.email }, data: { passwordHash } });
+  return { ok: true };
 }

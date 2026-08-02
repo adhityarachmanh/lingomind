@@ -1,14 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { logoutAction } from "@/lib/actions/auth";
+import ChangePasswordModal from "./ChangePasswordModal";
 
 export interface AdminTab { key: string; label: string; icon: string; }
 
 export default function AdminShell({ tabs, children }: { tabs: AdminTab[]; children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
   const active = pathname.split("/")[2] ?? "konfigurasi";
   const activeTab = tabs.find((t) => t.key === active);
 
@@ -19,6 +22,7 @@ export default function AdminShell({ tabs, children }: { tabs: AdminTab[]; child
 
   return (
     <div className="h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+      {showPasswordModal && <ChangePasswordModal onClose={() => setShowPasswordModal(false)} />}
       <aside className="w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700 flex flex-col">
         <div className="p-6">
           <p className="text-xl font-black">LingoAdmin</p>
@@ -46,6 +50,7 @@ export default function AdminShell({ tabs, children }: { tabs: AdminTab[]; child
           <h1 className="font-extrabold">{activeTab?.label ?? "Admin"}</h1>
           <div className="flex items-center gap-4">
             <Link href="/dashboard" className="text-xs font-bold text-slate-400 hover:text-teal-600">Aplikasi Utama</Link>
+            <button type="button" onClick={() => setShowPasswordModal(true)} className="text-xs font-bold text-slate-400 hover:text-teal-600">🔑 Ganti Password</button>
             <button type="button" onClick={logout} className="text-xs font-bold text-slate-400 hover:text-rose-500">Logout</button>
           </div>
         </header>

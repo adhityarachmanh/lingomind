@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import { db } from "./db";
 import type { BattleItem } from "./types";
 
@@ -62,50 +63,65 @@ export async function getActiveBattles(email: string): Promise<BattleItem[]> {
 }
 
 export async function submitBattleScore(battleId: number, email: string, score: number): Promise<string> {
-  const battle = await db.quizBattle.findUnique({ where: { id: battleId } });
-  if (!battle) throw new Error("Tantangan tidak ditemukan.");
-  if (battle.status !== "pending") throw new Error("Tantangan sudah selesai atau dibatalkan.");
-  const amChallenger = battle.challengerEmail === email;
-  const isParticipant = amChallenger || battle.challengedEmail === email;
-  if (!isParticipant) throw new Error("Anda tidak berpartisipasi dalam tantangan ini.");
+  return db.$transaction(async (tx) => {
+    const rows = await tx.$queryRaw<
+      {
+        id: number;
+        status: string | null;
+        challenger_email: string;
+        challenged_email: string;
+        challenger_score: number | null;
+        challenged_score: number | null;
+      }[]
+    >(Prisma.sql`
+      SELECT id, status, challenger_email, challenged_email, challenger_score, challenged_score
+      FROM quiz_battles WHERE id = ${battleId} FOR UPDATE
+    `);
+    const battle = rows[0];
+    if (!battle) throw new Error("Tantangan tidak ditemukan.");
+    if (battle.status !== "pending") throw new Error("Tantangan sudah selesai atau dibatalkan.");
+    const amChallenger = battle.challenger_email === email;
+    const isParticipant = amChallenger || battle.challenged_email === email;
+    if (!isParticipant) throw new Error("Anda tidak berpartisipasi dalam tantangan ini.");
 
-  const opponentScore = amChallenger ? battle.challengedScore : battle.challengerScore;
-  const bothPlayed = opponentScore !== null;
+    const opponentScore = amChallenger ? battle.challenged_score : battle.challenger_score;
+    const bothPlayed = opponentScore !== null;
 
-  await db.quizBattle.update({
-    where: { id: battleId },
-    data: amChallenger ? { challengerScore: score } : { challengedScore: score },
+    await tx.quizBattle.update({
+      where: { id: battleId },
+      data: amChallenger ? { challengerScore: score } : { challengedScore: score },
+    });
+
+    if (!bothPlayed) {
+      return decideBattleMessage({ amChallenger, bothPlayed: false, winner: "tie", amWinner: false });
+    }
+
+    const winner = decideBattleWinner(score, opponentScore ?? 0);
+    const amWinner = amChallenger ? winner === "challenger" : winner === "challenged";
+    const message = decideBattleMessage({ amChallenger, bothPlayed: true, winner, amWinner });
+
+    await tx.quizBattle.update({ where: { id: battleId }, data: { status: "completed" } });
+    if (winner !== "tie") {
+      const winnerEmail = winner === "challenger" ? battle.challenger_email : battle.challenged_email;
+      await tx.userEngagementStat
+        .update({ where: { email: winnerEmail }, data: { coins: { increment: 50 } } })
+        .catch(() => {});
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      await tx.userDailyMission
+        .upsert({
+          where: { email_date: { email: winnerEmail, date: today } },
+          create: { email: winnerEmail, date: today },
+          update: {},
+        })
+        .catch(() => {});
+      await tx.userDailyMission
+        .update({
+          where: { email_date: { email: winnerEmail, date: today } },
+          data: { pvpWinsToday: { increment: 1 } },
+        })
+        .catch(() => {});
+    }
+    return message;
   });
-
-  if (!bothPlayed) {
-    return decideBattleMessage({ amChallenger, bothPlayed: false, winner: "tie", amWinner: false });
-  }
-
-  const winner = decideBattleWinner(score, opponentScore ?? 0);
-  const amWinner = amChallenger ? winner === "challenger" : winner === "challenged";
-  const message = decideBattleMessage({ amChallenger, bothPlayed: true, winner, amWinner });
-
-  await db.quizBattle.update({ where: { id: battleId }, data: { status: "completed" } });
-  if (winner !== "tie") {
-    const winnerEmail = winner === "challenger" ? battle.challengerEmail : battle.challengedEmail;
-    await db.userEngagementStat
-      .update({ where: { email: winnerEmail }, data: { coins: { increment: 50 } } })
-      .catch(() => {});
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    await db.userDailyMission
-      .upsert({
-        where: { email_date: { email: winnerEmail, date: today } },
-        create: { email: winnerEmail, date: today },
-        update: {},
-      })
-      .catch(() => {});
-    await db.userDailyMission
-      .update({
-        where: { email_date: { email: winnerEmail, date: today } },
-        data: { pvpWinsToday: { increment: 1 } },
-      })
-      .catch(() => {});
-  }
-  return message;
 }

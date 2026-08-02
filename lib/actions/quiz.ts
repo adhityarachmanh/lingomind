@@ -2,7 +2,7 @@
 
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
-import { getEngagementStats } from "../dashboard";
+import { getEngagementStats, getCurriculum } from "../dashboard";
 import { getTopWeaknesses, logSkillProgress, logWeakness, classifySkill, classifyWeaknessTopic } from "../weakness";
 import { generateQuiz, shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
@@ -99,8 +99,18 @@ export async function submitQuizResultAction(input: {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
 
-  await incrementCorrectAnswers(session.email, input.correctCount);
-  const profile = await applyQuizResult(session.email, input.language, input.goal, input.score);
-  await updateEngagementAfterQuiz(session.email, input.score);
-  return { profile };
+  const profile = await getUserProfile(session.email);
+  if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
+
+  const language = profile.preferred_language;
+  const baseLevel = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
+  const curriculum = await getCurriculum();
+  const pts = curriculum.find((c) => c.level === baseLevel)?.base_reward_points ?? 10;
+  const clampedScore = Math.min(Math.max(0, input.score), pts * 5);
+  const clampedCorrect = Math.min(Math.max(0, input.correctCount), 5);
+
+  await incrementCorrectAnswers(session.email, clampedCorrect);
+  const updated = await applyQuizResult(session.email, language, input.goal, clampedScore);
+  await updateEngagementAfterQuiz(session.email, clampedScore);
+  return { profile: updated };
 }

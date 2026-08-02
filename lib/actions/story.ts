@@ -4,6 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { generateStory } from "../ai-content/story";
 import { applyQuizResult, updateEngagementAfterQuiz } from "../progress";
+import { db } from "../db";
 import type { ActionResult } from "./types";
 import type { StoryData } from "../types";
 
@@ -31,6 +32,14 @@ export async function completeStoryAction(goal: string): Promise<ActionResult> {
   if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
 
   try {
+    // dedup anti-farm: story reward sekali per topik per hari
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const alreadyDone = await db.userProgressLog.count({
+      where: { email: session.email, activityType: "quiz", topic: goal, createdAt: { gte: todayStart } },
+    });
+    if (alreadyDone >= 1) return { message: "Cerita selesai." };
+
     await applyQuizResult(session.email, profile.preferred_language, goal, 20);
     await updateEngagementAfterQuiz(session.email, 20);
     return { message: "ok" };
