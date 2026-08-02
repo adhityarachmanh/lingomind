@@ -1,5 +1,5 @@
 import { db } from "./db";
-import type { AdminLanguageItem, AdminShopItem, AdminUserRow } from "./types";
+import type { AdminLanguageItem, AdminLevelItem, AdminMissionConfigItem, AdminShopItem, AdminTopicItem, AdminUserRow } from "./types";
 
 export async function getUsersAdmin(): Promise<AdminUserRow[]> {
   const users = await db.user.findMany({ orderBy: { email: "asc" } });
@@ -112,6 +112,75 @@ export async function updateLanguageAdmin(id: string, lang: AdminLanguageItem): 
       name: lang.name, nativeName: lang.native_name, flag: lang.flag,
       description: lang.description, themeClass: lang.theme_class, buttonClass: lang.button_class,
       category: lang.category, ttsLangCode: lang.tts_lang_code, edgeTtsVoice: lang.edge_tts_voice ?? "",
+    },
+  });
+}
+
+export async function getLevelsAdmin(): Promise<AdminLevelItem[]> {
+  const rows = await db.level.findMany({ orderBy: { orderIndex: "asc" } });
+  return rows.map((l) => ({
+    id: l.id, title: l.title, description: l.description,
+    base_reward_points: l.baseRewardPoints, order_index: l.orderIndex,
+  }));
+}
+
+export async function updateLevelAdmin(id: string, level: AdminLevelItem): Promise<void> {
+  await db.level.update({
+    where: { id },
+    data: { title: level.title, description: level.description, baseRewardPoints: level.base_reward_points, orderIndex: level.order_index },
+  });
+}
+
+export async function createLevelAdmin(level: AdminLevelItem): Promise<void> {
+  await db.level.create({
+    data: {
+      id: level.id, title: level.title, description: level.description,
+      baseRewardPoints: level.base_reward_points, orderIndex: level.order_index,
+    },
+  });
+}
+
+export async function getTopicsAdmin(levelId: string): Promise<AdminTopicItem[]> {
+  const rows = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
+  return rows.map((t) => ({ id: t.id, level_id: t.levelId, title: t.title, order_index: t.orderIndex }));
+}
+
+export async function updateTopicAdmin(id: number, title: string, orderIndex: number): Promise<void> {
+  await db.topic.update({ where: { id }, data: { title, orderIndex } });
+}
+
+export async function createTopicAdmin(levelId: string, title: string, orderIndex: number): Promise<void> {
+  await db.topic.create({ data: { levelId, title, orderIndex } });
+}
+
+export async function getAppConfigsAdmin(): Promise<{ key: string; value: string; description: string | null }[]> {
+  const rows = await db.appConfig.findMany({ orderBy: { key: "asc" } });
+  return rows.map((c) => ({ key: c.key, value: c.value, description: c.description }));
+}
+
+export async function updateAppConfigAdmin(key: string, value: string): Promise<void> {
+  await db.appConfig.update({ where: { key }, data: { value } });
+}
+
+export async function getMissionConfigsAdmin(): Promise<AdminMissionConfigItem[]> {
+  const rows = await db.missionConfig.findMany({ orderBy: { id: "asc" } });
+  return rows.map((c) => ({
+    id: c.id, name: c.name,
+    lesson_target: c.lessonTarget ?? 1, quiz_target: c.quizTarget ?? 1,
+    weakness_target: c.weaknessTarget ?? 3,
+    flashcard_target_min: c.flashcardTargetMin ?? 5, flashcard_target_max: c.flashcardTargetMax ?? 15,
+  }));
+}
+
+export async function updateMissionConfigAdmin(id: number, cfg: {
+  lessonTarget: number; quizTarget: number; weaknessTarget: number;
+  flashcardTargetMin: number; flashcardTargetMax: number;
+}): Promise<void> {
+  await db.missionConfig.update({
+    where: { id },
+    data: {
+      lessonTarget: cfg.lessonTarget, quizTarget: cfg.quizTarget, weaknessTarget: cfg.weaknessTarget,
+      flashcardTargetMin: cfg.flashcardTargetMin, flashcardTargetMax: cfg.flashcardTargetMax,
     },
   });
 }

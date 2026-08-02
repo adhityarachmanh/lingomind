@@ -118,4 +118,14 @@ export interface AdminLanguageItem {
   theme_class: string; button_class: string; category: string;
   tts_lang_code: string; edge_tts_voice: string | null;
 }
+export interface AdminLevelItem {
+  id: string; title: string; description: string; base_reward_points: number; order_index: number;
+}
+export interface AdminTopicItem {
+  id: number; level_id: string; title: string; order_index: number;
+}
+export interface AdminMissionConfigItem {
+  id: number; name: string; lesson_target: number; quiz_target: number;
+  weakness_target: number; flashcard_target_min: number; flashcard_target_max: number;
+}
 export interface SkillProgressPoint { day: string; grammar: number; vocabulary: number; listening: number; }
