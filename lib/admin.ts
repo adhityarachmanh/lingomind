@@ -19,16 +19,23 @@ function words(s: string): Set<string> {
   return new Set(normalizeTextForCompare(s).split(" ").filter(Boolean));
 }
 
-// Quiz duplikat jika >= 50% pertanyaan (normalisasi) sama dengan varian existing.
-export function hasDuplicateQuiz(existingQuestions: string[], newQuestions: string[]): boolean {
+// Quiz duplikat jika ADA minimal 1 pertanyaan yang identik (normalisasi, question + listen_text)
+// dengan varian existing — soal listening dibedakan oleh isi listen_text, bukan instruksinya.
+export function hasDuplicateQuiz(
+  existingQuestions: { question: string; listenText?: string }[],
+  newQuestions: { question: string; listenText?: string }[]
+): boolean {
   if (existingQuestions.length === 0 || newQuestions.length === 0) return false;
-  const existing = new Set(existingQuestions.map(normalizeTextForCompare).filter(Boolean));
-  let overlap = 0;
+  const existing = new Set(
+    existingQuestions
+      .map((q) => normalizeTextForCompare(`${q.question} ${q.listenText ?? ""}`))
+      .filter(Boolean)
+  );
   for (const q of newQuestions) {
-    const n = normalizeTextForCompare(q);
-    if (n && existing.has(n)) overlap++;
+    const key = normalizeTextForCompare(`${q.question} ${q.listenText ?? ""}`);
+    if (key && existing.has(key)) return true;
   }
-  return overlap / Math.max(1, newQuestions.length) >= 0.5;
+  return false;
 }
 
 // Lesson duplikat jika judul sama persis (normalisasi) ATAU overlap kata konten (Jaccard) >= 0.6.
@@ -482,8 +489,8 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
     });
     const existingQuestions = existing.flatMap((e) => {
       try {
-        const p = JSON.parse(e.contentJson) as { questions?: { question?: string }[] };
-        return p.questions?.map((q) => q.question ?? "") ?? [];
+        const p = JSON.parse(e.contentJson) as { questions?: { question?: string; listen_text?: string }[] };
+        return p.questions?.map((q) => ({ question: q.question ?? "", listenText: q.listen_text ?? "" })) ?? [];
       } catch {
         return [];
       }
@@ -511,7 +518,12 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
           label: "quiz",
         });
       }
-      if (!hasDuplicateQuiz(existingQuestions, candidate.questions.map((q) => q.question))) {
+      if (
+        !hasDuplicateQuiz(
+          existingQuestions,
+          candidate.questions.map((q) => ({ question: q.question, listenText: q.listen_text ?? "" }))
+        )
+      ) {
         quiz = candidate;
         break;
       }

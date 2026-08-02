@@ -28,11 +28,38 @@ describe("buildContentWorkList", () => {
 });
 
 describe("hasDuplicateQuiz", () => {
-  it("mendeteksi duplikat saat >= 50% pertanyaan sama (case & HTML-insensitive)", () => {
-    expect(hasDuplicateQuiz(["What <b>is</b> your name?"], ["what is your name?  "])).toBe(true);
-    expect(hasDuplicateQuiz(["A", "B", "C", "D"], ["A", "X", "Y", "Z"])).toBe(false);
-    expect(hasDuplicateQuiz(["A", "B", "C"], ["A", "B", "X"])).toBe(true);
-    expect(hasDuplicateQuiz([], ["A", "B"])).toBe(false);
+  it("mendeteksi duplikat saat ADA minimal 1 pertanyaan identik (case & HTML-insensitive)", () => {
+    expect(
+      hasDuplicateQuiz([{ question: "What <b>is</b> your name?" }], [{ question: "what is your name?  " }])
+    ).toBe(true);
+    expect(
+      hasDuplicateQuiz(
+        [{ question: "A" }, { question: "B" }],
+        [{ question: "A" }, { question: "X" }, { question: "Y" }]
+      )
+    ).toBe(true);
+    expect(
+      hasDuplicateQuiz(
+        [{ question: "A" }, { question: "B" }],
+        [{ question: "C" }, { question: "X" }, { question: "Y" }]
+      )
+    ).toBe(false);
+    expect(hasDuplicateQuiz([], [{ question: "A" }])).toBe(false);
+  });
+
+  it("soal listening dibedakan oleh listen_text (instruksi yang sama bukan duplikat)", () => {
+    expect(
+      hasDuplicateQuiz(
+        [{ question: "Dengarkan lalu jawab", listenText: "Hello, how are you today?" }],
+        [{ question: "Dengarkan lalu jawab", listenText: "What time does the train leave?" }]
+      )
+    ).toBe(false);
+    expect(
+      hasDuplicateQuiz(
+        [{ question: "Dengarkan lalu jawab", listenText: "Hello, how are you today?" }],
+        [{ question: "Dengarkan lalu jawab", listenText: "Hello, how are you today?" }]
+      )
+    ).toBe(true);
   });
 });
 
