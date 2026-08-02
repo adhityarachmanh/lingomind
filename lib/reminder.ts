@@ -45,26 +45,33 @@ export async function sendDailyReminders(): Promise<{ sent: number; skipped: boo
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const subject = "Saatnya Belajar Bahasa di LingoMind! 🚀";
 
+  const CHUNK = 8;
   let sent = 0;
-  for (const u of users) {
-    const stats = statsMap.get(u.email);
-    if (!stats) continue;
-    const lastActive = stats.lastActiveDate;
-    if (lastActive && lastActive >= today) continue; // sudah aktif hari ini
+  for (let i = 0; i < users.length; i += CHUNK) {
+    const chunk = users.slice(i, i + CHUNK);
+    const results = await Promise.allSettled(
+      chunk.map((u) =>
+        (async () => {
+          const stats = statsMap.get(u.email);
+          if (!stats) return;
+          const lastActive = stats.lastActiveDate;
+          if (lastActive && lastActive >= today) return; // sudah aktif hari ini
 
-    const body = buildReminderBody({
-      fullName: u.fullName ?? "",
-      currentStreak: stats.currentStreak,
-      dueFlashcards: dueMap.get(u.email) ?? 0,
-      appUrl,
-    });
+          const body = buildReminderBody({
+            fullName: u.fullName ?? "",
+            currentStreak: stats.currentStreak,
+            dueFlashcards: dueMap.get(u.email) ?? 0,
+            appUrl,
+          });
 
-    try {
-      await sendMail(u.email, subject, body);
-      sent += 1;
-      console.log(`Pengingat harian dikirim ke: ${u.email}`);
-    } catch (e) {
-      console.error(`Gagal mengirim pengingat ke ${u.email}: ${e}`);
+          await sendMail(u.email, subject, body);
+          console.log(`Pengingat harian dikirim ke: ${u.email}`);
+        })(),
+      ),
+    );
+    for (const r of results) {
+      if (r.status === "fulfilled") sent += 1;
+      else console.error(`Gagal mengirim pengingat ke user: ${r.reason}`);
     }
   }
   return { sent, skipped: false };
