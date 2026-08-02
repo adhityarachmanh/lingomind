@@ -5,13 +5,14 @@
 import "dotenv/config";
 import { db } from "../lib/db";
 import {
+  FAILED_COOLDOWN_MS,
+  FAILED_SKIP_THRESHOLD,
   findNextUndoneUnits,
   generateOneContentUnit,
   resolveLanguageContentStatus,
 } from "../lib/admin";
 
 const PARALLEL = 3;
-const FAILED_SKIP = 3;
 
 const args = process.argv.slice(2);
 const languages = args.filter((a) => !a.startsWith("--"));
@@ -30,7 +31,7 @@ async function generateLanguage(language: string): Promise<void> {
     console.log(`  ${lvl.title}: ${lvl.done}/${lvl.total} (lesson ${lvl.lessonDone}/${lvl.lessonTotal}, quiz ${lvl.quizDone}/${lvl.quizTotal})`);
   }
   const failedCount = await db.failedContentUnit.count({ where: { language } });
-  if (failedCount > 0) console.log(`Unit gagal tersimpan: ${failedCount} (di-skip setelah ${FAILED_SKIP}x gagal)`);
+  if (failedCount > 0) console.log(`Unit gagal tersimpan: ${failedCount} (di-skip sementara setelah ${FAILED_SKIP_THRESHOLD}x gagal, cooldown 30 menit)`);
   if (dryRun) {
     console.log("(dry-run — tidak ada generate)");
     return;
@@ -52,7 +53,17 @@ async function generateLanguage(language: string): Promise<void> {
     }
     const units = await findNextUndoneUnits(language, level.levelId, PARALLEL);
     if (units.length === 0) {
-      console.log("TIDAK ADA UNIT YANG BISA DIKERJAKAN (level di-skip semua).");
+      // semua unit tersisa sedang dalam cooldown kegagalan → tunggu lalu lanjut otomatis
+      const failed = await db.failedContentUnit.findMany({ where: { language, failures: { gte: FAILED_SKIP_THRESHOLD } } });
+      const now = Date.now();
+      const cooling = failed.filter((f) => now - f.lastFailedAt.getTime() < FAILED_COOLDOWN_MS);
+      if (cooling.length > 0) {
+        const waitMs = Math.max(...cooling.map((f) => f.lastFailedAt.getTime() + FAILED_COOLDOWN_MS - now)) + 5_000;
+        console.log(`  ${cooling.length} unit dalam cooldown kegagalan AI — menunggu ${Math.ceil(waitMs / 60000)} menit lalu lanjut... (Ctrl+C untuk berhenti, resume aman)`);
+        await new Promise((r) => setTimeout(r, waitMs));
+        continue;
+      }
+      console.log("TIDAK ADA UNIT YANG BISA DIKERJAKAN (gagal permanen — reset via Prisma Studio: hapus baris failed_content_units, lalu jalankan ulang).");
       return;
     }
     await Promise.all(

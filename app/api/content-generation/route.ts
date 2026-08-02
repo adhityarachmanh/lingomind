@@ -55,13 +55,13 @@ async function runChunk(language: string): Promise<void> {
       return;
     }
     if (blocked) {
-      // sisa unit semuanya di-skip (gagal AI permanen) — hentikan chain agar tidak jalan selamanya
+      // sisa unit semuanya sedang dalam cooldown kegagalan AI — hentikan chain agar tidak jalan selamanya
       const failedCount = await db.failedContentUnit.count({ where: { language } });
       await db.contentGenerationJob.update({
         where: { id: job.id },
         data: {
           status: "failed",
-          error: `Ada ${failedCount} unit yang gagal AI berulang kali (di-skip). Klik "Reset Unit Gagal" di panel, lalu generate lagi.`,
+          error: `Ada ${failedCount} unit gagal AI (di-skip sementara — dicoba lagi otomatis setelah 30 menit; atau klik "Reset Unit Gagal" untuk mencoba segera).`,
           updatedAt: new Date(),
         },
       });

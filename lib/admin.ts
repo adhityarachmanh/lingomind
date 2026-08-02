@@ -339,7 +339,8 @@ export async function resolveLanguageContentStatus(language: string): Promise<La
 }
 
 // Ambil hingga `n` unit berikutnya yang belum ada di cache untuk (language, level).
-// Unit yang gagal AI >= 3x di-skip (anti-deadlock) sampai direset via panel admin.
+// Unit yang gagal AI >= 3x di-skip SEMENTARA (cooldown 30 menit sejak kegagalan terakhir) —
+// setelah cooldown dicoba lagi otomatis (anti-deadlock sekaligus anti-skip-permanen).
 export async function findNextUndoneUnits(language: string, levelId: string, n: number): Promise<ContentUnit[]> {
   const topics = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
   const units = buildContentWorkList(topics.map((t) => t.title), {
@@ -352,7 +353,7 @@ export async function findNextUndoneUnits(language: string, levelId: string, n: 
   const [lessons, quizzes, failed] = await Promise.all([
     db.cachedLesson.findMany({ where: { language, level: levelId }, select: { goal: true, part: true, modifier: true } }),
     db.cachedQuiz.findMany({ where: { language, level: levelId }, select: { goal: true, modifier: true } }),
-    db.failedContentUnit.findMany({ where: { language, level: levelId, failures: { gte: 3 } } }),
+    db.failedContentUnit.findMany({ where: { language, level: levelId, failures: { gte: FAILED_SKIP_THRESHOLD } } }),
   ]);
   const lessonKeys = new Set(lessons.map((l) => `${l.goal}|${l.part}|${l.modifier}`));
   const quizCounts = new Map<string, number>();
@@ -360,7 +361,12 @@ export async function findNextUndoneUnits(language: string, levelId: string, n: 
     const key = `${q.goal}|${q.modifier}`;
     quizCounts.set(key, (quizCounts.get(key) ?? 0) + 1);
   }
-  const skippedKeys = new Set(failed.map((f) => `${f.goal}|${f.part}|${f.modifier}`));
+  const now = Date.now();
+  const skippedKeys = new Set(
+    failed
+      .filter((f) => now - f.lastFailedAt.getTime() < FAILED_COOLDOWN_MS)
+      .map((f) => `${f.goal}|${f.part}|${f.modifier}`)
+  );
 
   const quizPos = new Map<string, number>();
   const found: ContentUnit[] = [];
@@ -433,6 +439,9 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
 const BATCH_SAFETY_MS = 90_000;
 // Jumlah unit yang digenerate paralel dalam satu iterasi batch (AI calls independen → waktu ÷3).
 const BATCH_PARALLEL = 3;
+// Unit gagal AI di-skip SEMENTARA (cooldown), bukan permanen — setelah cooldown dicoba lagi otomatis.
+export const FAILED_SKIP_THRESHOLD = 3;
+export const FAILED_COOLDOWN_MS = 30 * 60 * 1000;
 
 export async function getFailedContentUnitCount(language: string): Promise<number> {
   return db.failedContentUnit.count({ where: { language } });
