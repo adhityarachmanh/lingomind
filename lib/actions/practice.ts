@@ -106,11 +106,39 @@ export async function logPracticeAnswerAction(input: {
 export async function submitGeneralPracticeResultAction(input: { perfect: boolean }): Promise<ActionResult> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const profile = await getUserProfile(session.email);
+  if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
+  const language = profile.preferred_language;
+  const baseLevel = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const todayPracticeCount = await db.userProgressLog.count({
+    where: { email: session.email, activityType: "practice", createdAt: { gte: todayStart } },
+  });
+
   if (input.perfect) {
-    await addHeart(session.email).catch(() => {}); // "Nyawa sudah penuh!" → abaikan (fire-and-forget legacy)
+    // anti-farm: hearts dari practice maks 3x/hari
+    if (todayPracticeCount <= 3) {
+      await addHeart(session.email).catch(() => {}); // "Nyawa sudah penuh!" → abaikan (fire-and-forget legacy)
+    }
     await updateEngagementAfterQuiz(session.email, 15);
   } else {
     await updateEngagementAfterQuiz(session.email, 10);
   }
+
+  await db.userProgressLog.create({
+    data: {
+      email: session.email,
+      language,
+      activityType: "practice",
+      topic: "General Practice",
+      scoreGained: input.perfect ? 15 : 10,
+      passed: input.perfect,
+      baseLevel,
+      topicIdx: 0,
+    },
+  }).catch(() => {});
+
   return { message: "ok" };
 }

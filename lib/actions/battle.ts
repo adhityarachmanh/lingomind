@@ -3,7 +3,7 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getCurriculum } from "../dashboard";
-import { getActiveBattles, submitBattleScore } from "../battle";
+import { getActiveBattles, normalizeBattleScore, submitBattleScore } from "../battle";
 import type { ActionResult } from "./types";
 import type { BattleItem } from "../types";
 
@@ -23,8 +23,9 @@ export async function submitBattleScoreAction(battleId: number, score: number): 
   const curriculum = await getCurriculum();
   const pts = curriculum.find((c) => c.level === baseLevel)?.base_reward_points ?? 10;
   const clampedScore = Math.min(Math.max(0, score), pts * 5);
+  const normalized = normalizeBattleScore(clampedScore, pts);
   try {
-    const message = await submitBattleScore(battleId, session.email, clampedScore);
+    const message = await submitBattleScore(battleId, session.email, normalized);
     return { message };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal mengirim skor tantangan." };

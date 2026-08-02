@@ -446,3 +446,14 @@ model SocialFeedLike {
   @@id([feedId, likerEmail])
   @@map("social_feed_likes")
 }
+
+model LoginAttempt {
+  id        Int      @id @default(autoincrement())
+  email     String
+  ip        String
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([email, ip, createdAt])
+  @@map("login_attempts")
+}

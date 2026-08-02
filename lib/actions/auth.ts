@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import bcrypt from "bcryptjs";
 import { db } from "../db";
 import { isValidEmail, isValidPassword } from "../validation";
@@ -68,20 +69,43 @@ export async function loginAction(_prev: ActionResult, formData: FormData): Prom
     return { error: "Format email tidak valid." };
   }
 
+  const h = await headers();
+  const xff = h.get("x-forwarded-for");
+  const ip = (xff ? xff.split(",")[0].trim() : h.get("x-real-ip") ?? "").trim() || "unknown";
+
+  async function recordAttempt(success: boolean): Promise<void> {
+    // Berlaku untuk semua login (user + admin) — admin login memakai loginAction yang sama.
+    await db.loginAttempt.create({ data: { email, ip, success } }).catch(() => {});
+    await db.loginAttempt
+      .deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } })
+      .catch(() => {});
+  }
+
+  const failedCount = await db.loginAttempt.count({
+    where: { email, ip, success: false, createdAt: { gte: new Date(Date.now() - 15 * 60 * 1000) } },
+  });
+  if (failedCount >= 5) {
+    return { error: "Terlalu banyak percobaan. Coba lagi dalam 15 menit." };
+  }
+
   const user = await db.user.findUnique({ where: { email } });
   if (!user || !user.passwordHash) {
+    await recordAttempt(false);
     return { error: "Email atau password salah." };
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
+    await recordAttempt(false);
     return { error: "Email atau password salah." };
   }
 
   if (!user.isVerified) {
+    await recordAttempt(false);
     return { error: "UNVERIFIED:Akun Anda belum diverifikasi. Silakan cek email Anda." };
   }
 
+  await recordAttempt(true);
   await setSessionCookie({
     email: user.email,
     full_name: user.fullName ?? "",

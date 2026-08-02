@@ -8,6 +8,12 @@ export function decideBattleWinner(myScore: number, opponentScore: number): "cha
   return "tie";
 }
 
+// normalisasi 0..100 agar perbandingan adil antar level (legacy: raw pts beda per level)
+export function normalizeBattleScore(score: number, pts: number): number {
+  const max = Math.max(1, pts * 5);
+  return Math.round((Math.min(Math.max(0, score), max) / max) * 100);
+}
+
 export function decideBattleMessage(input: {
   amChallenger: boolean;
   bothPlayed: boolean;
