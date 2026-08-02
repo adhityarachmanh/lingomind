@@ -3,7 +3,10 @@
 //   --dry-run: hanya tampilkan status per level tanpa generate (tanpa biaya AI)
 // Idempotent: unit yang sudah ada di cache di-skip; unit gagal AI >=3x di-skip sementara
 // (cooldown 30 mnt) lalu dicoba lagi otomatis.
+// Progress bar memakai cli-progress (update hanya saat state berubah — tanpa loop per detik;
+// otomatis nonaktif saat output di-redirect/pipe).
 import "dotenv/config";
+import cliProgress from "cli-progress";
 import { db } from "../lib/db";
 import {
   FAILED_COOLDOWN_MS,
@@ -14,8 +17,7 @@ import {
 } from "../lib/admin";
 
 const PARALLEL = 3;
-const REDRAW_MS = 1000;
-const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju/ETA
+const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju
 
 const args = process.argv.slice(2);
 const languages = args.filter((a) => !a.startsWith("--"));
@@ -33,11 +35,6 @@ const C = {
   cyan: "\x1b[36m",
 };
 const col = (s: string, code: string): string => (isTTY ? `${code}${s}${C.reset}` : s);
-
-function bar(percent: number, width = 24): string {
-  const filled = Math.round(Math.max(0, Math.min(1, percent)) * width);
-  return col("█".repeat(filled), C.green) + "░".repeat(width - filled);
-}
 
 function fmtDuration(ms: number): string {
   const s = Math.round(ms / 1000);
@@ -59,20 +56,18 @@ function unitLabel(u: { kind: string; goal: string; part: number; modifier: stri
 // ---- engine per bahasa ----
 async function generateLanguage(language: string): Promise<void> {
   const startedAt = Date.now();
-  let levels: { title: string; done: number; total: number }[] = [];
   let totalNow = 0;
   let startDone = 0;
-  let doneInRun = 0; // unit selesai dalam run ini (realtime)
-  const completions: number[] = []; // timestamp tiap unit selesai (untuk laju/ETA jendela bergulir)
+  let doneInRun = 0; // unit selesai dalam run ini
+  const completions: number[] = []; // timestamp tiap unit selesai (laju jendela bergulir)
   const activeUnits = new Map<string, number>(); // label → mulai (ms)
-  let lastRender = "";
+  let levelTitle = "";
 
   console.log(`\n${col(`=== ${language} ===`, C.bold)}`);
   const initial = await resolveLanguageContentStatus(language);
   console.log(`Status awal: ${col(`${initial.done}/${initial.total} unit`, C.cyan)}`);
   startDone = initial.done;
   totalNow = initial.total;
-  levels = initial.levels.map((l) => ({ title: l.title, done: l.done, total: l.total }));
 
   const failedCount = await db.failedContentUnit.count({ where: { language } });
   if (failedCount > 0) {
@@ -92,47 +87,46 @@ async function generateLanguage(language: string): Promise<void> {
     return;
   }
 
-  // render realtime: 1 baris live (progress + ETA + laju + unit aktif + level berjalan),
-  // ditulis di baris kursor dengan \r + \x1b[K — aman terhadap log error (baris bergeser ke bawah).
-  // Laju/ETA memakai jendela bergulir 3 menit agar stabil saat satu unit berjalan lama.
-  function rollingRate(now: number): number {
-    const cutoff = now - RATE_WINDOW_MS;
-    const recent = completions.filter((t) => t >= cutoff);
-    return recent.length / (RATE_WINDOW_MS / 60000);
+  // Progress bar (cli-progress): ETA rolling built-in (etaBuffer), update hanya saat state berubah.
+  const bar = new cliProgress.SingleBar({
+    format:
+      "{bar} {percentage}% | {value}/{total} | ETA {eta_formatted} | {rate} unit/mnt" +
+      "{level}{active}",
+    barCompleteChar: "█",
+    barIncompleteChar: "░",
+    hideCursor: true,
+    clearOnComplete: true,
+    etaBuffer: 30,
+    fps: 10,
+    noTTYOutput: true, // non-TTY (redirect/pipe): bar tidak dicetak, hanya log ✓ + summary
+    stream: process.stdout,
+  });
+
+  function startBar(): void {
+    bar.start(Math.max(1, totalNow), Math.min(startDone + doneInRun, totalNow), { rate: "0.0", level: "", active: "" });
+    refreshBar();
   }
 
-  function render(): void {
-    if (!isTTY) return;
-    const now = Date.now();
-    const elapsed = now - startedAt;
+  function refreshBar(): void {
     const done = startDone + doneInRun;
-    const pct = totalNow > 0 ? done / totalNow : 0;
-    const rate = rollingRate(now) || (done - startDone > 0 ? (done - startDone) / (elapsed / 60000) : 0);
-    const etaMs = rate > 0 ? ((totalNow - done) / rate) * 60000 : 0;
-    const active = [...activeUnits.entries()]
-      .map(([label, t]) => `${label} ${col(`[${fmtDuration(now - t)}]`, C.dim)}`)
-      .join(" · ");
-    const currentLevel = levels.find((l) => l.done < l.total);
-
-    const content =
-      `\r${bar(pct)} ${done}/${totalNow} (${Math.round(pct * 100)}%)` +
-      `  ${col(`ETA ${fmtDuration(etaMs)}`, C.cyan)}` +
-      `  ${col(`${rate.toFixed(1)} unit/mnt`, C.dim)}` +
-      (currentLevel ? `  ${col(`${currentLevel.title} ${currentLevel.done}/${currentLevel.total}`, C.yellow)}` : "") +
-      (active ? `  ${col("⟳", C.yellow)} ${active}` : "") +
-      "\x1b[K";
-    if (content === lastRender) return;
-    process.stdout.write(content);
-    lastRender = content;
+    const now = Date.now();
+    const cutoff = now - RATE_WINDOW_MS;
+    const rate = completions.filter((t) => t >= cutoff).length / (RATE_WINDOW_MS / 60000);
+    const active = [...activeUnits.keys()].join(" · ");
+    bar.update(Math.min(done, totalNow), {
+      rate: rate.toFixed(1),
+      level: levelTitle ? ` | ${levelTitle}` : "",
+      active: active ? ` | ⟳ ${active}` : "",
+    });
   }
 
-  const redrawTimer = setInterval(render, REDRAW_MS);
+  startBar();
 
   try {
     for (;;) {
       const s = await resolveLanguageContentStatus(language);
       totalNow = s.total;
-      levels = s.levels.map((l) => ({ title: l.title, done: l.done, total: l.total }));
+      levelTitle = s.levels.find((l) => l.done < l.total)?.title ?? "";
       if (s.done >= s.total) break;
 
       const level = s.levels.find((l) => l.done < l.total);
@@ -140,27 +134,26 @@ async function generateLanguage(language: string): Promise<void> {
 
       const units = await findNextUndoneUnits(language, level.levelId, PARALLEL);
       if (units.length === 0) {
-        // semua unit tersisa sedang dalam cooldown → countdown lalu lanjut otomatis
+        // semua unit tersisa sedang dalam cooldown → tunggu lalu lanjut otomatis
         const failed = await db.failedContentUnit.findMany({
           where: { language, failures: { gte: FAILED_SKIP_THRESHOLD } },
         });
         const now = Date.now();
         const cooling = failed.filter((f) => now - f.lastFailedAt.getTime() < FAILED_COOLDOWN_MS);
         if (cooling.length > 0) {
-          const until = Math.max(...cooling.map((f) => f.lastFailedAt.getTime() + FAILED_COOLDOWN_MS)) + 1_000;
-          for (;;) {
-            const remain = until - Date.now();
-            if (remain <= 0) break;
-            clearLine();
-            process.stdout.write(
-              `\r${col(`⏳ ${cooling.length} unit dalam cooldown kegagalan AI — lanjut dalam ${fmtDuration(remain)}`, C.yellow)}`
-            );
-            await new Promise((r) => setTimeout(r, 1000));
-          }
-          clearLine();
+          const waitMs = Math.max(...cooling.map((f) => f.lastFailedAt.getTime() + FAILED_COOLDOWN_MS - now)) + 5_000;
+          bar.stop();
+          console.log(
+            col(
+              `⏳ ${cooling.length} unit dalam cooldown kegagalan AI — menunggu ${fmtDuration(waitMs)} lalu lanjut otomatis... (Ctrl+C aman, resume idempotent)`,
+              C.yellow
+            )
+          );
+          await new Promise((r) => setTimeout(r, waitMs));
+          startBar();
           continue;
         }
-        clearLine();
+        bar.stop();
         console.log(
           col(
             "TIDAK ADA UNIT YANG BISA DIKERJAKAN (gagal permanen — reset via panel admin 'Reset Unit Gagal' atau Prisma Studio, lalu jalankan ulang).",
@@ -175,6 +168,7 @@ async function generateLanguage(language: string): Promise<void> {
           const label = unitLabel(unit);
           const unitStart = Date.now();
           activeUnits.set(label, unitStart);
+          refreshBar();
           try {
             await generateOneContentUnit(language, unit, level.levelId);
             await db.failedContentUnit
@@ -185,11 +179,12 @@ async function generateLanguage(language: string): Promise<void> {
             doneInRun++;
             completions.push(Date.now());
             const duration = fmtDuration(Date.now() - unitStart);
-            clearLine();
+            bar.stop();
             console.log(col(`  ✓ ${label} ${col(`[${duration}]`, C.dim)}`, C.green));
+            startBar();
           } catch (e) {
             const msg = e instanceof Error ? e.message : String(e);
-            clearLine();
+            bar.stop();
             console.error(col(`  ✗ ${label} — ${msg}`, C.red));
             await db.failedContentUnit
               .upsert({
@@ -202,14 +197,16 @@ async function generateLanguage(language: string): Promise<void> {
                 update: { failures: { increment: 1 }, lastFailedAt: new Date() },
               })
               .catch(() => {});
+            startBar();
           } finally {
             activeUnits.delete(label);
           }
         })
       );
+      refreshBar();
     }
 
-    clearInterval(redrawTimer);
+    bar.stop();
     clearLine();
 
     const final = await resolveLanguageContentStatus(language);
@@ -238,7 +235,7 @@ async function generateLanguage(language: string): Promise<void> {
       console.log(col("Tip: reset semua kegagalan via panel admin Konten → 'Reset Unit Gagal', lalu jalankan ulang.", C.dim));
     }
   } catch (e) {
-    clearInterval(redrawTimer);
+    bar.stop();
     clearLine();
     console.error(col(`ERROR: ${e instanceof Error ? e.message : String(e)}`, C.red));
     throw e;
