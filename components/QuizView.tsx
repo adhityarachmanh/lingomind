@@ -41,6 +41,7 @@ export default function QuizView({
   const [hearts, setHearts] = useState(initialHearts);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [battleMessage, setBattleMessage] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -119,7 +120,8 @@ export default function QuizView({
       return;
     }
     if (battleId) {
-      await submitBattleScoreAction(battleId, score).catch(() => {});
+      const bres = await submitBattleScoreAction(battleId, score).catch(() => null);
+      if (bres?.message) setBattleMessage(bres.message);
     }
     const required = ptsPerQuestion * 5;
     setPhase({ name: "finished", passed: score >= required, score });
@@ -178,6 +180,7 @@ export default function QuizView({
         <p className="text-4xl">🎉</p>
         <p className="text-2xl font-black">Kuis Selesai!</p>
         <p className="text-sm text-slate-500 dark:text-slate-400">Skor Anda berhasil dikirim ke database Neon.</p>
+        {battleMessage && <p className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-2">{battleMessage}</p>}
         <p className="text-3xl font-black text-teal-600 dark:text-teal-400">+{phase.score} Poin</p>
         {phase.passed ? (
           <div className="max-w-md bg-teal-500/10 border border-teal-500/40 rounded-2xl p-4">

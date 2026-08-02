@@ -45,6 +45,10 @@ export async function createBattleAction(challengedEmail: string, goal: string):
   if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
   const g = goal.trim();
   if (!g) return { error: "Topik kuis tidak boleh kosong!" };
-  await createBattleRecord(session.email, challengedEmail, profile.preferred_language, g);
+  try {
+    await createBattleRecord(session.email, challengedEmail, profile.preferred_language, g);
+  } catch (e) {
+    return { error: e instanceof Error && e.message ? e.message : "Gagal mengirim tantangan." };
+  }
   return { message: "Tantangan berhasil dikirim! Tutup jendela ini." };
 }

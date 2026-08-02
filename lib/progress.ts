@@ -139,13 +139,17 @@ export async function applyQuizResult(
     }),
   ]);
 
-  const weekStart = weekStartOf(new Date());
-  const groups = await db.leagueGroup.findMany({ where: { weekStartDate: weekStart }, select: { id: true } });
-  if (groups.length > 0) {
-    await db.userLeagueMember.updateMany({
-      where: { email, groupId: { in: groups.map((g) => g.id) } },
-      data: { leagueScore: { increment: actualDelta } },
-    }).catch(() => {});
+  try {
+    const weekStart = weekStartOf(new Date());
+    const groups = await db.leagueGroup.findMany({ where: { weekStartDate: weekStart }, select: { id: true } });
+    if (groups.length > 0) {
+      await db.userLeagueMember.updateMany({
+        where: { email, groupId: { in: groups.map((g) => g.id) } },
+        data: { leagueScore: { increment: actualDelta } },
+      });
+    }
+  } catch {
+    // Jangan pernah menggagalkan flow quiz karena update league gagal.
   }
 
   await incrementMissionProgress(email, "quiz");
