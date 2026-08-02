@@ -49,7 +49,7 @@ export async function generateStory(params: {
   let prompt = buildStoryPrompt(language, level, goal);
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const { text } = await generateText({ model, prompt, maxOutputTokens: 8192, temperature: 0.7 });
+    const { text } = await generateText({ model, prompt, maxOutputTokens: 2048, temperature: 0.7 });
     const story = parseStoryData(text);
     if (story) return story;
     prompt += `\n\nRespons sebelumnya tidak valid. Kembalikan HANYA JSON dengan bentuk yang diminta (4 segmen, tiap segmen punya question dengan 4 opsi dan 1 jawaban benar).`;

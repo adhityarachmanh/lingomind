@@ -66,13 +66,17 @@ export async function generateLesson(params: {
 
   const first = await generateText({ model, prompt, maxOutputTokens: 8192 });
   let lesson = parseAiJson<LessonContainer>(first.text);
+  let fromRetry = false;
   if (!lesson) {
     const retry = await generateText({ model, prompt, maxOutputTokens: 8192 });
     lesson = parseAiJson<LessonContainer>(retry.text);
+    fromRetry = true;
   }
   if (!lesson) throw new Error("Gagal parsing respons lesson: respons bukan JSON valid.");
 
-  if (!isRichLesson(lesson)) {
+  // batas maks 2 panggilan AI: enrichment hanya untuk hasil first (jika retry dipakai
+  // dan hasilnya kurang rich, terima apa adanya)
+  if (!fromRetry && !isRichLesson(lesson)) {
     const enrichmentPrompt = `${prompt}\n\nRespons sebelumnya kurang lengkap. Perbaiki JSON berikut agar memenuhi semua syarat kualitas (content >= 700 karakter, vocabulary >= 6, example_sentences >= 6):\n${JSON.stringify(lesson)}`;
     const second = await generateText({ model, prompt: enrichmentPrompt, maxOutputTokens: 8192 });
     const improved = parseAiJson<LessonContainer>(second.text);

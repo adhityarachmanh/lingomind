@@ -7,6 +7,7 @@ import { buildOpeningPrompt, buildReplySystemPrompt, generateChatReply } from ".
 import { db } from "../db";
 import type { ChatMessageItem } from "../types";
 
+// trim history: maks 30 pesan terakhir agar latency AI rendah
 async function fetchHistory(sessionId: number, limit: number): Promise<ChatMessageItem[]> {
   const rows = await db.chatMessage.findMany({
     where: { sessionId },
@@ -27,7 +28,7 @@ async function findOrCreateSession(
     where: { email, language, level, goal, roleplaySetting: setting },
   });
   if (existing) {
-    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 120) };
+    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 30) };
   }
   const created = await db.chatSession.create({
     data: { email, language, level, goal, roleplaySetting: setting },
@@ -74,7 +75,7 @@ export async function getOrCreateChatSessionAction(
     await db.chatMessage.create({
       data: { sessionId, sender: "ai", content: opening },
     });
-    resultMessages = await fetchHistory(sessionId, 120);
+    resultMessages = await fetchHistory(sessionId, 30);
   }
 
   return { sessionId, messages: resultMessages, language, level };
@@ -115,5 +116,5 @@ export async function sendChatMessageAction(
     data: { sessionId, sender: "ai", content: reply },
   });
 
-  return { messages: await fetchHistory(sessionId, 120) };
+  return { messages: await fetchHistory(sessionId, 30) };
 }
