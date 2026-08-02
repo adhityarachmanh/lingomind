@@ -16,15 +16,22 @@ export default function AdminLoginForm() {
 
   useEffect(() => {
     if (state.message === "ok") {
-      checkAdminRoleAction().then((r) => {
-        if ("isAdmin" in r && r.isAdmin) {
-          router.push("/admin/konfigurasi");
-        } else {
-          setRoleError("Akses ditolak. Anda bukan admin.");
-        }
-      });
+      checkAdminRoleAction()
+        .then((r) => {
+          if ("isAdmin" in r && r.isAdmin) {
+            router.push("/admin/konfigurasi");
+          } else {
+            setRoleError("Akses ditolak. Anda bukan admin.");
+          }
+        })
+        .catch(() => setRoleError("Gagal memeriksa hak akses."));
     }
   }, [state, router]);
+
+  function handleSubmit(formData: FormData) {
+    setRoleError(null);
+    formAction(formData);
+  }
 
   const errorMsg = state.error?.replace("UNVERIFIED:", "");
 
@@ -37,7 +44,7 @@ export default function AdminLoginForm() {
         {!roleError && errorMsg && (
           <p className="mt-4 p-3 bg-rose-900/30 border border-rose-700 rounded-lg text-rose-400 text-xs font-semibold">{errorMsg}</p>
         )}
-        <form action={formAction} className="text-left mt-6 space-y-4">
+        <form action={handleSubmit} className="text-left mt-6 space-y-4">
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Admin Email</label>
             <input type="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@lingomind.com" disabled={pending}

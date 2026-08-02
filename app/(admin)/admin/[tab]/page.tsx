@@ -16,7 +16,7 @@ export default async function AdminTabPage({ params }: { params: Promise<{ tab: 
     case "toko": return <AdminShopPanel />;
     case "bahasa": return <AdminLanguagePanel />;
     case "kurikulum": return <AdminCurriculumPanel />;
-    case "pengguna": return <AdminUsersPanel />;
+    case "pengguna": return <AdminUsersPanel adminEmail={admin.email} />;
     default: return <p className="text-sm text-slate-400">Tab tidak ditemukan.</p>;
   }
 }

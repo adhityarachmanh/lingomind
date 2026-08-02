@@ -12,7 +12,7 @@ interface UserRow {
   score: number; coins: number; streak_days: number;
 }
 
-export default function AdminUsersPanel() {
+export default function AdminUsersPanel({ adminEmail }: { adminEmail: string }) {
   const [users, setUsers] = useState<UserRow[] | null>(null);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +68,8 @@ export default function AdminUsersPanel() {
   }
 
   async function reset(u: UserRow) {
+    if (u.email === adminEmail) { setError("Tidak bisa mereset akun sendiri."); return; }
+    if (!window.confirm("Yakin ingin mereset seluruh progress pengguna ini?")) return;
     setStatus(null);
     const res = await resetUserProgressAdminAction(u.email).catch(() => ({ error: "Gagal mereset." }));
     if ("error" in res) { setError(res.error); return; }
@@ -76,12 +78,24 @@ export default function AdminUsersPanel() {
   }
 
   async function toggleRole(u: UserRow) {
+    if (u.email === adminEmail) { setError("Tidak bisa mengubah akun admin sendiri."); return; }
     const isAdmin = u.role === "admin";
     setStatus(null);
     const res = await updateUserRoleAdminAction({ email: u.email, role: isAdmin ? "user" : "admin" }).catch(() => ({ error: "Gagal mengubah peran." }));
     if ("error" in res) { setError(res.error); return; }
     setStatus(`Peran ${u.email} diubah!`);
     setReloadKey((k) => k + 1);
+  }
+
+  if (error && !users) {
+    return (
+      <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">
+        {error}
+        <button type="button" onClick={() => { setError(null); setReloadKey((k) => k + 1); }} className="ml-2 text-xs font-bold underline">
+          Coba Lagi
+        </button>
+      </div>
+    );
   }
 
   if (!users || !filtered) {

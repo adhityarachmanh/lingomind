@@ -90,6 +90,17 @@ export default function AdminShopPanel() {
     setReloadKey((k) => k + 1);
   }
 
+  if (error && !items) {
+    return (
+      <div className="px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">
+        {error}
+        <button type="button" onClick={() => { setError(null); setReloadKey((k) => k + 1); }} className="ml-2 text-xs font-bold underline">
+          Coba Lagi
+        </button>
+      </div>
+    );
+  }
+
   if (!items) {
     return <div className="text-sm text-slate-400">Memuat item toko...</div>;
   }
