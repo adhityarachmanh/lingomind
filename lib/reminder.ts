@@ -53,9 +53,9 @@ export async function sendDailyReminders(): Promise<{ sent: number; skipped: boo
       chunk.map((u) =>
         (async () => {
           const stats = statsMap.get(u.email);
-          if (!stats) return;
+          if (!stats) return { sent: false };
           const lastActive = stats.lastActiveDate;
-          if (lastActive && lastActive >= today) return; // sudah aktif hari ini
+          if (lastActive && lastActive >= today) return { sent: false }; // sudah aktif hari ini
 
           const body = buildReminderBody({
             fullName: u.fullName ?? "",
@@ -64,14 +64,20 @@ export async function sendDailyReminders(): Promise<{ sent: number; skipped: boo
             appUrl,
           });
 
-          await sendMail(u.email, subject, body);
-          console.log(`Pengingat harian dikirim ke: ${u.email}`);
+          try {
+            await sendMail(u.email, subject, body);
+            console.log(`Pengingat harian dikirim ke: ${u.email}`);
+            return { sent: true };
+          } catch (err) {
+            console.error(`Gagal mengirim pengingat ke user: ${err}`);
+            return { sent: false };
+          }
         })(),
       ),
     );
     for (const r of results) {
-      if (r.status === "fulfilled") sent += 1;
-      else console.error(`Gagal mengirim pengingat ke user: ${r.reason}`);
+      if (r.status === "fulfilled" && r.value.sent) sent += 1;
+      else if (r.status === "rejected") console.error(`Gagal mengirim pengingat ke user: ${r.reason}`);
     }
   }
   return { sent, skipped: false };
