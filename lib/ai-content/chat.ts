@@ -1,9 +1,9 @@
 import { generateText } from "ai";
 import { model } from "../ai";
 
-// trim history: maks 30 pesan terakhir agar latency AI rendah
+// trim history: maks 20 pesan terakhir agar latency AI rendah
 export function buildChatHistory(messages: { sender: string; content: string }[]): { role: "user" | "assistant"; content: string }[] {
-  return messages.slice(-30).map((m) => ({
+  return messages.slice(-20).map((m) => ({
     role: m.sender === "ai" ? "assistant" : "user",
     content: m.content,
   }));

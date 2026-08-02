@@ -216,7 +216,7 @@ export async function generateQuizWithPrompt(params: {
   let best: QuizContainer | null = null;
   let bestScore = 0;
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  for (let attempt = 1; attempt <= 2; attempt++) {
     const { text } = await generateText({ model, prompt: currentPrompt, maxOutputTokens: 4096, temperature: 0.6 });
     const parsed = parseAiJson<QuizContainer>(text);
     if (!parsed) {

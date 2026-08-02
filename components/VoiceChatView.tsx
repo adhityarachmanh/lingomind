@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getOrCreateChatSessionAction, sendChatMessageAction } from "@/lib/actions/chat";
+import { getOrCreateChatSessionAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { splitKoreksi } from "@/lib/chat";
 
@@ -40,10 +40,8 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   const [customs, setCustoms] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
   const statusRef = useRef(status);
-  // eslint-disable-next-line react-hooks/refs
   statusRef.current = status;
   const sessionIdRef = useRef(sessionId);
-  // eslint-disable-next-line react-hooks/refs
   sessionIdRef.current = sessionId;
   const mountedRef = useRef(true);
   const timersRef = useRef<number[]>([]);
@@ -89,6 +87,30 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
   }
 
+  // Streaming balasan AI token-per-token (persepsi cepat); teks final dipakai untuk TTS.
+  async function streamReply(sid: number, text: string): Promise<string> {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId: sid, message: text }),
+    });
+    if (!res.ok || !res.body) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(typeof data?.error === "string" ? data.error : "Gagal mengirim pesan.");
+    }
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let full = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      full += decoder.decode(value, { stream: true });
+      if (mountedRef.current) setAiCaption(full);
+    }
+    full += decoder.decode();
+    return full.trim();
+  }
+
   const startSession = useCallback(async (setting: string, title: string) => {
     setPhase("chat");
     setStatus("menghubungkan");
@@ -115,7 +137,6 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
   }, [goal]);
 
   const isMutedRef = useRef(isMuted);
-  // eslint-disable-next-line react-hooks/refs, react-hooks/immutability
   isMutedRef.current = isMuted;
 
   useEffect(() => {
@@ -137,24 +158,18 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     setStatus("berpikir");
     stopSpeaking();
     setSttError(null);
-    sendChatMessageAction(sid, text)
-      .then((res) => {
+    streamReply(sid, text)
+      .then((final) => {
         if (!mountedRef.current) return;
-        if ("error" in res) {
-          setError(`Gagal mengirim pesan suara: ${res.error}`);
+        if (!final) {
           setStatus(isMutedRef.current ? "muted" : "mendengarkan");
           return;
         }
-        const lastAi = [...res.messages].reverse().find((m) => m.sender === "ai");
-        if (lastAi) {
-          const { main, koreksi } = splitKoreksi(lastAi.content);
-          setAiCaption(main);
-          setAiKoreksi(koreksi);
-          setStatus("berbicara");
-          speak(main);
-        } else {
-          setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-        }
+        const { main, koreksi } = splitKoreksi(final);
+        setAiCaption(main);
+        setAiKoreksi(koreksi);
+        setStatus("berbicara");
+        speak(main);
       })
       .catch((e: unknown) => {
         if (!mountedRef.current) return;

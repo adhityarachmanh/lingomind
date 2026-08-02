@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getOrCreateChatSessionAction, sendChatMessageAction } from "@/lib/actions/chat";
+import { getOrCreateChatSessionAction } from "@/lib/actions/chat";
 import { splitKoreksi } from "@/lib/chat";
 import type { ChatMessageItem } from "@/lib/types";
 
@@ -25,6 +25,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
   const [level, setLevel] = useState("A1");
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [customs, setCustoms] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState("");
@@ -80,16 +81,40 @@ export default function ChatView({ goal, language }: { goal: string; language: s
     setInput("");
     setSending(true);
     setError(null);
+    setStreamingText("");
     setMessages((m) => [...m, { id: 0, sender: "user", content: text }]);
-    const res = await sendChatMessageAction(sessionId, text).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal mengirim pesan." }));
-    setSending(false);
-    if ("error" in res) {
+    try {
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, message: text }),
+      });
+      if (!res.ok || !res.body) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(typeof data?.error === "string" ? data.error : "Gagal mengirim pesan.");
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = "";
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        full += decoder.decode(value, { stream: true });
+        setStreamingText(full);
+      }
+      full += decoder.decode();
+      const final = full.trim();
+      if (final) {
+        setMessages((m) => [...m, { id: 0, sender: "ai", content: final }]);
+      }
+    } catch (e) {
       setMessages((m) => m.filter((msg) => !(msg.id === 0 && msg.content === text)));
       setInput(text);
-      setError(`Gagal mengirim pesan: ${res.error}`);
-      return;
+      setError(`Gagal mengirim pesan: ${e instanceof Error ? e.message : "Terjadi kesalahan."}`);
+    } finally {
+      setStreamingText("");
+      setSending(false);
     }
-    setMessages(res.messages);
   }
 
   // ---- picker ----
@@ -199,7 +224,15 @@ export default function ChatView({ goal, language }: { goal: string; language: s
             </div>
           );
         })}
-        {sending && (
+        {(sending && streamingText) && (
+          <div className="flex justify-start">
+            <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm whitespace-pre-wrap">
+              {streamingText}
+              <span className="inline-block w-1.5 h-4 bg-teal-500 animate-pulse ml-0.5 align-middle" />
+            </div>
+          </div>
+        )}
+        {sending && !streamingText && (
           <div className="flex justify-start">
             <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-400">
               Partner AI sedang mengetik...

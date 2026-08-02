@@ -338,9 +338,9 @@ export async function resolveLanguageContentStatus(language: string): Promise<La
   return { levels: levelStatuses, done: totalDone, total: totalAll };
 }
 
-// Unit berikutnya yang belum ada di cache untuk (language, level) — atau null jika level selesai.
+// Ambil hingga `n` unit berikutnya yang belum ada di cache untuk (language, level).
 // Unit yang gagal AI >= 3x di-skip (anti-deadlock) sampai direset via panel admin.
-export async function findNextUndoneUnit(language: string, levelId: string): Promise<ContentUnit | null> {
+export async function findNextUndoneUnits(language: string, levelId: string, n: number): Promise<ContentUnit[]> {
   const topics = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
   const units = buildContentWorkList(topics.map((t) => t.title), {
     parts: CONTENT_PARTS,
@@ -363,6 +363,7 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
   const skippedKeys = new Set(failed.map((f) => `${f.goal}|${f.part}|${f.modifier}`));
 
   const quizPos = new Map<string, number>();
+  const found: ContentUnit[] = [];
   for (const u of units) {
     if (skippedKeys.has(`${u.goal}|${u.part}|${u.modifier}`)) continue;
     let isDone: boolean;
@@ -374,9 +375,18 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
       quizPos.set(key, pos);
       isDone = pos <= (quizCounts.get(key) ?? 0);
     }
-    if (!isDone) return u;
+    if (!isDone) {
+      found.push(u);
+      if (found.length >= n) break;
+    }
   }
-  return null;
+  return found;
+}
+
+// Unit berikutnya yang belum ada di cache (untuk action manual — 1 unit/panggilan).
+export async function findNextUndoneUnit(language: string, levelId: string): Promise<ContentUnit | null> {
+  const units = await findNextUndoneUnits(language, levelId, 1);
+  return units[0] ?? null;
 }
 
 // Generate satu unit konten (lesson / quiz goal / exam / general_practice) lalu simpan ke cache.
@@ -421,6 +431,8 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
 // Margin pengaman: berhenti mulai unit baru agar selalu ada waktu untuk update status + chainNext
 // (function Vercel di-kill di batas durasi ~300s Hobby — jangan sampai chain putus kena kill).
 const BATCH_SAFETY_MS = 90_000;
+// Jumlah unit yang digenerate paralel dalam satu iterasi batch (AI calls independen → waktu ÷3).
+const BATCH_PARALLEL = 3;
 
 export async function getFailedContentUnitCount(language: string): Promise<number> {
   return db.failedContentUnit.count({ where: { language } });
@@ -431,6 +443,7 @@ export async function resetFailedContentUnits(language: string): Promise<void> {
 }
 
 // Proses batch unit dalam batas waktu (default 4,5 menit — aman di bawah limit 5 menit Hobby).
+// Unit digenerate PARALEL (BATCH_PARALLEL sekaligus — AI calls independen → waktu ÷3).
 // Unit yang gagal (mis. AI JSON tidak valid) TIDAK mematikan batch — dicatat di failed_content_units
 // (skip permanen setelah 3x gagal, anti-deadlock) dan batch lanjut ke unit berikutnya.
 // `blocked` = masih ada unit belum digenerate tapi semuanya di-skip (perlu reset unit gagal).
@@ -444,33 +457,39 @@ export async function processContentBatch(
     if (status.done >= status.total) return { done: status.done, total: status.total, blocked: false };
     const level = status.levels.find((l) => l.done < l.total);
     if (!level) return { done: status.done, total: status.total, blocked: false };
-    const unit = await findNextUndoneUnit(language, level.levelId);
-    if (!unit) {
+    const units = await findNextUndoneUnits(language, level.levelId, BATCH_PARALLEL);
+    if (units.length === 0) {
       // sisa unit yang belum digenerate semuanya di-skip (gagal AI permanen)
       return { done: status.done, total: status.total, blocked: true };
     }
-    try {
-      await generateOneContentUnit(language, unit, level.levelId);
-      await db.failedContentUnit.deleteMany({
-        where: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier },
-      }).catch(() => {});
-    } catch (e) {
-      const unitLabel = unit.kind === "lesson"
-        ? `Lesson: ${unit.goal} — Bagian ${unit.part} (${unit.modifier})`
-        : `Quiz: ${unit.goal}`;
-      console.error(`[content-generation] unit gagal: ${unitLabel} — ${e instanceof Error ? e.message : e}`);
-      await db.failedContentUnit
-        .upsert({
-          where: {
-            language_level_goal_part_modifier: {
-              language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier,
-            },
-          },
-          create: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier, failures: 1, lastFailedAt: new Date() },
-          update: { failures: { increment: 1 }, lastFailedAt: new Date() },
-        })
-        .catch(() => {});
-    }
+    await Promise.all(
+      units.map(async (unit) => {
+        try {
+          await generateOneContentUnit(language, unit, level.levelId);
+          await db.failedContentUnit
+            .deleteMany({
+              where: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier },
+            })
+            .catch(() => {});
+        } catch (e) {
+          const unitLabel = unit.kind === "lesson"
+            ? `Lesson: ${unit.goal} — Bagian ${unit.part} (${unit.modifier})`
+            : `Quiz: ${unit.goal}`;
+          console.error(`[content-generation] unit gagal: ${unitLabel} — ${e instanceof Error ? e.message : e}`);
+          await db.failedContentUnit
+            .upsert({
+              where: {
+                language_level_goal_part_modifier: {
+                  language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier,
+                },
+              },
+              create: { language, level: level.levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier, failures: 1, lastFailedAt: new Date() },
+              update: { failures: { increment: 1 }, lastFailedAt: new Date() },
+            })
+            .catch(() => {});
+        }
+      })
+    );
   }
   const status = await resolveLanguageContentStatus(language);
   return { done: status.done, total: status.total, blocked: false };

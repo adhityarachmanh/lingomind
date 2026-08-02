@@ -3,11 +3,11 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { normalizeSetting } from "../chat";
-import { buildOpeningPrompt, buildReplySystemPrompt, generateChatReply } from "../ai-content/chat";
+import { buildOpeningPrompt, generateChatReply } from "../ai-content/chat";
 import { db } from "../db";
 import type { ChatMessageItem } from "../types";
 
-// trim history: maks 30 pesan terakhir agar latency AI rendah
+// trim history: maks 20 pesan terakhir agar latency AI rendah
 async function fetchHistory(sessionId: number, limit: number): Promise<ChatMessageItem[]> {
   const rows = await db.chatMessage.findMany({
     where: { sessionId },
@@ -28,7 +28,7 @@ async function findOrCreateSession(
     where: { email, language, level, goal, roleplaySetting: setting },
   });
   if (existing) {
-    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 30) };
+    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 20) };
   }
   const created = await db.chatSession.create({
     data: { email, language, level, goal, roleplaySetting: setting },
@@ -75,46 +75,8 @@ export async function getOrCreateChatSessionAction(
     await db.chatMessage.create({
       data: { sessionId, sender: "ai", content: opening },
     });
-    resultMessages = await fetchHistory(sessionId, 30);
+    resultMessages = await fetchHistory(sessionId, 20);
   }
 
   return { sessionId, messages: resultMessages, language, level };
-}
-
-export async function sendChatMessageAction(
-  sessionId: number,
-  message: string
-): Promise<{ messages: ChatMessageItem[] } | { error: string }> {
-  const session = await getSession();
-  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
-  if (!message.trim()) return { error: "Pesan tidak boleh kosong." };
-
-  const chatSession = await db.chatSession.findFirst({ where: { id: sessionId, email: session.email } });
-  if (!chatSession) return { error: "Sesi chat tidak valid atau tidak lagi sinkron. Coba buka ulang sesi." };
-
-  await db.chatMessage.create({
-    data: { sessionId, sender: "user", content: message.trim() },
-  });
-
-  const window = await db.chatMessage.findMany({
-    where: { sessionId },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-  });
-  const history = window.reverse().map((m) => ({ sender: m.sender as "user" | "ai", content: m.content }));
-
-  const isTopicBased = chatSession.roleplaySetting === chatSession.goal && chatSession.goal !== "Bebas";
-  const system = buildReplySystemPrompt(chatSession.language, chatSession.level, chatSession.goal, chatSession.roleplaySetting, isTopicBased);
-  let reply: string;
-  try {
-    reply = await generateChatReply({ system, history, lastUserMessage: message.trim(), temperature: 0.7 });
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "Gagal mengirim pesan." };
-  }
-
-  await db.chatMessage.create({
-    data: { sessionId, sender: "ai", content: reply },
-  });
-
-  return { messages: await fetchHistory(sessionId, 30) };
 }
