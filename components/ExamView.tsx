@@ -171,7 +171,10 @@ export default function ExamView({
             Gunakan 1 Tiket
           </button>
         ) : (
-          <p className="text-xs text-slate-400">Tidak punya Tiket Ujian Ulang.</p>
+          <>
+            <p className="text-xs text-slate-400">Tidak punya Tiket Ujian Ulang.</p>
+            <Link href="/shop" className="text-xs font-bold text-teal-600 dark:text-teal-400 hover:underline">Beli Tiket di Toko 🏪</Link>
+          </>
         )}
         <Link href="/roadmap" className="text-xs text-slate-400 hover:underline">Kembali ke Roadmap</Link>
       </div>
