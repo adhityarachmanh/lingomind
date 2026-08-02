@@ -118,8 +118,8 @@ export async function submitGeneralPracticeResultAction(input: { perfect: boolea
   });
 
   if (input.perfect) {
-    // anti-farm: hearts dari practice maks 3x/hari
-    if (todayPracticeCount <= 3) {
+    // anti-farm: hearts dari practice maks 3x/hari (count dihitung sebelum baris log dibuat)
+    if (todayPracticeCount < 3) {
       await addHeart(session.email).catch(() => {}); // "Nyawa sudah penuh!" → abaikan (fire-and-forget legacy)
     }
     await updateEngagementAfterQuiz(session.email, 15);
