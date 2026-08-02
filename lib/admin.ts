@@ -1,5 +1,5 @@
 import { db } from "./db";
-import type { AdminUserRow } from "./types";
+import type { AdminLanguageItem, AdminShopItem, AdminUserRow } from "./types";
 
 export async function getUsersAdmin(): Promise<AdminUserRow[]> {
   const users = await db.user.findMany({ orderBy: { email: "asc" } });
@@ -59,4 +59,59 @@ export async function resetUserProgressAdmin(email: string): Promise<void> {
 
 export async function updateUserRoleAdmin(email: string, newRole: string): Promise<void> {
   await db.user.update({ where: { email }, data: { role: newRole } });
+}
+
+export async function getShopItemsAdmin(): Promise<AdminShopItem[]> {
+  const items = await db.shopItem.findMany({ orderBy: { cost: "asc" } });
+  return items.map((i) => ({
+    id: i.id, name: i.name, description: i.description, cost: i.cost,
+    effect_type: i.effectType, icon_name: i.iconName,
+  }));
+}
+
+export async function createShopItemAdmin(input: {
+  name: string; description: string | null; cost: number; effect_type: string; icon_name: string | null;
+}): Promise<void> {
+  await db.shopItem.create({
+    data: { name: input.name, description: input.description, cost: input.cost, effectType: input.effect_type, iconName: input.icon_name },
+  });
+}
+
+export async function updateShopItemAdmin(id: number, input: {
+  name: string; description: string | null; cost: number; effect_type: string; icon_name: string | null;
+}): Promise<void> {
+  await db.shopItem.update({
+    where: { id },
+    data: { name: input.name, description: input.description, cost: input.cost, effectType: input.effect_type, iconName: input.icon_name },
+  });
+}
+
+export async function getLanguagesAdmin(): Promise<AdminLanguageItem[]> {
+  const rows = await db.language.findMany({ orderBy: { name: "asc" } });
+  return rows.map((l) => ({
+    id: l.id, name: l.name, native_name: l.nativeName, flag: l.flag, description: l.description,
+    theme_class: l.themeClass, button_class: l.buttonClass, category: l.category,
+    tts_lang_code: l.ttsLangCode, edge_tts_voice: l.edgeTtsVoice,
+  }));
+}
+
+export async function createLanguageAdmin(lang: AdminLanguageItem): Promise<void> {
+  await db.language.create({
+    data: {
+      id: lang.id, name: lang.name, nativeName: lang.native_name, flag: lang.flag,
+      description: lang.description, themeClass: lang.theme_class, buttonClass: lang.button_class,
+      category: lang.category, ttsLangCode: lang.tts_lang_code, edgeTtsVoice: lang.edge_tts_voice ?? "",
+    },
+  });
+}
+
+export async function updateLanguageAdmin(id: string, lang: AdminLanguageItem): Promise<void> {
+  await db.language.update({
+    where: { id },
+    data: {
+      name: lang.name, nativeName: lang.native_name, flag: lang.flag,
+      description: lang.description, themeClass: lang.theme_class, buttonClass: lang.button_class,
+      category: lang.category, ttsLangCode: lang.tts_lang_code, edgeTtsVoice: lang.edge_tts_voice ?? "",
+    },
+  });
 }

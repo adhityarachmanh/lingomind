@@ -109,4 +109,13 @@ export interface AdminUserRow {
   email: string; full_name: string; role: string | null; is_verified: boolean | null;
   score: number; coins: number; streak_days: number;
 }
+export interface AdminShopItem {
+  id: number; name: string; description: string | null;
+  cost: number; effect_type: string; icon_name: string | null;
+}
+export interface AdminLanguageItem {
+  id: string; name: string; native_name: string; flag: string; description: string;
+  theme_class: string; button_class: string; category: string;
+  tts_lang_code: string; edge_tts_voice: string | null;
+}
 export interface SkillProgressPoint { day: string; grammar: number; vocabulary: number; listening: number; }
