@@ -414,17 +414,39 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
   }
 }
 
+// Margin pengaman: berhenti mulai unit baru agar selalu ada waktu untuk update status + chainNext
+// (function Vercel di-kill di batas durasi ~300s Hobby — jangan sampai chain putus kena kill).
+const BATCH_SAFETY_MS = 90_000;
+const MAX_CONSECUTIVE_FAILURES = 3;
+
 // Proses batch unit dalam batas waktu (default 4,5 menit — aman di bawah limit 5 menit Hobby).
+// Unit yang gagal (mis. AI JSON tidak valid) TIDAK mematikan batch — dilanjutkan ke unit berikutnya;
+// batch baru berhenti bila kegagalan beruntun >= 3 atau sisa waktu < margin pengaman.
 export async function processContentBatch(language: string, maxMs = 270_000): Promise<{ done: number; total: number }> {
   const started = Date.now();
-  while (Date.now() - started < maxMs) {
+  let consecutiveFailures = 0;
+  while (Date.now() - started < maxMs - BATCH_SAFETY_MS) {
     const status = await resolveLanguageContentStatus(language);
     if (status.done >= status.total) return { done: status.done, total: status.total };
     const level = status.levels.find((l) => l.done < l.total);
     if (!level) return { done: status.done, total: status.total };
     const unit = await findNextUndoneUnit(language, level.levelId);
     if (!unit) return { done: status.done, total: status.total };
-    await generateOneContentUnit(language, unit, level.levelId);
+    try {
+      await generateOneContentUnit(language, unit, level.levelId);
+      consecutiveFailures = 0;
+    } catch (e) {
+      consecutiveFailures++;
+      const unitLabel = unit.kind === "lesson"
+        ? `Lesson: ${unit.goal} — Bagian ${unit.part} (${unit.modifier})`
+        : `Quiz: ${unit.goal}`;
+      console.error(`[content-generation] unit gagal (${consecutiveFailures}x): ${unitLabel} — ${e instanceof Error ? e.message : e}`);
+      if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
+        throw new Error(
+          `Gagal generate ${MAX_CONSECUTIVE_FAILURES} unit berturut-turut (terakhir: "${unitLabel}"): ${e instanceof Error ? e.message : "error tidak diketahui"}`
+        );
+      }
+    }
   }
   const status = await resolveLanguageContentStatus(language);
   return { done: status.done, total: status.total };

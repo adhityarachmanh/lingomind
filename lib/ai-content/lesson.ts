@@ -166,13 +166,16 @@ export async function generateLesson(params: {
   const merged = mergeLessonParts(contentRes.text, vocabRes.text, sentencesRes.text);
   if (merged) return merged;
 
-  // fallback (jarang): pipeline legacy single call + 1 retry
-  const prompt = buildLessonPrompt(language, level, goal, part, modifier);
-  const first = await generateText({ model, prompt, maxOutputTokens: 8192 });
-  let lesson = parseAiJson<LessonContainer>(first.text);
-  if (!lesson) {
-    const retry = await generateText({ model, prompt, maxOutputTokens: 8192 });
-    lesson = parseAiJson<LessonContainer>(retry.text);
+  // fallback (jarang): pipeline legacy single call + retry dengan instruksi JSON
+  let prompt = buildLessonPrompt(language, level, goal, part, modifier);
+  let lesson: LessonContainer | null = null;
+  for (let attempt = 1; attempt <= 3 && !lesson; attempt++) {
+    const { text } = await generateText({ model, prompt, maxOutputTokens: 8192 });
+    lesson = parseAiJson<LessonContainer>(text);
+    if (!lesson) {
+      prompt +=
+        "\n\nRespons sebelumnya BUKAN JSON yang valid. Kembalikan HANYA JSON valid sesuai bentuk yang diminta, tanpa teks lain apa pun.";
+    }
   }
   if (!lesson) throw new Error("Gagal parsing respons lesson: respons bukan JSON valid.");
   if (!lesson.title || !lesson.content) {
