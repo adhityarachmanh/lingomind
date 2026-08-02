@@ -230,47 +230,65 @@ export async function resetFailedContentUnitsAction(language: string): Promise<A
   return { ok: true };
 }
 
-// Generate SATU unit konten spesifik (incremental 1-per-1, bukan bulk).
-export async function generateSpecificUnitAction(input: {
+// Generate lesson berikutnya yang belum ada (bagian 1-5, modifier normal) untuk (goal) — 1 konten per klik.
+export async function generateNextLessonAction(input: {
   language: string;
   level: string;
-  kind: "lesson" | "quiz" | "exam" | "general_practice";
-  goal?: string;
-  part?: number;
-  modifier?: string;
+  goal: string;
 }): Promise<AdminResult<{ ok: boolean; label: string }>> {
   const g = await guard();
   if (typeof g !== "string") return g;
 
   const languages = await getLanguagesAdmin();
   if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
-
   const levels = await getLevelsAdmin();
   const levelRow = levels.find((l) => l.id === input.level);
   if (!levelRow) return { error: "Level tidak ditemukan." };
-
+  const goal = input.goal.trim();
   const topics = await getTopicsAdmin(levelRow.id);
+  if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
 
-  // bangun unit + cek duplikat lesson (quiz/varian tanpa batasan — bisa ditambah kapan pun)
-  let unit: ContentUnit;
-  if (input.kind === "lesson") {
-    const part = Math.min(CONTENT_PARTS, Math.max(1, input.part ?? 1));
-    const modifier = input.modifier && ["normal", "hard", "easy"].includes(input.modifier) ? input.modifier : "normal";
-    const goal = (input.goal ?? "").trim();
-    if (!goal) return { error: "Goal (topik) wajib diisi untuk lesson." };
+  // cari bagian 1..CONTENT_PARTS pertama yang belum ada
+  let part: number | null = null;
+  for (let p = 1; p <= CONTENT_PARTS; p++) {
+    const existing = await db.cachedLesson.findFirst({
+      where: { language: input.language, level: input.level, goal, part: p, modifier: "normal" },
+    });
+    if (!existing) { part = p; break; }
+  }
+  if (part === null) return { error: `Semua bagian lesson untuk goal ini sudah digenerate (${CONTENT_PARTS}).` };
+
+  const unit: ContentUnit = { kind: "lesson", goal, part, modifier: "normal" };
+  const label = contentUnitLabel(unit, levelRow.title);
+  try {
+    await generateOneContentUnit(input.language, unit, input.level);
+  } catch (e) {
+    return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  }
+  return { ok: true, label };
+}
+
+// Generate 1 varian quiz (goal topik / exam / general_practice) — tanpa batas jumlah, anti-duplikat isi.
+export async function generateQuizVariantAction(input: {
+  language: string;
+  level: string;
+  goal: string; // topik, atau "exam", atau "general_practice"
+}): Promise<AdminResult<{ ok: boolean; label: string }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+
+  const languages = await getLanguagesAdmin();
+  if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
+  const levels = await getLevelsAdmin();
+  const levelRow = levels.find((l) => l.id === input.level);
+  if (!levelRow) return { error: "Level tidak ditemukan." };
+  const goal = input.goal.trim();
+  if (goal !== "exam" && goal !== "general_practice") {
+    const topics = await getTopicsAdmin(levelRow.id);
     if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
-    const existing = await db.cachedLesson.findFirst({ where: { language: input.language, level: input.level, goal, part, modifier } });
-    if (existing) return { error: "Konten ini sudah digenerate." };
-    unit = { kind: "lesson", goal, part, modifier };
-  } else {
-    const goal = input.kind === "exam" ? "exam" : input.kind === "general_practice" ? "general_practice" : (input.goal ?? "").trim();
-    if (input.kind === "quiz") {
-      if (!goal) return { error: "Goal (topik) wajib diisi untuk quiz." };
-      if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
-    }
-    unit = { kind: "quiz", goal, part: 0, modifier: "normal" };
   }
 
+  const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };
   const label = contentUnitLabel(unit, levelRow.title);
   try {
     await generateOneContentUnit(input.language, unit, input.level);

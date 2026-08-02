@@ -4,6 +4,55 @@ import { generateLesson } from "./ai-content/lesson";
 import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildQuizPrompt, generateQuizWithPrompt } from "./ai-content/quiz";
 import { generateExam } from "./ai-content/exam";
 
+// ---- Validasi anti-duplikat konten (pure, diuji di vitest) ----
+
+export function normalizeTextForCompare(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function words(s: string): Set<string> {
+  return new Set(normalizeTextForCompare(s).split(" ").filter(Boolean));
+}
+
+// Quiz duplikat jika >= 50% pertanyaan (normalisasi) sama dengan varian existing.
+export function hasDuplicateQuiz(existingQuestions: string[], newQuestions: string[]): boolean {
+  if (existingQuestions.length === 0 || newQuestions.length === 0) return false;
+  const existing = new Set(existingQuestions.map(normalizeTextForCompare).filter(Boolean));
+  let overlap = 0;
+  for (const q of newQuestions) {
+    const n = normalizeTextForCompare(q);
+    if (n && existing.has(n)) overlap++;
+  }
+  return overlap / Math.max(1, newQuestions.length) >= 0.5;
+}
+
+// Lesson duplikat jika judul sama persis (normalisasi) ATAU overlap kata konten (Jaccard) >= 0.6.
+export function hasDuplicateLesson(
+  existingTitles: string[],
+  existingContents: string[],
+  newTitle: string,
+  newContent: string
+): boolean {
+  const title = normalizeTextForCompare(newTitle);
+  if (title && existingTitles.some((t) => normalizeTextForCompare(t) === title)) return true;
+  if (!newContent.trim()) return false;
+  const newWords = words(newContent);
+  if (newWords.size === 0) return false;
+  for (const content of existingContents) {
+    const existingSet = words(content);
+    if (existingSet.size === 0) continue;
+    const union = new Set([...newWords, ...existingSet]);
+    const intersection = new Set([...newWords].filter((w) => existingSet.has(w)));
+    if (intersection.size / union.size >= 0.6) return true;
+  }
+  return false;
+}
+
 export async function getUsersAdmin(): Promise<AdminUserRow[]> {
   const users = await db.user.findMany({ orderBy: { email: "asc" } });
   const emails = users.map((u) => u.email);
@@ -197,12 +246,12 @@ export interface ContentWorkOptions {
   generalPracticeVariants: number;
 }
 
-// Target minimal per level: tiap unit konten cukup ADA 1 varian (bukan jumlah varian penuh).
-// Panel admin bisa menambah varian quiz tanpa batas (generateSpecificUnitAction tidak punya cap).
+// Target minimal per level: lesson 5 bagian per goal (modifier normal), quiz 1 per goal, exam 1, general_practice 1.
+// Panel admin bisa menambah varian quiz tanpa batas (generateQuizVariantAction tidak punya cap).
 export const CONTENT_EXAM_VARIANTS = 1;
 export const CONTENT_GENERAL_PRACTICE_VARIANTS = 1;
-export const CONTENT_PARTS = 3;
-export const CONTENT_LESSON_MODIFIERS = ["normal", "hard", "easy"] as const;
+export const CONTENT_PARTS = 5;
+export const CONTENT_LESSON_MODIFIERS = ["normal"] as const;
 export const CONTENT_QUIZ_VARIANTS = 1;
 
 // Work list deterministik untuk bulk pre-generation konten (language, level):
@@ -397,38 +446,77 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
 }
 
 // Generate satu unit konten (lesson / quiz goal / exam / general_practice) lalu simpan ke cache.
+// Anti-duplikat: hasil dibandingkan dengan varian existing (pertanyaan/judul+konten) — jika mirip,
+// generate ulang otomatis (maks 3x); tetap mirip → throw error jujur.
 export async function generateOneContentUnit(language: string, unit: ContentUnit, levelId: string): Promise<void> {
+  const MAX_RETRY = 3;
   if (unit.kind === "lesson") {
-    const lesson = await generateLesson({
-      language, level: levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier,
+    const existing = await db.cachedLesson.findMany({
+      where: { language, level: levelId, goal: unit.goal },
+      select: { contentJson: true },
     });
+    const existingTitles = existing.map((e) => {
+      const p = JSON.parse(e.contentJson) as { title?: string };
+      return p.title ?? "";
+    });
+    const existingContents = existing.map((e) => {
+      const p = JSON.parse(e.contentJson) as { content?: string };
+      return p.content ?? "";
+    });
+    let lesson: Awaited<ReturnType<typeof generateLesson>> | null = null;
+    for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+      const candidate = await generateLesson({ language, level: levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier });
+      if (!hasDuplicateLesson(existingTitles, existingContents, candidate.title, candidate.content)) {
+        lesson = candidate;
+        break;
+      }
+    }
+    if (!lesson) throw new Error("Hasil generate mirip dengan materi yang sudah ada — coba lagi.");
     await db.cachedLesson.create({
       data: { language, level: levelId, goal: unit.goal, part: unit.part, modifier: unit.modifier, contentJson: JSON.stringify(lesson) },
     });
-  } else if (unit.goal === "exam") {
-    const topics = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
-    const topicsStr = topics.map((t) => t.title).join(", ") || "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening";
-    const quiz = await generateExam({ language, level: levelId, topicsStr });
-    await db.cachedQuiz.create({
-      data: { language, level: levelId, goal: "exam", modifier: "normal", contentJson: JSON.stringify(quiz) },
-    });
-  } else if (unit.goal === "general_practice") {
-    // pool general practice: tema acak tiap varian agar variasi besar
-    const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
-    const quiz = await generateQuizWithPrompt({
-      prompt: buildGeneralPracticePrompt(language, levelId, theme),
-      expectedCount: 5,
-      label: "general practice quiz",
-    });
-    await db.cachedQuiz.create({
-      data: { language, level: levelId, goal: "general_practice", modifier: "normal", contentJson: JSON.stringify(quiz) },
-    });
   } else {
-    const quiz = await generateQuizWithPrompt({
-      prompt: buildQuizPrompt(language, levelId, unit.goal, "(belum ada riwayat kelemahan)"),
-      expectedCount: 5,
-      label: "quiz",
+    const existing = await db.cachedQuiz.findMany({
+      where: { language, level: levelId, goal: unit.goal, modifier: "normal" },
+      select: { contentJson: true },
     });
+    const existingQuestions = existing.flatMap((e) => {
+      try {
+        const p = JSON.parse(e.contentJson) as { questions?: { question?: string }[] };
+        return p.questions?.map((q) => q.question ?? "") ?? [];
+      } catch {
+        return [];
+      }
+    });
+
+    let quiz: Awaited<ReturnType<typeof generateQuizWithPrompt>> | null = null;
+    for (let attempt = 1; attempt <= MAX_RETRY; attempt++) {
+      let candidate: Awaited<ReturnType<typeof generateQuizWithPrompt>>;
+      if (unit.goal === "exam") {
+        const topics = await db.topic.findMany({ where: { levelId }, orderBy: { orderIndex: "asc" } });
+        const topicsStr = topics.map((t) => t.title).join(", ") || "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening";
+        candidate = await generateExam({ language, level: levelId, topicsStr });
+      } else if (unit.goal === "general_practice") {
+        // pool general practice: tema acak tiap varian agar variasi besar
+        const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
+        candidate = await generateQuizWithPrompt({
+          prompt: buildGeneralPracticePrompt(language, levelId, theme),
+          expectedCount: 5,
+          label: "general practice quiz",
+        });
+      } else {
+        candidate = await generateQuizWithPrompt({
+          prompt: buildQuizPrompt(language, levelId, unit.goal, "(belum ada riwayat kelemahan)"),
+          expectedCount: 5,
+          label: "quiz",
+        });
+      }
+      if (!hasDuplicateQuiz(existingQuestions, candidate.questions.map((q) => q.question))) {
+        quiz = candidate;
+        break;
+      }
+    }
+    if (!quiz) throw new Error("Hasil generate mirip dengan varian yang sudah ada — coba lagi.");
     await db.cachedQuiz.create({
       data: { language, level: levelId, goal: unit.goal, modifier: "normal", contentJson: JSON.stringify(quiz) },
     });

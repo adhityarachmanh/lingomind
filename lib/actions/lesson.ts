@@ -37,9 +37,16 @@ export async function getLessonAction(
   const { language, level, modifier } = ctx;
   const safePart = Math.max(1, part);
 
-  const cached = await db.cachedLesson.findFirst({
-    where: { language, level, goal, part: safePart, modifier },
-  });
+  // cari cache sesuai modifier user (normal/hard/easy); fallback ke "normal" bila modifier tidak tersedia
+  const cached =
+    (await db.cachedLesson.findFirst({
+      where: { language, level, goal, part: safePart, modifier },
+    })) ??
+    (modifier !== "normal"
+      ? await db.cachedLesson.findFirst({
+          where: { language, level, goal, part: safePart, modifier: "normal" },
+        })
+      : null);
   if (cached) {
     const parsed = parseAiJson<LessonContainer>(cached.contentJson);
     if (parsed && parsed.title && parsed.content) {
