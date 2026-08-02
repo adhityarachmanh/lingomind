@@ -4,7 +4,6 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { deductHeart, submitExamResult } from "../progress";
 import { getCurriculum } from "../dashboard";
-import { generateExam } from "../ai-content/exam";
 import { shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
@@ -86,22 +85,14 @@ export async function getExamAction(level: string): Promise<{ quiz: QuizContaine
   const gate = await requireLevel(session.email, level);
   if ("error" in gate) return { error: gate.error };
 
-  const topics = await db.topic.findMany({
-    where: { levelId: level },
-    orderBy: { orderIndex: "asc" },
-  });
-  const topicsStr = topics.map((t) => t.title).join(", ") || "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening";
-
   const variants = await db.cachedQuiz.findMany({ where: { language: gate.language, level, goal: "exam", modifier: "normal" } });
   let quiz: QuizContainer | null = null;
-  if (variants.length >= 5) {
+  if (variants.length > 0) {
     quiz = parseAiJson<QuizContainer>(randomPick(variants).contentJson);
   }
-  if (!quiz) {
-    quiz = await generateExam({ language: gate.language, level, topicsStr });
-    await db.cachedQuiz.create({
-      data: { language: gate.language, level, goal: "exam", modifier: "normal", contentJson: JSON.stringify(quiz) },
-    });
+  // Cache-only: soal ujian di-pre-generate via panel admin (bukan AI on-demand dari user).
+  if (!quiz || !quiz.questions || quiz.questions.length === 0) {
+    return { error: "Soal ujian belum tersedia. Konten sedang disiapkan, silakan coba lagi nanti." };
   }
 
   const levelData = await db.level.findUnique({ where: { id: level } });

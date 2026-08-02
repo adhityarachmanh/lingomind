@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getLessonAction, prefetchLessonAction } from "@/lib/actions/lesson";
+import { getLessonAction } from "@/lib/actions/lesson";
 import { incrementMissionAction } from "@/lib/actions/mission";
 import { sanitizeHtml } from "@/lib/sanitize";
 import SpeakButton from "./SpeakButton";
@@ -45,7 +45,6 @@ export default function LessonView({
           return;
         }
         setState({ status: "ready", lesson: res.lesson });
-        prefetchLessonAction(goal, part).catch(() => {});
       })
       .catch((e) => {
         if (cancelled) return;

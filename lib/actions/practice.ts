@@ -4,7 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getPriorityWeakness, logWeakness } from "../weakness";
 import { addHeart, updateEngagementAfterQuiz } from "../progress";
-import { buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
+import { buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -34,6 +34,7 @@ async function cacheOrGenerate(params: {
   return quiz;
 }
 
+// Cache-only: general practice di-pre-generate via panel admin (bukan AI on-demand dari user).
 export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer; language: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -43,15 +44,15 @@ export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer;
   const language = profile.preferred_language;
   const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
 
-  const quiz = await cacheOrGenerate({
-    language, level, goal: "general_practice", modifier: "normal",
-    generate: () => generateQuizWithPrompt({
-      prompt: buildGeneralPracticePrompt(language, level),
-      expectedCount: 5,
-      label: "general practice quiz",
-    }),
-  });
-  return { quiz: shuffleOptions(quiz), language };
+  const variants = await db.cachedQuiz.findMany({ where: { language, level, goal: "general_practice", modifier: "normal" } });
+  if (variants.length > 0) {
+    const quiz = parseAiJson<QuizContainer>(randomPick(variants).contentJson);
+    if (quiz && quiz.questions && quiz.questions.length > 0) {
+      return { quiz: shuffleOptions(quiz), language };
+    }
+  }
+
+  return { error: "Latihan belum tersedia. Konten sedang disiapkan, silakan coba lagi nanti." };
 }
 
 export async function getWeaknessPracticeAction(goal: string): Promise<{ quiz: QuizContainer; language: string; topic: string } | { error: string }> {

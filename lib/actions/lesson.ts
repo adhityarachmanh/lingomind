@@ -3,7 +3,6 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getEngagementStats } from "../dashboard";
-import { generateLesson } from "../ai-content/lesson";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { LessonContainer } from "../types";
@@ -24,6 +23,7 @@ async function resolveLessonContext(session: { email: string }) {
   return { language, level, modifier };
 }
 
+// Cache-only: konten lesson di-pre-generate via panel admin (bukan AI on-demand dari user).
 export async function getLessonAction(
   goal: string,
   part: number
@@ -47,45 +47,5 @@ export async function getLessonAction(
     }
   }
 
-  const lesson = await generateLesson({ language, level, goal, part: safePart, modifier });
-  await db.cachedLesson.create({
-    data: { language, level, goal, part: safePart, modifier, contentJson: JSON.stringify(lesson) },
-  });
-  return { lesson, language };
-}
-
-export async function prefetchLessonAction(goal: string, part: number): Promise<{ ok: boolean }> {
-  try {
-    const session = await getSession();
-    if (!session) return { ok: false };
-    const ctx = await resolveLessonContext(session);
-    if (!ctx) return { ok: false };
-
-    const target = part + 1;
-    const cached = await db.cachedLesson.findFirst({
-      where: { language: ctx.language, level: ctx.level, goal, part: target, modifier: ctx.modifier },
-    });
-    if (cached) return { ok: true };
-
-    const lesson = await generateLesson({
-      language: ctx.language,
-      level: ctx.level,
-      goal,
-      part: target,
-      modifier: ctx.modifier,
-    });
-    await db.cachedLesson.create({
-      data: {
-        language: ctx.language,
-        level: ctx.level,
-        goal,
-        part: target,
-        modifier: ctx.modifier,
-        contentJson: JSON.stringify(lesson),
-      },
-    });
-    return { ok: true };
-  } catch {
-    return { ok: false };
-  }
+  return { error: "Materi belum tersedia. Konten sedang disiapkan, silakan coba lagi nanti." };
 }

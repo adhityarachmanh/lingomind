@@ -1,5 +1,24 @@
+import { cache } from "react";
 import { db } from "./db";
 import type { CurriculumLevel, DailyMission, EngagementStats, LanguageCourse } from "./types";
+
+// Target konten per level (default bulk pre-generation: bagian 1-3, modifier normal+hard+easy, 5 varian quiz).
+export function computeLevelContentTargets(goalCount: number): { lessonTotal: number; quizTotal: number } {
+  return { lessonTotal: goalCount * 9, quizTotal: goalCount * 5 + 10 };
+}
+
+// Level siap = lesson & quiz cache memenuhi target; level tanpa topik dianggap siap.
+export function isLevelReady(lessonCount: number, quizCount: number, goalCount: number): boolean {
+  if (goalCount <= 0) return true;
+  const t = computeLevelContentTargets(goalCount);
+  return lessonCount >= t.lessonTotal && quizCount >= t.quizTotal;
+}
+
+// Bahasa siap = SEMUA level (yang punya topik) lengkap kontennya.
+export function isLanguageReady(levels: { goalCount: number; lessonCount: number; quizCount: number }[]): boolean {
+  if (levels.length === 0) return false;
+  return levels.every((l) => isLevelReady(l.lessonCount, l.quizCount, l.goalCount));
+}
 
 export function computeHeartRefill(
   hearts: number,
@@ -125,14 +144,41 @@ export async function getDailyMission(email: string, language: string): Promise<
   };
 }
 
-export async function getLanguages(): Promise<LanguageCourse[]> {
+// Hanya bahasa dengan konten SIAP (semua level lengkap) yang ditampilkan ke user —
+// konten lesson/quiz di-pre-generate via panel admin, bukan on-demand.
+export const getLanguages = cache(async (): Promise<LanguageCourse[]> => {
   const rows = await db.language.findMany({ orderBy: { name: "asc" } });
-  return rows.map((r) => ({
-    id: r.id, name: r.name, native_name: r.nativeName, flag: r.flag,
-    description: r.description, theme_class: r.themeClass, button_class: r.buttonClass,
-    category: r.category, tts_lang_code: r.ttsLangCode, edge_tts_voice: r.edgeTtsVoice,
-  }));
-}
+  if (rows.length === 0) return [];
+
+  const [lessons, quizzes, levels, topics] = await Promise.all([
+    db.cachedLesson.groupBy({ by: ["language", "level"], _count: true }),
+    db.cachedQuiz.groupBy({ by: ["language", "level"], _count: true }),
+    db.level.findMany({ orderBy: { orderIndex: "asc" } }),
+    db.topic.findMany({ orderBy: { orderIndex: "asc" } }),
+  ]);
+  const lessonCounts = new Map(lessons.map((l) => [`${l.language}|${l.level}`, l._count]));
+  const quizCounts = new Map(quizzes.map((q) => [`${q.language}|${q.level}`, q._count]));
+  const goalCounts = new Map<string, number>();
+  for (const t of topics) goalCounts.set(t.levelId, (goalCounts.get(t.levelId) ?? 0) + 1);
+
+  const readyIds = new Set<string>();
+  for (const lang of rows) {
+    const status = levels.map((l) => ({
+      goalCount: goalCounts.get(l.id) ?? 0,
+      lessonCount: lessonCounts.get(`${lang.id}|${l.id}`) ?? 0,
+      quizCount: quizCounts.get(`${lang.id}|${l.id}`) ?? 0,
+    }));
+    if (isLanguageReady(status)) readyIds.add(lang.id);
+  }
+
+  return rows
+    .filter((r) => readyIds.has(r.id))
+    .map((r) => ({
+      id: r.id, name: r.name, native_name: r.nativeName, flag: r.flag,
+      description: r.description, theme_class: r.themeClass, button_class: r.buttonClass,
+      category: r.category, tts_lang_code: r.ttsLangCode, edge_tts_voice: r.edgeTtsVoice,
+    }));
+});
 
 export async function getCurriculum(): Promise<CurriculumLevel[]> {
   const levels = await db.level.findMany({ orderBy: { orderIndex: "asc" } });

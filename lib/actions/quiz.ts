@@ -3,8 +3,8 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getEngagementStats, getCurriculum } from "../dashboard";
-import { getTopWeaknesses, logSkillProgress, logWeakness, classifySkill, classifyWeaknessTopic } from "../weakness";
-import { generateQuiz, shuffleOptions } from "../ai-content/quiz";
+import { logSkillProgress, logWeakness, classifySkill, classifyWeaknessTopic } from "../weakness";
+import { shuffleOptions } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { addFlashcards } from "../flashcards";
 import { applyQuizResult, deductHeart, updateEngagementAfterQuiz } from "../progress";
@@ -25,6 +25,7 @@ function randomPick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
+// Cache-only: quiz di-pre-generate via panel admin (bukan AI on-demand dari user).
 export async function getQuizAction(goal: string): Promise<{ quiz: QuizContainer; language: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -35,28 +36,17 @@ export async function getQuizAction(goal: string): Promise<{ quiz: QuizContainer
   const language = profile.preferred_language;
   const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
 
-  const topWeak = await getTopWeaknesses(session.email, language, 3);
-  const weaknessContext = topWeak.length
-    ? topWeak.map((w) => `- ${w.topic} (${w.count}x)`).join("\n")
-    : "";
-
   const variants = await db.cachedQuiz.findMany({ where: { language, level, goal, modifier: "normal" } });
 
-  let quiz: QuizContainer | null = null;
-
-  if (variants.length >= 5) {
+  if (variants.length > 0) {
     const picked = randomPick(variants);
-    quiz = parseAiJson<QuizContainer>(picked.contentJson);
+    const quiz = parseAiJson<QuizContainer>(picked.contentJson);
+    if (quiz && quiz.questions && quiz.questions.length > 0) {
+      return { quiz: shuffleOptions(quiz), language };
+    }
   }
 
-  if (!quiz) {
-    quiz = await generateQuiz({ language, level, goal, weaknessContext });
-    await db.cachedQuiz.create({
-      data: { language, level, goal, modifier: "normal", contentJson: JSON.stringify(quiz) },
-    });
-  }
-
-  return { quiz: shuffleOptions(quiz), language };
+  return { error: "Kuis belum tersedia. Konten sedang disiapkan, silakan coba lagi nanti." };
 }
 
 export async function recordAnswerAction(input: RecordAnswerInput): Promise<{ hearts: number } | { error: string }> {
