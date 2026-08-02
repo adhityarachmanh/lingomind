@@ -184,3 +184,33 @@ export async function updateMissionConfigAdmin(id: number, cfg: {
     },
   });
 }
+
+export type ContentUnit = { kind: "lesson" | "quiz"; goal: string; part: number; modifier: string };
+
+export interface ContentWorkOptions {
+  parts: number;
+  lessonModifiers: string[];
+  quizVariants: number;
+}
+
+// Work list deterministik untuk bulk pre-generation konten (language, level):
+// lesson per (goal, part, modifier) + quiz per (goal, modifier "normal") + exam + general_practice.
+export function buildContentWorkList(topics: string[], opts: ContentWorkOptions): ContentUnit[] {
+  const units: ContentUnit[] = [];
+  const { parts, lessonModifiers, quizVariants } = opts;
+  for (const goal of topics) {
+    for (const modifier of lessonModifiers) {
+      for (let part = 1; part <= parts; part++) {
+        units.push({ kind: "lesson", goal, part, modifier });
+      }
+    }
+    for (let v = 1; v <= quizVariants; v++) {
+      units.push({ kind: "quiz", goal, part: 0, modifier: "normal" });
+    }
+  }
+  for (let v = 1; v <= quizVariants; v++) {
+    units.push({ kind: "quiz", goal: "exam", part: 0, modifier: "normal" });
+    units.push({ kind: "quiz", goal: "general_practice", part: 0, modifier: "normal" });
+  }
+  return units;
+}

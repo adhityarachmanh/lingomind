@@ -7,6 +7,7 @@ const TABS = [
   { key: "bahasa", label: "Bahasa", icon: "🌐" },
   { key: "kurikulum", label: "Kurikulum", icon: "📚" },
   { key: "pengguna", label: "Pengguna", icon: "👥" },
+  { key: "konten", label: "Konten", icon: "🧠" },
 ];
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

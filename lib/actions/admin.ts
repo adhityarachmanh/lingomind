@@ -4,13 +4,17 @@ import bcrypt from "bcryptjs";
 import { requireAdmin } from "../auth";
 import { db } from "../db";
 import {
-  createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
+  buildContentWorkList, createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetUserProgressAdmin,
   updateAppConfigAdmin, updateLanguageAdmin, updateLevelAdmin, updateMissionConfigAdmin,
   updateShopItemAdmin, updateTopicAdmin, updateUserRoleAdmin, updateUserStatsAdmin,
 } from "../admin";
 import type { AdminLanguageItem, AdminLevelItem } from "../types";
+import type { ContentUnit } from "../admin";
+import { generateLesson } from "../ai-content/lesson";
+import { buildGeneralPracticePrompt, buildQuizPrompt, generateQuizWithPrompt } from "../ai-content/quiz";
+import { generateExam } from "../ai-content/exam";
 
 type AdminResult<T> = T | { error: string };
 
@@ -171,4 +175,153 @@ export async function changeAdminPasswordAction(input: { currentPassword: string
   const passwordHash = await bcrypt.hash(input.newPassword, 10);
   await db.user.update({ where: { email: admin.email }, data: { passwordHash } });
   return { ok: true };
+}
+
+const LESSON_MODIFIERS_ALLOWED = ["normal", "hard", "easy"] as const;
+
+interface ContentProgress {
+  units: ContentUnit[];
+  topics: Awaited<ReturnType<typeof getTopicsAdmin>>;
+  done: number;
+  total: number;
+  nextIndex: number;
+}
+
+// Hitung progress bulk pre-generation per (language, level) berdasarkan baris cache yang sudah ada.
+// Idempotent: unit yang sudah ada di cache di-skip → resume aman dari posisi mana pun.
+async function resolveContentProgress(
+  language: string,
+  level: string,
+  parts: number,
+  lessonModifiers: string[],
+  quizVariants: number
+): Promise<ContentProgress | { error: string }> {
+  const levels = await getLevelsAdmin();
+  const levelRow = levels.find((l) => l.id === level);
+  if (!levelRow) return { error: "Level tidak ditemukan." };
+  const topics = await getTopicsAdmin(levelRow.id);
+  const units = buildContentWorkList(topics.map((t) => t.title), { parts, lessonModifiers, quizVariants });
+
+  const [lessons, quizzes] = await Promise.all([
+    db.cachedLesson.findMany({ where: { language, level }, select: { goal: true, part: true, modifier: true } }),
+    db.cachedQuiz.findMany({ where: { language, level }, select: { goal: true, modifier: true } }),
+  ]);
+  const lessonKeys = new Set(lessons.map((l) => `${l.goal}|${l.part}|${l.modifier}`));
+  const quizCounts = new Map<string, number>();
+  for (const q of quizzes) {
+    const key = `${q.goal}|${q.modifier}`;
+    quizCounts.set(key, (quizCounts.get(key) ?? 0) + 1);
+  }
+
+  let done = 0;
+  let nextIndex = -1;
+  const quizPos = new Map<string, number>();
+  units.forEach((u, i) => {
+    let isDone: boolean;
+    if (u.kind === "lesson") {
+      isDone = lessonKeys.has(`${u.goal}|${u.part}|${u.modifier}`);
+    } else {
+      const key = `${u.goal}|${u.modifier}`;
+      const pos = (quizPos.get(key) ?? 0) + 1;
+      quizPos.set(key, pos);
+      isDone = pos <= (quizCounts.get(key) ?? 0);
+    }
+    if (isDone) done++;
+    else if (nextIndex === -1) nextIndex = i;
+  });
+  return { units, topics, done, total: units.length, nextIndex };
+}
+
+function contentUnitLabel(u: ContentUnit): string {
+  if (u.kind === "lesson") return `Lesson: ${u.goal} — Bagian ${u.part} (${u.modifier})`;
+  return `Quiz: ${u.goal}`;
+}
+
+function sanitizeContentOptions(input: { parts?: number; lessonModifiers?: string[]; quizVariants?: number }) {
+  const parts = Math.min(5, Math.max(1, input.parts ?? 3));
+  const lessonModifiers = (input.lessonModifiers ?? ["normal"]).filter((m) =>
+    (LESSON_MODIFIERS_ALLOWED as readonly string[]).includes(m)
+  );
+  const quizVariants = Math.min(5, Math.max(1, input.quizVariants ?? 5));
+  return { parts, lessonModifiers, quizVariants };
+}
+
+export async function getContentGenerationStatusAction(input: {
+  language: string;
+  level: string;
+  parts?: number;
+  lessonModifiers?: string[];
+  quizVariants?: number;
+}): Promise<AdminResult<{ ok: boolean; done: number; total: number; label: string | null }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+  const opts = sanitizeContentOptions(input);
+  const prog = await resolveContentProgress(input.language, input.level, opts.parts, opts.lessonModifiers, opts.quizVariants);
+  if ("error" in prog) return prog;
+  const label = prog.nextIndex === -1 ? null : contentUnitLabel(prog.units[prog.nextIndex]);
+  return { ok: true, done: prog.done, total: prog.total, label };
+}
+
+export async function generateContentChunkAction(input: {
+  language: string;
+  level: string;
+  parts?: number;
+  lessonModifiers?: string[];
+  quizVariants?: number;
+}): Promise<
+  AdminResult<{ ok: boolean; done: number; total: number; label: string | null; generated: boolean }>
+> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+
+  const languages = await getLanguagesAdmin();
+  if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
+
+  const opts = sanitizeContentOptions(input);
+  const prog = await resolveContentProgress(input.language, input.level, opts.parts, opts.lessonModifiers, opts.quizVariants);
+  if ("error" in prog) return prog;
+  if (prog.nextIndex === -1) return { ok: true, done: prog.done, total: prog.total, label: null, generated: false };
+
+  const unit = prog.units[prog.nextIndex];
+  try {
+    if (unit.kind === "lesson") {
+      const lesson = await generateLesson({
+        language: input.language, level: input.level, goal: unit.goal, part: unit.part, modifier: unit.modifier,
+      });
+      await db.cachedLesson.create({
+        data: {
+          language: input.language, level: input.level, goal: unit.goal,
+          part: unit.part, modifier: unit.modifier, contentJson: JSON.stringify(lesson),
+        },
+      });
+    } else if (unit.goal === "exam") {
+      const topicsStr = prog.topics.map((t) => t.title).join(", ") || "Grammar lanjutan, vocabulary tingkat tinggi, reading comprehension, dan listening";
+      const quiz = await generateExam({ language: input.language, level: input.level, topicsStr });
+      await db.cachedQuiz.create({
+        data: { language: input.language, level: input.level, goal: "exam", modifier: "normal", contentJson: JSON.stringify(quiz) },
+      });
+    } else if (unit.goal === "general_practice") {
+      const quiz = await generateQuizWithPrompt({
+        prompt: buildGeneralPracticePrompt(input.language, input.level),
+        expectedCount: 5,
+        label: "general practice quiz",
+      });
+      await db.cachedQuiz.create({
+        data: { language: input.language, level: input.level, goal: "general_practice", modifier: "normal", contentJson: JSON.stringify(quiz) },
+      });
+    } else {
+      const quiz = await generateQuizWithPrompt({
+        prompt: buildQuizPrompt(input.language, input.level, unit.goal, "(belum ada riwayat kelemahan)"),
+        expectedCount: 5,
+        label: "quiz",
+      });
+      await db.cachedQuiz.create({
+        data: { language: input.language, level: input.level, goal: unit.goal, modifier: "normal", contentJson: JSON.stringify(quiz) },
+      });
+    }
+  } catch (e) {
+    return { error: `Gagal generate "${contentUnitLabel(unit)}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  }
+
+  return { ok: true, done: prog.done + 1, total: prog.total, label: contentUnitLabel(unit), generated: true };
 }
