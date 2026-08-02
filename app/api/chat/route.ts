@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
       model,
       instructions: system,
       messages: [...history, { role: "user", content: message }],
-      maxOutputTokens: 2048,
+      maxOutputTokens: 8192,
       temperature: 0.7,
       onFinish: async ({ text }) => {
         const reply = text.trim();

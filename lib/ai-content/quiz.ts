@@ -217,7 +217,7 @@ export async function generateQuizWithPrompt(params: {
   let bestScore = 0;
 
   for (let attempt = 1; attempt <= 3; attempt++) {
-    const { text } = await generateText({ model, prompt: currentPrompt, maxOutputTokens: 4096, temperature: 0.6 });
+    const { text } = await generateText({ model, prompt: currentPrompt, maxOutputTokens: 12288, temperature: 0.6 });
     const parsed = parseAiJson<QuizContainer>(text);
     if (!parsed) {
       currentPrompt += `\n\nRespons tidak valid (bukan JSON). Kembalikan HANYA JSON.`;

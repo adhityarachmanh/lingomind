@@ -48,7 +48,7 @@ export async function generateSentences(params: { language: string; level: strin
   const { language, level } = params;
   let prompt = buildSentencePrompt(language, level);
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const { text } = await generateText({ model, prompt, maxOutputTokens: 1024, temperature: 0.7 });
+    const { text } = await generateText({ model, prompt, maxOutputTokens: 4096, temperature: 0.7 });
     const sentences = parseSentenceArray(text);
     if (sentences) return sentences;
     prompt += `\n\nRespons tidak valid. Kembalikan HANYA JSON array string (minimal 1 kalimat).`;
@@ -60,7 +60,7 @@ export async function evaluatePronunciation(params: { language: string; targetSe
   const { language, targetSentence, transcript } = params;
   let prompt = buildEvaluationPrompt(language, targetSentence, transcript);
   for (let attempt = 1; attempt <= 2; attempt++) {
-    const { text } = await generateText({ model, prompt, maxOutputTokens: 1024, temperature: 0.2 });
+    const { text } = await generateText({ model, prompt, maxOutputTokens: 4096, temperature: 0.2 });
     const evaluation = parseEvaluation(text);
     if (evaluation) return evaluation;
     prompt += `\n\nRespons tidak valid. Kembalikan HANYA JSON sesuai bentuk yang diminta.`;

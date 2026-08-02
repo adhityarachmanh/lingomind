@@ -21,7 +21,7 @@ export async function evaluatePlacementAction(
   const language = profile.preferred_language;
   const prompt = buildPlacementPrompt(language, formatPlacementHistory(messages));
 
-  const { text } = await generateText({ model, prompt, maxOutputTokens: 2048 });
+  const { text } = await generateText({ model, prompt, maxOutputTokens: 8192 });
   const level = parseCefrLevel(text);
 
   await db.userLanguageProgress.upsert({
