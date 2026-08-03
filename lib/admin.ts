@@ -60,6 +60,93 @@ export function hasDuplicateLesson(
   return false;
 }
 
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  const intersection = [...a].filter((w) => b.has(w)).length;
+  const union = a.size + b.size - intersection;
+  return union === 0 ? 0 : intersection / union;
+}
+
+export interface QuizRowQuestions {
+  id: number;
+  questions: { question: string; listenText?: string }[];
+}
+
+export interface QuizDuplicateFlag {
+  key: string; // `${level}|${goal}` — grup tempat varian itu berada
+  rowId: number;
+  reason: "identical" | "near";
+  similarity: number; // 1 untuk identik, skor Jaccard untuk near
+  collidedWithRowId: number;
+  question: string;
+}
+
+// Scan varian quiz existing per grup: varian di-flag duplikat jika ADA minimal 1 soal yang
+// IDENTIK (normalisasi question + listen_text) atau MIRIP (Jaccard >= nearThreshold) dengan
+// soal varian yang lebih dulu ada. Varian pertama tiap grup tidak pernah di-flag (keep-first).
+export function detectQuizDuplicates(
+  groups: { key: string; rows: QuizRowQuestions[] }[],
+  nearThreshold = 0.7
+): QuizDuplicateFlag[] {
+  const flags: QuizDuplicateFlag[] = [];
+  for (const { key, rows } of groups) {
+    const ordered = [...rows].sort((a, b) => a.id - b.id);
+    const refById = new Map<string, number>(); // normalized question+listen → rowId pertama
+    const refQuestions: { rowId: number; text: string; wordSet: Set<string> }[] = [];
+    for (const row of ordered) {
+      let flag: QuizDuplicateFlag | null = null;
+      for (const q of row.questions) {
+        const combined = `${q.question} ${q.listenText ?? ""}`;
+        const norm = normalizeTextForCompare(combined);
+        if (!norm) continue;
+        const owner = refById.get(norm);
+        if (owner !== undefined) {
+          flag = { key, rowId: row.id, reason: "identical", similarity: 1, collidedWithRowId: owner, question: q.question };
+          break;
+        }
+        const qWords = words(combined);
+        if (qWords.size > 0) {
+          let bestScore = 0;
+          let bestRow = 0;
+          let bestText = "";
+          for (const ref of refQuestions) {
+            const score = jaccard(qWords, ref.wordSet);
+            if (score > bestScore) {
+              bestScore = score;
+              bestRow = ref.rowId;
+              bestText = ref.text;
+            }
+          }
+          if (bestScore >= nearThreshold) {
+            flag = {
+              key,
+              rowId: row.id,
+              reason: "near",
+              similarity: Math.round(bestScore * 100) / 100,
+              collidedWithRowId: bestRow,
+              question: bestText || q.question,
+            };
+            break;
+          }
+        }
+      }
+      if (flag) {
+        flags.push(flag);
+      } else {
+        for (const q of row.questions) {
+          const combined = `${q.question} ${q.listenText ?? ""}`;
+          const norm = normalizeTextForCompare(combined);
+          if (!norm) continue;
+          if (!refById.has(norm)) refById.set(norm, row.id);
+          const qWords = words(combined);
+          if (qWords.size > 0) refQuestions.push({ rowId: row.id, text: q.question, wordSet: qWords });
+        }
+      }
+    }
+  }
+  return flags;
+}
+
 export async function getUsersAdmin(): Promise<AdminUserRow[]> {
   const users = await db.user.findMany({ orderBy: { email: "asc" } });
   const emails = users.map((u) => u.email);

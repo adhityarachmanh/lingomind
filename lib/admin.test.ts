@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildContentWorkList, hasDuplicateLesson, hasDuplicateQuiz } from "./admin";
+import { buildContentWorkList, detectQuizDuplicates, hasDuplicateLesson, hasDuplicateQuiz } from "./admin";
 
 describe("buildContentWorkList", () => {
   it("menyusun 3 lesson per goal (modifier normal) lalu 1 quiz per goal", () => {
@@ -69,5 +69,89 @@ describe("hasDuplicateLesson", () => {
     expect(hasDuplicateLesson([], ["ini kalimat pertama materi dan lanjutan"], "Judul Baru", "ini kalimat pertama materi dan lanjutan lainnya")).toBe(true);
     expect(hasDuplicateLesson(["Judul A"], ["konten satu"], "Judul B", "konten dua yang sangat berbeda sekali")).toBe(false);
     expect(hasDuplicateLesson(["A"], ["x"], "B", "")).toBe(false);
+  });
+});
+
+describe("detectQuizDuplicates", () => {
+  const rows = (id: number, qs: { question: string; listenText?: string }[]) => ({ id, questions: qs });
+
+  it("mendeteksi varian dengan soal IDENTIK (keep yang pertama)", () => {
+    const flags = detectQuizDuplicates([
+      {
+        key: "A1|Sapaan",
+        rows: [
+          rows(1, [{ question: "What is your name?" }]),
+          rows(2, [{ question: "what  is your name?  " }]),
+        ],
+      },
+    ]);
+    expect(flags).toHaveLength(1);
+    expect(flags[0]).toMatchObject({ rowId: 2, reason: "identical", similarity: 1, collidedWithRowId: 1 });
+  });
+
+  it("mendeteksi parafrase mirip (Jaccard >= 0.7) — kasus instruksi sama, audio beda sedikit", () => {
+    const flags = detectQuizDuplicates([
+      {
+        key: "A1|Sapaan",
+        rows: [
+          rows(1, [{ question: "Listen and choose the best reply.", listenText: "How are you?" }]),
+          rows(2, [{ question: "Listen and choose the best reply.", listenText: "Good morning! How are you?" }]),
+        ],
+      },
+    ]);
+    expect(flags).toHaveLength(1);
+    expect(flags[0].rowId).toBe(2);
+    expect(flags[0].reason).toBe("near");
+    expect(flags[0].similarity).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it("TIDAK menandai parafrase ringan di bawah threshold", () => {
+    const flags = detectQuizDuplicates([
+      {
+        key: "A1|Sapaan",
+        rows: [
+          rows(1, [{ question: "apple banana cherry" }]),
+          rows(2, [{ question: "apple banana cherry durian mango orange" }]),
+        ],
+      },
+    ]);
+    expect(flags).toHaveLength(0);
+  });
+
+  it("TIDAK mencampur antar grup (level/goal berbeda)", () => {
+    const flags = detectQuizDuplicates([
+      { key: "A1|Sapaan", rows: [rows(1, [{ question: "A" }])] },
+      { key: "A2|Sapaan", rows: [rows(2, [{ question: "A" }])] },
+    ]);
+    expect(flags).toHaveLength(0);
+  });
+
+  it("varian pertama tiap grup tidak pernah di-flag; varian ke-3 duplikat di-flag terhadap sumber aslinya", () => {
+    const flags = detectQuizDuplicates([
+      {
+        key: "A1|Sapaan",
+        rows: [
+          rows(1, [{ question: "A" }, { question: "B" }]),
+          rows(2, [{ question: "C" }]),
+          rows(3, [{ question: "B" }]),
+          rows(4, [{ question: "D" }]),
+        ],
+      },
+    ]);
+    expect(flags).toHaveLength(1);
+    expect(flags[0]).toMatchObject({ rowId: 3, collidedWithRowId: 1 });
+  });
+
+  it("audio yang berbeda membuat dua soal tidak identik dan tidak mirip cukup", () => {
+    const flags = detectQuizDuplicates([
+      {
+        key: "A1|Sapaan",
+        rows: [
+          rows(1, [{ question: "Dengarkan lalu jawab", listenText: "Hello, how are you today?" }]),
+          rows(2, [{ question: "Dengarkan lalu jawab", listenText: "What time does the train leave tomorrow morning?" }]),
+        ],
+      },
+    ]);
+    expect(flags).toHaveLength(0);
   });
 });

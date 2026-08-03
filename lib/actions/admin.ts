@@ -6,13 +6,15 @@ import { db } from "../db";
 import {
   CONTENT_PARTS, CONTENT_QUIZ_MAX_VARIANTS,
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
-  findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
+  detectQuizDuplicates, findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
   getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
   resolveLanguageContentStatus, updateAppConfigAdmin, updateLanguageAdmin, updateLevelAdmin, updateMissionConfigAdmin,
   updateShopItemAdmin, updateTopicAdmin, updateUserRoleAdmin, updateUserStatsAdmin,
 } from "../admin";
 import type { AdminLanguageItem, AdminLevelItem } from "../types";
-import type { ContentUnit, LanguageContentStatus } from "../admin";
+import { parseAiJson } from "../ai-content/parse";
+import type { QuizContainer } from "../types";
+import type { ContentUnit, LanguageContentStatus, QuizRowQuestions } from "../admin";
 
 type AdminResult<T> = T | { error: string };
 
@@ -314,4 +316,93 @@ export async function generateQuizVariantAction(input: {
     return { error: failedMsg ?? `Varian quiz untuk konten ini sudah maksimal (${CONTENT_QUIZ_MAX_VARIANTS}).` };
   }
   return { ok: true, labels, error: failedMsg ?? undefined };
+}
+
+export interface QuizDuplicateFlagRow {
+  rowId: number;
+  level: string;
+  goal: string;
+  reason: "identical" | "near";
+  similarity: number;
+  collidedWithRowId: number;
+  question: string;
+}
+
+// Scan varian quiz existing (bahasa terpilih) untuk menemukan duplikat identik / mirip.
+export async function checkQuizDuplicatesAction(input: {
+  language: string;
+}): Promise<AdminResult<{ ok: boolean; flags: QuizDuplicateFlagRow[] }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+
+  const languages = await getLanguagesAdmin();
+  if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
+
+  const quizzes = await db.cachedQuiz.findMany({ where: { language: input.language } });
+  const groups = new Map<string, QuizRowQuestions[]>();
+  for (const q of quizzes) {
+    const key = `${q.level}|${q.goal}`;
+    const parsed = parseAiJson<QuizContainer>(q.contentJson);
+    const questions =
+      parsed?.questions?.map((qq) => ({ question: qq.question ?? "", listenText: qq.listen_text ?? "" })) ?? [];
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push({ id: q.id, questions });
+  }
+
+  const flags = detectQuizDuplicates([...groups.entries()].map(([key, rows]) => ({ key, rows })));
+  return {
+    ok: true,
+    flags: flags.map((f) => {
+      const sep = f.key.indexOf("|");
+      return {
+        rowId: f.rowId,
+        level: f.key.slice(0, sep),
+        goal: f.key.slice(sep + 1),
+        reason: f.reason,
+        similarity: f.similarity,
+        collidedWithRowId: f.collidedWithRowId,
+        question: f.question,
+      };
+    }),
+  };
+}
+
+// Regenerate varian quiz duplikat: generate varian baru DULU (prompt diberi soal existing →
+// anti-duplikat), baru hapus row lama setelah sukses. Gagal → row lama tetap utuh.
+export async function regenerateQuizVariantAction(input: {
+  language: string;
+  level: string;
+  goal: string;
+  rowId: number;
+}): Promise<AdminResult<{ ok: boolean; label: string }>> {
+  const g = await guard();
+  if (typeof g !== "string") return g;
+
+  const languages = await getLanguagesAdmin();
+  if (!languages.some((l) => l.id === input.language)) return { error: "Bahasa tidak ditemukan." };
+  const levels = await getLevelsAdmin();
+  const levelRow = levels.find((l) => l.id === input.level);
+  if (!levelRow) return { error: "Level tidak ditemukan." };
+  const goal = input.goal.trim();
+  if (goal !== "exam" && goal !== "general_practice") {
+    const topics = await getTopicsAdmin(levelRow.id);
+    if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
+  }
+
+  const target = await db.cachedQuiz.findUnique({ where: { id: input.rowId } });
+  if (!target || target.language !== input.language || target.level !== input.level || target.goal !== goal) {
+    return { error: "Varian quiz tidak ditemukan." };
+  }
+  const total = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
+  if (total <= 1) return { error: "Tidak bisa regenerate varian terakhir." };
+
+  const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };
+  const label = contentUnitLabel(unit, levelRow.title);
+  try {
+    await generateOneContentUnit(input.language, unit, input.level);
+  } catch (e) {
+    return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  }
+  await db.cachedQuiz.delete({ where: { id: input.rowId } });
+  return { ok: true, label };
 }

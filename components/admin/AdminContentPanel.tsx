@@ -1,14 +1,17 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import {
+  checkQuizDuplicatesAction,
   generateNextLessonAction,
   generateQuizVariantAction,
   getContentGenerationStatusAction,
   getLanguagesAdminAction,
   getLevelsAdminAction,
+  regenerateQuizVariantAction,
   resetFailedContentUnitsAction,
 } from "@/lib/actions/admin";
+import type { QuizDuplicateFlagRow } from "@/lib/actions/admin";
 import type { ContentLevelStatus, LanguageContentStatus } from "@/lib/admin";
 
 function levelBadge(level: ContentLevelStatus): { label: string; cls: string } {
@@ -35,6 +38,10 @@ export default function AdminContentPanel() {
   const [message, setMessage] = useState<string | null>(null);
   const [quizModal, setQuizModal] = useState<{ levelId: string; goal: string; current: number; total: number } | null>(null);
   const [quizCount, setQuizCount] = useState(1);
+  const [dupeFlags, setDupeFlags] = useState<QuizDuplicateFlagRow[] | null>(null);
+  const [dupeError, setDupeError] = useState<string | null>(null);
+  const [dupeBusy, setDupeBusy] = useState(false);
+  const [regenerating, setRegenerating] = useState<number | null>(null);
 
   // Sinkronkan bahasa terpilih ke query param ?language= agar bertahan saat halaman direfresh.
   function readLanguageParam(): string | null {
@@ -144,6 +151,29 @@ export default function AdminContentPanel() {
     generateQuiz(m.levelId, m.goal, Math.max(1, Math.min(quizCount, remaining)));
   }
 
+  async function runDupeCheck() {
+    if (!languageId || dupeBusy || !!busy) return;
+    setDupeError(null);
+    setDupeBusy(true);
+    const res = await checkQuizDuplicatesAction({ language: languageId }).catch(() => ({ error: "Gagal memeriksa duplikat." }));
+    setDupeBusy(false);
+    if ("error" in res) { setDupeError(res.error); return; }
+    setDupeFlags(res.flags);
+  }
+
+  async function regenerateRow(f: QuizDuplicateFlagRow) {
+    if (regenerating !== null) return;
+    setDupeError(null);
+    setRegenerating(f.rowId);
+    const res = await regenerateQuizVariantAction({ language: languageId, level: f.level, goal: f.goal, rowId: f.rowId }).catch(
+      () => ({ error: "Gagal regenerate." })
+    );
+    setRegenerating(null);
+    if ("error" in res) { setDupeError(res.error); return; }
+    setMessage(`"${res.label}" berhasil digenerate ulang!`);
+    await Promise.all([refreshStatus(), runDupeCheck()]);
+  }
+
   async function resetFailedUnits() {
     setError(null);
     setMessage(null);
@@ -154,6 +184,19 @@ export default function AdminContentPanel() {
   }
 
   const hasLevels = levels.length > 0;
+  const levelTitles = new Map(levels.map((l) => [l.id, l.title]));
+  const dupeGroups = useMemo(() => {
+    if (!dupeFlags) return [];
+    const map = new Map<string, QuizDuplicateFlagRow[]>();
+    for (const f of dupeFlags) {
+      const key = `${f.level}|${f.goal}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(f);
+    }
+    return [...map.entries()];
+  }, [dupeFlags]);
+  const identicalCount = dupeFlags?.filter((f) => f.reason === "identical").length ?? 0;
+  const nearCount = (dupeFlags?.length ?? 0) - identicalCount;
 
   return (
     <div className="space-y-6">
@@ -171,7 +214,12 @@ export default function AdminContentPanel() {
             <div className="w-56">
               <select
                 value={languageId}
-                onChange={(e) => { setLanguageId(e.target.value); writeLanguageParam(e.target.value); }}
+                onChange={(e) => {
+                  setLanguageId(e.target.value);
+                  writeLanguageParam(e.target.value);
+                  setDupeFlags(null);
+                  setDupeError(null);
+                }}
                 className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               >
                 {languages.map((l) => (
@@ -186,6 +234,14 @@ export default function AdminContentPanel() {
               className="px-4 py-2 rounded-md bg-white border border-slate-300 text-slate-600 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
             >
               Perbarui Status
+            </button>
+            <button
+              type="button"
+              onClick={runDupeCheck}
+              disabled={!!busy || dupeBusy || !languageId}
+              className="px-4 py-2 rounded-md bg-white border border-amber-300 text-amber-700 hover:bg-amber-50 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
+            >
+              {dupeBusy ? "..." : "Cek Duplikat"}
             </button>
             {failedCount > 0 && (
               <button
@@ -284,6 +340,66 @@ export default function AdminContentPanel() {
           Belum ada level untuk bahasa ini.
         </div>
       )}
+
+      {dupeError && (
+        <div className="bg-white border border-rose-200 rounded-lg p-4">
+          <p className="px-3 py-2 rounded-md bg-rose-50 border border-rose-200 text-rose-600 text-xs font-semibold">{dupeError}</p>
+        </div>
+      )}
+
+      {dupeFlags !== null && dupeFlags.length === 0 && (
+        <div className="bg-white border border-emerald-200 rounded-lg p-4 text-xs text-emerald-700 font-semibold">
+          Tidak ada duplikat quiz ditemukan untuk bahasa ini.
+        </div>
+      )}
+
+      {dupeFlags !== null && dupeFlags.length > 0 && (
+        <div className="bg-white border border-amber-200 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 border-b border-amber-200 flex items-center justify-between bg-amber-50/60">
+            <h3 className="text-sm font-bold text-amber-800">
+              Duplikat Ditemukan: {dupeFlags.length} ({identicalCount} identik, {nearCount} mirip)
+            </h3>
+            <span className="text-[11px] text-amber-600">
+              Regenerate mengganti varian duplikat dengan varian baru (anti-duplikat otomatis).
+            </span>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {dupeGroups.map(([key, flags]) => {
+              const sep = key.indexOf("|");
+              const levelId = key.slice(0, sep);
+              const goal = key.slice(sep + 1);
+              return (
+                <div key={key} className="px-4 py-3">
+                  <p className="text-xs font-bold text-slate-800">
+                    {levelTitles.get(levelId) ?? levelId} — {goal}
+                  </p>
+                  <ul className="mt-2 space-y-1.5">
+                    {flags.map((f) => (
+                      <li key={f.rowId} className="flex items-start justify-between gap-3 text-xs">
+                        <span className="text-slate-600">
+                          Varian id <b className="text-slate-800">{f.rowId}</b> duplikat dari id{" "}
+                          <b className="text-slate-800">{f.collidedWithRowId}</b> (
+                          {f.reason === "identical" ? "identik" : `mirip, skor ${f.similarity.toFixed(2)}`}):{" "}
+                          <i className="text-slate-500">&#34;{f.question}&#34;</i>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => regenerateRow(f)}
+                          disabled={regenerating !== null}
+                          className="shrink-0 px-2.5 py-1 rounded-md bg-amber-500 hover:bg-amber-600 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[11px] font-bold"
+                        >
+                          {regenerating === f.rowId ? "..." : "Regenerate"}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {!hasLevels && (
         <div className="bg-white border border-slate-200 rounded-lg p-5 text-xs text-slate-400">
           Memuat data...
