@@ -147,6 +147,18 @@ export function detectQuizDuplicates(
   return flags;
 }
 
+// Verifikasi varian kandidat bersih (tidak identik/mirip dengan varian lain di grup yang sama).
+// Dipakai setelah regenerate: varian baru wajib lolos ini sebelum row lama dihapus.
+export function isQuizVariantClean(
+  groupRows: QuizRowQuestions[],
+  candidate: QuizRowQuestions,
+  nearThreshold = 0.7
+): boolean {
+  return !detectQuizDuplicates([{ key: "g", rows: [...groupRows, candidate] }], nearThreshold).some(
+    (f) => f.rowId === candidate.id
+  );
+}
+
 export async function getUsersAdmin(): Promise<AdminUserRow[]> {
   const users = await db.user.findMany({ orderBy: { email: "asc" } });
   const emails = users.map((u) => u.email);

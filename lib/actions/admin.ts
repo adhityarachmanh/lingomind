@@ -7,7 +7,7 @@ import {
   CONTENT_PARTS, CONTENT_QUIZ_MAX_VARIANTS,
   createLanguageAdmin, createLevelAdmin, createShopItemAdmin, createTopicAdmin,
   detectQuizDuplicates, findNextUndoneUnit, generateOneContentUnit, getAppConfigsAdmin, getLanguagesAdmin, getLevelsAdmin, getMissionConfigsAdmin,
-  getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, resetFailedContentUnits, resetUserProgressAdmin,
+  getShopItemsAdmin, getTopicsAdmin, getUsersAdmin, isQuizVariantClean, resetFailedContentUnits, resetUserProgressAdmin,
   resolveLanguageContentStatus, updateAppConfigAdmin, updateLanguageAdmin, updateLevelAdmin, updateMissionConfigAdmin,
   updateShopItemAdmin, updateTopicAdmin, updateUserRoleAdmin, updateUserStatsAdmin,
 } from "../admin";
@@ -328,6 +328,15 @@ export interface QuizDuplicateFlagRow {
   question: string;
 }
 
+function parseQuizQuestions(contentJson: string): { question: string; listenText?: string }[] {
+  try {
+    const parsed = parseAiJson<QuizContainer>(contentJson);
+    return parsed?.questions?.map((q) => ({ question: q.question ?? "", listenText: q.listen_text ?? "" })) ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // Scan varian quiz existing (bahasa terpilih) untuk menemukan duplikat identik / mirip.
 export async function checkQuizDuplicatesAction(input: {
   language: string;
@@ -342,9 +351,7 @@ export async function checkQuizDuplicatesAction(input: {
   const groups = new Map<string, QuizRowQuestions[]>();
   for (const q of quizzes) {
     const key = `${q.level}|${q.goal}`;
-    const parsed = parseAiJson<QuizContainer>(q.contentJson);
-    const questions =
-      parsed?.questions?.map((qq) => ({ question: qq.question ?? "", listenText: qq.listen_text ?? "" })) ?? [];
+    const questions = parseQuizQuestions(q.contentJson);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push({ id: q.id, questions });
   }
@@ -367,8 +374,9 @@ export async function checkQuizDuplicatesAction(input: {
   };
 }
 
-// Regenerate varian quiz duplikat: generate varian baru DULU (prompt diberi soal existing →
-// anti-duplikat), baru hapus row lama setelah sukses. Gagal → row lama tetap utuh.
+// Regenerate varian quiz duplikat: generate varian baru DULU (prompt diberi soal existing → anti-duplikat),
+// verifikasi varian baru bersih (isQuizVariantClean — identik/mirip dengan sisa grup), retry maks 3×;
+// baru hapus row lama setelah ada pengganti bersih. Gagal → row lama tetap utuh.
 export async function regenerateQuizVariantAction(input: {
   language: string;
   level: string;
@@ -398,10 +406,45 @@ export async function regenerateQuizVariantAction(input: {
 
   const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };
   const label = contentUnitLabel(unit, levelRow.title);
-  try {
-    await generateOneContentUnit(input.language, unit, input.level);
-  } catch (e) {
-    return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  const MAX_ATTEMPTS = 3;
+  let createdId: number | null = null;
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await generateOneContentUnit(input.language, unit, input.level);
+    } catch (e) {
+      if (createdId !== null) {
+        await db.cachedQuiz.delete({ where: { id: createdId } }).catch(() => {});
+        createdId = null;
+      }
+      return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+    }
+
+    const newest = await db.cachedQuiz.findFirst({
+      where: { language: input.language, level: input.level, goal, modifier: "normal" },
+      orderBy: { id: "desc" },
+    });
+    if (!newest || newest.id === input.rowId) {
+      return { error: `Gagal generate "${label}": varian baru tidak ditemukan.` };
+    }
+    createdId = newest.id;
+
+    const group = await db.cachedQuiz.findMany({
+      where: { language: input.language, level: input.level, goal, modifier: "normal" },
+    });
+    const groupRows = group
+      .filter((q) => q.id !== input.rowId && q.id !== createdId)
+      .map((q) => ({ id: q.id, questions: parseQuizQuestions(q.contentJson) }));
+    const candidate = { id: createdId, questions: parseQuizQuestions(newest.contentJson) };
+    if (isQuizVariantClean(groupRows, candidate)) break;
+
+    // masih identik/mirip dengan varian lain → hapus percobaan ini, generate ulang
+    await db.cachedQuiz.delete({ where: { id: createdId } }).catch(() => {});
+    createdId = null;
+  }
+
+  if (createdId === null) {
+    return { error: `Varian baru untuk "${label}" masih mirip dengan varian lain setelah ${MAX_ATTEMPTS} percobaan — coba lagi.` };
   }
   await db.cachedQuiz.delete({ where: { id: input.rowId } });
   return { ok: true, label };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildContentWorkList, detectQuizDuplicates, hasDuplicateLesson, hasDuplicateQuiz } from "./admin";
+import { buildContentWorkList, detectQuizDuplicates, hasDuplicateLesson, hasDuplicateQuiz, isQuizVariantClean } from "./admin";
 
 describe("buildContentWorkList", () => {
   it("menyusun 3 lesson per goal (modifier normal) lalu 1 quiz per goal", () => {
@@ -153,5 +153,29 @@ describe("detectQuizDuplicates", () => {
       },
     ]);
     expect(flags).toHaveLength(0);
+  });
+});
+
+describe("isQuizVariantClean", () => {
+  const rows = (id: number, qs: { question: string; listenText?: string }[]) => ({ id, questions: qs });
+
+  it("bersih saat tidak ada soal yang identik atau mirip dengan varian lain", () => {
+    const group = [rows(1, [{ question: "What is your name?" }])];
+    expect(isQuizVariantClean(group, rows(2, [{ question: "Where do you live?" }]))).toBe(true);
+  });
+
+  it("TIDAK bersih saat ada soal identik dengan varian lain", () => {
+    const group = [rows(1, [{ question: "What is your name?" }])];
+    expect(isQuizVariantClean(group, rows(2, [{ question: "what  is your name? " }]))).toBe(false);
+  });
+
+  it("TIDAK bersih saat ada soal mirip (Jaccard >= 0.7)", () => {
+    const group = [rows(1, [{ question: "Listen and choose the best reply.", listenText: "How are you?" }])];
+    expect(isQuizVariantClean(group, rows(2, [{ question: "Listen and choose the best reply.", listenText: "Good morning! How are you?" }]))).toBe(false);
+  });
+
+  it("bersih saat kemiripan di bawah threshold", () => {
+    const group = [rows(1, [{ question: "apple banana cherry" }])];
+    expect(isQuizVariantClean(group, rows(2, [{ question: "apple banana cherry durian mango orange" }]))).toBe(true);
   });
 });

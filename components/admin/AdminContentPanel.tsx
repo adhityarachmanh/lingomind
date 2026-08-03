@@ -60,7 +60,6 @@ export default function AdminContentPanel() {
   async function refreshStatus() {
     if (!languageId) return;
     setError(null);
-    setMessage(null);
     const res = await getContentGenerationStatusAction({ language: languageId }).catch(() => ({ error: "Gagal memeriksa status." }));
     if ("error" in res) { setError(res.error); return; }
     setStatus(res.status);
@@ -151,18 +150,21 @@ export default function AdminContentPanel() {
     generateQuiz(m.levelId, m.goal, Math.max(1, Math.min(quizCount, remaining)));
   }
 
-  async function runDupeCheck() {
-    if (!languageId || dupeBusy || !!busy) return;
+  async function runDupeCheck(): Promise<QuizDuplicateFlagRow[] | null> {
+    if (!languageId || dupeBusy || !!busy) return null;
+    setMessage(null);
     setDupeError(null);
     setDupeBusy(true);
     const res = await checkQuizDuplicatesAction({ language: languageId }).catch(() => ({ error: "Gagal memeriksa duplikat." }));
     setDupeBusy(false);
-    if ("error" in res) { setDupeError(res.error); return; }
+    if ("error" in res) { setDupeError(res.error); return null; }
     setDupeFlags(res.flags);
+    return res.flags;
   }
 
   async function regenerateRow(f: QuizDuplicateFlagRow) {
     if (regenerating !== null) return;
+    setMessage(null);
     setDupeError(null);
     setRegenerating(f.rowId);
     const res = await regenerateQuizVariantAction({ language: languageId, level: f.level, goal: f.goal, rowId: f.rowId }).catch(
@@ -170,8 +172,14 @@ export default function AdminContentPanel() {
     );
     setRegenerating(null);
     if ("error" in res) { setDupeError(res.error); return; }
-    setMessage(`"${res.label}" berhasil digenerate ulang!`);
-    await Promise.all([refreshStatus(), runDupeCheck()]);
+    const [ , flags] = await Promise.all([refreshStatus(), runDupeCheck()]);
+    if (flags === null) {
+      setMessage(`"${res.label}" berhasil digenerate ulang!`);
+    } else if (flags.length === 0) {
+      setMessage(`"${res.label}" berhasil digenerate ulang — cek ulang: bersih.`);
+    } else {
+      setMessage(`"${res.label}" berhasil digenerate ulang — cek ulang: ${flags.length} duplikat tersisa.`);
+    }
   }
 
   async function resetFailedUnits() {
@@ -217,6 +225,8 @@ export default function AdminContentPanel() {
                 onChange={(e) => {
                   setLanguageId(e.target.value);
                   writeLanguageParam(e.target.value);
+                  setError(null);
+                  setMessage(null);
                   setDupeFlags(null);
                   setDupeError(null);
                 }}
