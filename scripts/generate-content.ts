@@ -1,20 +1,22 @@
-// Generate konten bahasa via CLI (jalan di lokal — tidak tergantung Vercel).
+// Generate konten bahasa via CLI — lesson 3/goal + quiz fill ke 10/10 + auto-regenerate duplikat.
 // Usage: npm run content:generate <Bahasa> [bahasa lain...] [--dry-run]
 //   --dry-run: hanya tampilkan status per level tanpa generate (tanpa biaya AI)
 // Idempotent: unit yang sudah ada di cache di-skip; unit gagal AI >=3x di-skip sementara
 // (cooldown 30 mnt) lalu dicoba lagi otomatis.
-// Progress bar memakai cli-progress (update hanya saat state berubah — tanpa loop per detik;
-// otomatis nonaktif saat output di-redirect/pipe).
 import "dotenv/config";
 import cliProgress from "cli-progress";
 import { db } from "../lib/db";
 import {
+  CONTENT_QUIZ_MAX_VARIANTS,
   FAILED_COOLDOWN_MS,
   FAILED_SKIP_THRESHOLD,
+  detectQuizDuplicates,
   findNextUndoneUnits,
   generateOneContentUnit,
+  isQuizVariantClean,
   resolveLanguageContentStatus,
 } from "../lib/admin";
+import type { QuizRowQuestions } from "../lib/admin";
 
 const PARALLEL = 3;
 const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju
@@ -51,6 +53,13 @@ function clearLine(): void {
 function unitLabel(u: { kind: string; goal: string; part: number; modifier: string }): string {
   if (u.kind === "lesson") return `Lesson: ${u.goal} — Bagian ${u.part} (${u.modifier})`;
   return `Quiz: ${u.goal}`;
+}
+
+function parseQuizQuestions(contentJson: string): { question: string; listenText?: string }[] {
+  try {
+    const p = JSON.parse(contentJson) as { questions?: { question?: string; listen_text?: string }[] };
+    return p.questions?.map((q) => ({ question: q.question ?? "", listenText: q.listen_text ?? "" })) ?? [];
+  } catch { return []; }
 }
 
 // ---- engine per bahasa ----
@@ -233,6 +242,121 @@ async function generateLanguage(language: string): Promise<void> {
         console.log(`  ✗ ${label} — ${state}`);
       }
       console.log(col("Tip: reset semua kegagalan via panel admin Konten → 'Reset Unit Gagal', lalu jalankan ulang.", C.dim));
+    }
+
+    // ---------- fase 2: fill quiz ke 10/10 + auto-regenerate duplikat ----------
+    const quizFillStarted = Date.now();
+    const quizTargets: { levelId: string; levelTitle: string; goal: string; count: number }[] = [];
+    const quizStatus = await resolveLanguageContentStatus(language);
+    for (const lvl of quizStatus.levels) {
+      for (const g of lvl.goals) {
+        const count = await db.cachedQuiz.count({ where: { language, level: lvl.levelId, goal: g.goal, modifier: "normal" } });
+        if (count < CONTENT_QUIZ_MAX_VARIANTS) {
+          quizTargets.push({ levelId: lvl.levelId, levelTitle: lvl.title, goal: g.goal, count });
+        }
+      }
+    }
+    const quizTotalToFill = quizTargets.reduce((s, t) => s + (CONTENT_QUIZ_MAX_VARIANTS - t.count), 0);
+    console.log(col(`\n=== Fill Varian Quiz → ${CONTENT_QUIZ_MAX_VARIANTS} ===`, C.bold));
+    console.log(`Unit quiz perlu diisi: ${quizTargets.length} (total ${quizTotalToFill} varian)`);
+
+    if (quizTargets.length > 0) {
+      const quizBar = new cliProgress.SingleBar({
+        format: "{bar} {percentage}% | {value}/{total} | ETA {eta_formatted} | {active}",
+        barCompleteChar: "█", barIncompleteChar: "░",
+        hideCursor: true, clearOnComplete: true, etaBuffer: 20, fps: 10, noTTYOutput: true, stream: process.stdout,
+      });
+      quizBar.start(quizTotalToFill, 0, { active: "" });
+      let quizGenerated = 0;
+      async function processQuizUnit(t: { levelId: string; levelTitle: string; goal: string; count: number }): Promise<void> {
+        const label = `Quiz: ${t.goal}`;
+        let currentCount = t.count;
+        while (currentCount < CONTENT_QUIZ_MAX_VARIANTS) {
+          const unitStart = Date.now();
+          quizBar.update(quizGenerated, { active: `${label} (${currentCount + 1}/${CONTENT_QUIZ_MAX_VARIANTS})` });
+          try {
+            await db.cachedQuiz.count({ where: { language, level: t.levelId, goal: t.goal, modifier: "normal" } }).then((c) => { currentCount = c; });
+            if (currentCount >= CONTENT_QUIZ_MAX_VARIANTS) break;
+            await generateOneContentUnit(language, { kind: "quiz", goal: t.goal, part: 0, modifier: "normal" }, t.levelId);
+            quizGenerated++;
+            currentCount++;
+            const duration = fmtDuration(Date.now() - unitStart);
+            quizBar.stop();
+            console.log(col(`  ✓ ${label} [${duration}] (${currentCount}/${CONTENT_QUIZ_MAX_VARIANTS})`, C.green));
+            quizBar.start(quizTotalToFill, quizGenerated, { active: "" });
+          } catch (e) {
+            const msg = e instanceof Error ? e.message : String(e);
+            quizBar.stop();
+            console.error(col(`  ✗ ${label} — ${msg}`, C.red));
+            quizBar.start(quizTotalToFill, quizGenerated, { active: "" });
+            break;
+          }
+        }
+      }
+      let qi = 0;
+      while (qi < quizTargets.length) {
+        const batch = quizTargets.slice(qi, qi + PARALLEL);
+        await Promise.all(batch.map(processQuizUnit));
+        qi += PARALLEL;
+      }
+      quizBar.stop();
+      clearLine();
+      console.log(col(`Quiz fill selesai dalam ${fmtDuration(Date.now() - quizFillStarted)} — +${quizGenerated} varian`, C.green));
+    } else {
+      console.log(col("Semua varian quiz sudah penuh.", C.dim));
+    }
+
+    // ---------- cleanup duplikat existing ----------
+    console.log(col(`\n=== Cek Duplikat Quiz ===`, C.bold));
+    const allQuizzes = await db.cachedQuiz.findMany({ where: { language } });
+    const groups = new Map<string, QuizRowQuestions[]>();
+    for (const q of allQuizzes) {
+      const key = `${q.level}|${q.goal}`;
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key)!.push({ id: q.id, questions: parseQuizQuestions(q.contentJson) });
+    }
+    const groupsArr = [...groups.entries()].map(([key, rows]) => ({ key, rows }));
+    const dupFlags = detectQuizDuplicates(groupsArr);
+    if (dupFlags.length === 0) {
+      console.log(col("Bersih — tidak ada duplikat.", C.green));
+    } else {
+      const identical = dupFlags.filter((f) => f.reason === "identical").length;
+      console.log(col(`Ditemukan ${dupFlags.length} duplikat (${identical} identik, ${dupFlags.length - identical} mirip). Auto-regenerate...`, C.yellow));
+      let cleaned = 0;
+      for (const f of dupFlags) {
+        const sep = f.key.indexOf("|");
+        const level = f.key.slice(0, sep);
+        const goal = f.key.slice(sep + 1);
+        const target = await db.cachedQuiz.findUnique({ where: { id: f.rowId } });
+        if (!target) continue;
+        const total = await db.cachedQuiz.count({ where: { language, level, goal, modifier: "normal" } });
+        if (total <= 1) { console.log(col(`  ◈ Quiz: ${goal} [${level}] — tidak bisa regenerate (varian terakhir).`, C.yellow)); continue; }
+        let replaced = false;
+        for (let attempt = 1; attempt <= 3 && !replaced; attempt++) {
+          let createdId: number | null = null;
+          try { await generateOneContentUnit(language, { kind: "quiz", goal, part: 0, modifier: "normal" }, level); } catch { continue; }
+          const newest = await db.cachedQuiz.findFirst({ where: { language, level, goal, modifier: "normal" }, orderBy: { id: "desc" } });
+          if (!newest || newest.id === f.rowId) continue;
+          createdId = newest.id;
+          const group = await db.cachedQuiz.findMany({ where: { language, level, goal, modifier: "normal" } });
+          const groupRows = group.filter((q) => q.id !== f.rowId && q.id !== createdId).map((q) => ({ id: q.id, questions: parseQuizQuestions(q.contentJson) }));
+          if (isQuizVariantClean(groupRows, { id: createdId, questions: parseQuizQuestions(newest.contentJson) })) {
+            await db.cachedQuiz.deleteMany({ where: { id: f.rowId } });
+            console.log(col(`  ✓ Quiz: ${goal} [${level}] — diganti varian bersih`, C.green));
+            cleaned++; replaced = true;
+          } else { await db.cachedQuiz.deleteMany({ where: { id: createdId } }).catch(() => {}); }
+        }
+        if (!replaced) console.log(col(`  ✗ Quiz: ${goal} [${level}] — gagal regenerate setelah 3×`, C.red));
+      }
+      console.log(col(`Cleanup selesai: ${cleaned}/${dupFlags.length} duplikat diperbaiki.`, C.green));
+    }
+
+    const totalElapsed = Date.now() - startedAt;
+    console.log(col(`\n=== Ringkasan Akhir — ${fmtDuration(totalElapsed)} ===`, C.bold));
+    const finalStatus = await resolveLanguageContentStatus(language);
+    for (const lvl of finalStatus.levels) {
+      const quizLine = lvl.goals.map((g) => `Quiz:${Math.min(g.quizDone, CONTENT_QUIZ_MAX_VARIANTS)}/${CONTENT_QUIZ_MAX_VARIANTS}`).join(" · ");
+      console.log(`  ${col(`${lvl.title}:`, C.bold)} Lesson ${lvl.lessonDone}/${lvl.lessonTotal} · ${quizLine}`);
     }
   } catch (e) {
     bar.stop();
