@@ -33,6 +33,8 @@ export default function AdminContentPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [quizModal, setQuizModal] = useState<{ levelId: string; goal: string; current: number; total: number } | null>(null);
+  const [quizCount, setQuizCount] = useState(1);
 
   // Sinkronkan bahasa terpilih ke query param ?language= agar bertahan saat halaman direfresh.
   function readLanguageParam(): string | null {
@@ -98,15 +100,20 @@ export default function AdminContentPanel() {
     return () => { cancelled = true; };
   }, [languageId]);
 
-  async function run(key: string, fn: () => Promise<{ ok: boolean; label: string } | { error: string }>) {
+  async function run(key: string, fn: () => Promise<{ ok: boolean; label?: string; labels?: string[]; error?: string } | { error: string }>) {
     if (busy) return;
     setError(null);
     setMessage(null);
     setBusy(key);
     const res = await fn().catch(() => ({ error: "Gagal generate konten." }));
     setBusy(null);
-    if ("error" in res) { setError(res.error); return; }
-    setMessage(`"${res.label}" berhasil digenerate!`);
+    if ("ok" in res) {
+      const labels = res.labels && res.labels.length > 0 ? res.labels : res.label ? [res.label] : [];
+      if (labels.length > 0) setMessage(`${labels.length} konten berhasil digenerate: ${labels.join(", ")}`);
+      if (res.error) setError(res.error);
+    } else {
+      setError(res.error);
+    }
     await refreshStatus();
   }
 
@@ -116,10 +123,25 @@ export default function AdminContentPanel() {
     );
   }
 
-  function generateQuiz(levelId: string, goal: string) {
+  function generateQuiz(levelId: string, goal: string, count: number) {
     return run(`quiz:${levelId}:${goal}`, () =>
-      generateQuizVariantAction({ language: languageId, level: levelId, goal })
+      generateQuizVariantAction({ language: languageId, level: levelId, goal, count })
     );
+  }
+
+  function openQuizModal(levelId: string, goal: string, current: number, total: number) {
+    if (busy) return;
+    const remaining = Math.max(0, total - current);
+    setQuizCount(remaining > 0 ? 1 : 0);
+    setQuizModal({ levelId, goal, current, total });
+  }
+
+  function confirmQuizModal() {
+    const m = quizModal;
+    if (!m) return;
+    setQuizModal(null);
+    const remaining = Math.max(0, m.total - m.current);
+    generateQuiz(m.levelId, m.goal, Math.max(1, Math.min(quizCount, remaining)));
   }
 
   async function resetFailedUnits() {
@@ -141,7 +163,7 @@ export default function AdminContentPanel() {
             <h2 className="text-base font-bold text-slate-900">Status Konten</h2>
             <p className="text-xs text-slate-500 mt-1">
               Bahasa hanya muncul di aplikasi setelah semua level lengkap. Klik tombol di samping kiri tiap item untuk
-              generate 1 konten (lesson 5 bagian/goal · quiz tanpa batas, anti-duplikat). Massal via{" "}
+              generate 1 konten (lesson 3 bagian/goal · quiz via modal pilih jumlah, maks sisa varian 10). Massal via{" "}
               <code className="text-[11px] font-mono">npm run content:generate &lt;Bahasa&gt;</code>.
             </p>
           </div>
@@ -227,15 +249,15 @@ export default function AdminContentPanel() {
                                   {lessonBusy ? "..." : "Lesson"}
                                 </button>
                               )}
-                              <button
-                                type="button"
-                                onClick={() => generateQuiz(lvl.levelId, g.goal)}
-                                disabled={!!busy || g.quizDone >= g.quizTotal}
-                                className="px-2.5 py-1 rounded-md bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-bold"
-                                title={g.quizDone >= g.quizTotal ? "Varian quiz sudah maksimal (10)" : undefined}
-                              >
-                                {quizBusy ? "..." : "Quiz"}
-                              </button>
+              <button
+                type="button"
+                onClick={() => openQuizModal(lvl.levelId, g.goal, g.quizDone, g.quizTotal)}
+                disabled={!!busy || g.quizDone >= g.quizTotal}
+                className="px-2.5 py-1 rounded-md bg-white border border-blue-300 text-blue-600 hover:bg-blue-50 disabled:opacity-40 disabled:cursor-not-allowed text-[11px] font-bold"
+                title={g.quizDone >= g.quizTotal ? "Varian quiz sudah maksimal (10)" : undefined}
+              >
+                {quizBusy ? "..." : "Quiz"}
+              </button>
                             </div>
                           </td>
                           <td className="px-4 py-2 font-semibold text-slate-900">{g.goal}</td>
@@ -265,6 +287,54 @@ export default function AdminContentPanel() {
       {!hasLevels && (
         <div className="bg-white border border-slate-200 rounded-lg p-5 text-xs text-slate-400">
           Memuat data...
+        </div>
+      )}
+
+      {quizModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setQuizModal(null)}
+        >
+          <div
+            className="w-96 rounded-lg bg-white p-5 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-sm font-bold text-slate-900">Generate Quiz — {quizModal.goal}</h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Sudah {quizModal.current}/{quizModal.total} varian. Sisa yang bisa digenerate:{" "}
+              {Math.max(0, quizModal.total - quizModal.current)}.
+            </p>
+            <label className="mt-4 block text-xs font-semibold text-slate-700">
+              Jumlah quiz
+              <input
+                type="number"
+                min={1}
+                max={Math.max(1, quizModal.total - quizModal.current)}
+                value={quizCount}
+                onChange={(e) => {
+                  const remaining = Math.max(0, quizModal.total - quizModal.current);
+                  setQuizCount(Math.max(1, Math.min(remaining, Math.floor(Number(e.target.value) || 1))));
+                }}
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              />
+            </label>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setQuizModal(null)}
+                className="rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={confirmQuizModal}
+                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              >
+                Generate {quizCount} Quiz
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -511,13 +511,13 @@ export async function generateOneContentUnit(language: string, unit: ContentUnit
         // pool general practice: tema acak tiap varian agar variasi besar
         const theme = GENERAL_PRACTICE_THEMES[Math.floor(Math.random() * GENERAL_PRACTICE_THEMES.length)];
         candidate = await generateQuizWithPrompt({
-          prompt: buildGeneralPracticePrompt(language, levelId, theme),
+          prompt: buildGeneralPracticePrompt(language, levelId, theme, existingQuestions),
           expectedCount: 5,
           label: "general practice quiz",
         });
       } else {
         candidate = await generateQuizWithPrompt({
-          prompt: buildQuizPrompt(language, levelId, unit.goal, "(belum ada riwayat kelemahan)"),
+          prompt: buildQuizPrompt(language, levelId, unit.goal, "(belum ada riwayat kelemahan)", existingQuestions),
           expectedCount: 5,
           label: "quiz",
         });

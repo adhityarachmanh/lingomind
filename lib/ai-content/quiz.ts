@@ -96,9 +96,35 @@ export function qualityIssues(questions: QuizQuestion[], expectedCount: number, 
   return issues;
 }
 
-export function buildQuizPrompt(language: string, level: string, goal: string, weaknessContext: string): string {
-  const context = weaknessContext || "(belum ada riwayat kelemahan)";
+export interface ExistingQuestion {
+  question: string;
+  listenText?: string;
+}
+
+// Contoh soal yang SUDAH ADA di cache — disuntikkan ke prompt agar AI tidak meniru/memparafrase.
+// Ambil maks `max` soal terbaru agar token tetap hemat.
+export function formatExistingQuestions(existing: ExistingQuestion[], max = 10): string {
+  const list = existing.slice(-max);
+  if (list.length === 0) return "";
+  const lines = list.map((q, i) => {
+    const audio = q.listenText ? ` (audio: ${q.listenText})` : "";
+    return `${i + 1}) ${q.question}${audio}`;
+  });
   return [
+    "DILARANG KERAS membuat soal yang sama, hampir sama, atau memparafrase soal-soal varian yang sudah ada berikut ini (termasuk audio listeningnya):",
+    ...lines,
+  ].join("\n");
+}
+
+export function buildQuizPrompt(
+  language: string,
+  level: string,
+  goal: string,
+  weaknessContext: string,
+  existingQuestions?: ExistingQuestion[]
+): string {
+  const context = weaknessContext || "(belum ada riwayat kelemahan)";
+  const prompt = [
     `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
     `Buat 5 soal kuis pilihan ganda bahasa ${language} untuk level CEFR ${level} dengan topik pembelajaran/goal: '${goal}'.`,
     `1) SEMUA SOAL WAJIB menguji kosakata, tata bahasa, atau pemahaman bahasa terkait erat dengan topik '${goal}'. HANYA fokus pada pembelajaran bahasa untuk topik ini! DILARANG KERAS membuat soal pengetahuan umum (trivia)!`,
@@ -112,9 +138,12 @@ export function buildQuizPrompt(language: string, level: string, goal: string, w
     "9) question_type: 'listening' atau 'text'; listen_text: teks audio TTS untuk listening; question untuk listening = instruksi TANPA transcript, WAJIB format HTML (<br>, <b>, <i>, jangan tag root); text → listen_text boleh kosong, question WAJIB HTML (misal '<b>A:</b> Hello<br><b>B:</b> Hi!').",
     "10) question, options, correct_answer, listen_text WAJIB FULL bahasa target; explanation tetap Bahasa Indonesia.",
     `11) Konteks kelemahan user: ${context}. Gunakan untuk menyesuaikan soal remedial ringan.`,
+    "12) DILARANG KERAS mengulang soal atau meniru pola soal dari varian quiz yang sudah ada. Setiap varian harus berisi soal yang benar-benar baru.",
     "",
     "Kembalikan HANYA JSON valid dengan bentuk: {\"questions\": [{\"question\": string, \"question_type\": \"text\"|\"listening\", \"listen_text\": string, \"options\": [string x4], \"correct_answer\": string, \"explanation\": string}]}",
   ].join("\n");
+  const existingBlock = formatExistingQuestions(existingQuestions ?? []);
+  return existingBlock ? `${prompt}\n\n${existingBlock}` : prompt;
 }
 
 // Tema acak untuk variasi general practice (anti-monoton / anti-hafalan).
@@ -131,11 +160,16 @@ export const GENERAL_PRACTICE_THEMES = [
   "keluarga dan rumah",
 ] as const;
 
-export function buildGeneralPracticePrompt(language: string, level: string, theme?: string): string {
+export function buildGeneralPracticePrompt(
+  language: string,
+  level: string,
+  theme?: string,
+  existingQuestions?: ExistingQuestion[]
+): string {
   const themeLine = theme
     ? `Konteks variasi (gunakan sebagai warna latar kosakata/skenario, tetap uji kemampuan umum level ${level}): '${theme}'.`
     : "";
-  return [
+  const prompt = [
     `TARGET BAHASA SOAL: ${language} (WAJIB! Seluruh pertanyaan, teks, dan opsi jawaban harus dalam bahasa ini, BUKAN bahasa Indonesia).`,
     "",
     `Buat 5 soal kuis latihan acak (general practice) pilihan ganda bahasa ${language} untuk level CEFR ${level}.`,
@@ -157,6 +191,8 @@ export function buildGeneralPracticePrompt(language: string, level: string, them
     "",
     'Kembalikan HANYA JSON valid dengan bentuk: {"questions": [{"question": string, "question_type": "text"|"listening", "listen_text": string, "options": [string x4], "correct_answer": string, "explanation": string}]}',
   ].join("\n");
+  const existingBlock = formatExistingQuestions(existingQuestions ?? []);
+  return existingBlock ? `${prompt}\n\n${existingBlock}` : prompt;
 }
 
 export function buildWeaknessPrompt(

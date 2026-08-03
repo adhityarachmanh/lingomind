@@ -268,12 +268,14 @@ export async function generateNextLessonAction(input: {
   return { ok: true, label };
 }
 
-// Generate 1 varian quiz (goal topik / exam / general_practice) — tanpa batas jumlah, anti-duplikat isi.
+// Generate 1..N varian quiz (goal topik / exam / general_practice) — maks CONTENT_QUIZ_MAX_VARIANTS
+// per goal, anti-duplikat isi (prompt diberi contoh soal existing + retry dedup di generateOneContentUnit).
 export async function generateQuizVariantAction(input: {
   language: string;
   level: string;
   goal: string; // topik, atau "exam", atau "general_practice"
-}): Promise<AdminResult<{ ok: boolean; label: string }>> {
+  count?: number; // jumlah varian yang diminta (default 1, dibatasi sisa maks)
+}): Promise<AdminResult<{ ok: boolean; labels: string[]; error?: string }>> {
   const g = await guard();
   if (typeof g !== "string") return g;
 
@@ -288,18 +290,28 @@ export async function generateQuizVariantAction(input: {
     if (!topics.some((t) => t.title === goal)) return { error: "Goal tidak ditemukan di level ini." };
   }
 
-  // batas varian: maksimal CONTENT_QUIZ_MAX_VARIANTS per goal
-  const count = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
-  if (count >= CONTENT_QUIZ_MAX_VARIANTS) {
-    return { error: `Varian quiz untuk konten ini sudah maksimal (${CONTENT_QUIZ_MAX_VARIANTS}).` };
+  const requested = Math.max(1, Math.min(Math.floor(input.count ?? 1), CONTENT_QUIZ_MAX_VARIANTS));
+  const labels: string[] = [];
+  let failedMsg: string | null = null;
+
+  for (let i = 0; i < requested; i++) {
+    // batas varian: maksimal CONTENT_QUIZ_MAX_VARIANTS per goal (dicek per iterasi agar aman walau konkuren)
+    const count = await db.cachedQuiz.count({ where: { language: input.language, level: input.level, goal, modifier: "normal" } });
+    if (count >= CONTENT_QUIZ_MAX_VARIANTS) break;
+
+    const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };
+    const label = contentUnitLabel(unit, levelRow.title);
+    try {
+      await generateOneContentUnit(input.language, unit, input.level);
+      labels.push(label);
+    } catch (e) {
+      failedMsg = `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}`;
+      break;
+    }
   }
 
-  const unit: ContentUnit = { kind: "quiz", goal, part: 0, modifier: "normal" };
-  const label = contentUnitLabel(unit, levelRow.title);
-  try {
-    await generateOneContentUnit(input.language, unit, input.level);
-  } catch (e) {
-    return { error: `Gagal generate "${label}": ${e instanceof Error ? e.message : "error tidak diketahui"}` };
+  if (labels.length === 0) {
+    return { error: failedMsg ?? `Varian quiz untuk konten ini sudah maksimal (${CONTENT_QUIZ_MAX_VARIANTS}).` };
   }
-  return { ok: true, label };
+  return { ok: true, labels, error: failedMsg ?? undefined };
 }
