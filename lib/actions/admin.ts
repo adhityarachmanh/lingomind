@@ -446,6 +446,10 @@ export async function regenerateQuizVariantAction(input: {
   if (createdId === null) {
     return { error: `Varian baru untuk "${label}" masih mirip dengan varian lain setelah ${MAX_ATTEMPTS} percobaan — coba lagi.` };
   }
-  await db.cachedQuiz.delete({ where: { id: input.rowId } });
+  // anti-race: row lama bisa sudah diganti proses lain saat generate berjalan (20-60s)
+  const stillExists = await db.cachedQuiz.findUnique({ where: { id: input.rowId }, select: { id: true } });
+  if (stillExists) {
+    await db.cachedQuiz.deleteMany({ where: { id: input.rowId } });
+  }
   return { ok: true, label };
 }
