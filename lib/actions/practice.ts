@@ -5,7 +5,7 @@ import { getUserProfile } from "../profile";
 import { getPriorityWeakness, logWeakness } from "../weakness";
 import { addHeart, updateEngagementAfterQuiz } from "../progress";
 import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
-import { CONTENT_GENERAL_PRACTICE_VARIANTS } from "../admin";
+import { CONTENT_GENERAL_PRACTICE_VARIANTS, CONTENT_WEAKNESS_VARIANTS } from "../admin";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -80,6 +80,7 @@ export async function getWeaknessPracticeAction(goal: string): Promise<{ quiz: Q
 
   const quiz = await cacheOrGenerate({
     language, level, goal: "weakness", modifier: topic,
+    targetVariants: CONTENT_WEAKNESS_VARIANTS,
     generate: () => generateQuizWithPrompt({
       prompt: buildWeaknessPrompt(language, level, topic, weaknessContext),
       expectedCount: 3,

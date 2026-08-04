@@ -360,6 +360,9 @@ export const CONTENT_PARTS = 3;
 export const CONTENT_LESSON_MODIFIERS = ["normal"] as const;
 export const CONTENT_QUIZ_VARIANTS = 1;
 export const CONTENT_QUIZ_MAX_VARIANTS = 10;
+// Pool varian latihan kelemahan per topik (goal="weakness", modifier=topik) — cukup 3 agar cepat penuh,
+// kunjungan berikutnya pick acak dari pool (instan). Pre-gen massal via `npm run content:weakness <Bahasa>`.
+export const CONTENT_WEAKNESS_VARIANTS = 3;
 
 // Work list deterministik untuk bulk pre-generation konten (language, level):
 // lesson per (goal, part, modifier) + quiz per (goal, modifier "normal") + exam + general_practice.

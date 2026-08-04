@@ -7,6 +7,15 @@ const VOCABULARY_KEYWORDS = ["vocabulary", "word choice"];
 const SKILL_LISTENING = ["pengucapan", "pendengaran", "suara"];
 const SKILL_VOCABULARY = ["kosakata", "arti kata", "sinonim", "terjemahan", "makna", "kata ini"];
 
+// Topik kelemahan dari classifier — dipakai pre-gen pool latihan kelemahan (scripts/generate-weakness-pool.ts).
+export const WEAKNESS_TOPICS = [
+  "Grammar: Tense",
+  "Grammar: Preposition",
+  "Grammar: Article",
+  "Vocabulary: Word Choice",
+  "General: Answer Accuracy",
+] as const;
+
 function hasWord(text: string, keyword: string): boolean {
   return new RegExp(`\\b${keyword.trim()}\\b`).test(text);
 }

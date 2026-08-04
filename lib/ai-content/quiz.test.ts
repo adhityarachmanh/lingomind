@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGeneralPracticePrompt, buildQuizPrompt, formatExistingQuestions } from "./quiz";
+import { buildGeneralPracticePrompt, buildQuizPrompt, formatExistingQuestions, quizMaxTokens } from "./quiz";
 
 describe("formatExistingQuestions", () => {
   it("mengembalikan daftar soal yang dilarang ditiru (termasuk audio listening)", () => {
@@ -47,5 +47,15 @@ describe("buildQuizPrompt anti-duplikat", () => {
     ]);
     expect(prompt).toContain("Pertanyaan lama");
     expect(prompt).toContain("DILARANG");
+  });
+});
+
+describe("quizMaxTokens", () => {
+  it("kuis 3 soal pakai 4096, 5+ soal pakai 8192", () => {
+    expect(quizMaxTokens(3)).toBe(4096);
+    expect(quizMaxTokens(5)).toBe(8192);
+  });
+  it("override menang saat diberikan", () => {
+    expect(quizMaxTokens(5, 12288)).toBe(12288);
   });
 });

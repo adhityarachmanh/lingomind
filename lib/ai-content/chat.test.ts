@@ -17,6 +17,15 @@ describe("splitKoreksi", () => {
     const r = splitKoreksi("Koreksi: x");
     expect(r.koreksi).toBe("x");
   });
+  it("case-insensitive (koreksi:) tetap dipisah", () => {
+    const r = splitKoreksi("Halo.\nkoreksi: pakai 'am'");
+    expect(r.main).toContain("Halo.");
+    expect(r.koreksi).toContain("pakai 'am'");
+  });
+  it("toleransi spasi (Koreksi :)", () => {
+    const r = splitKoreksi("Halo\nKoreksi :  x ");
+    expect(r.koreksi).toBe("x");
+  });
 });
 
 describe("buildChatHistory", () => {
@@ -47,6 +56,12 @@ describe("buildReplySystemPrompt", () => {
   it("memuat instruksi Koreksi:", () => {
     const p = buildReplySystemPrompt("English", "A1", "Greetings", "Greetings", true);
     expect(p).toContain("Koreksi:");
-    expect(p).toContain("dalam Bahasa Indonesia (maksimal 2 poin ringkas)");
+    expect(p).toContain("maksimal 3 poin");
+  });
+  it("memuat format contoh koreksi (salah → benar — alasan)", () => {
+    const p = buildReplySystemPrompt("English", "A1", "Greetings", "Greetings", true);
+    expect(p).toContain("→");
+    expect(p).toContain("WAJIB sertakan blok");
+    expect(p).toContain("Jangan mengulangi koreksi yang sudah pernah diberikan");
   });
 });

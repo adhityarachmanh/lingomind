@@ -241,19 +241,31 @@ function qualityScore(issues: string[]): number {
   return Math.max(0, 100 - issues.length * 10);
 }
 
+// Budget token generasi sesuai jumlah soal — 3 soal tidak butuh 12k token (latensi turun drastis).
+export function quizMaxTokens(expectedCount: number, override?: number): number {
+  if (override !== undefined) return override;
+  return expectedCount >= 5 ? 8192 : 4096;
+}
+
 export async function generateQuizWithPrompt(params: {
   prompt: string;
   expectedCount: number;
   label: string;
   weaknessFocus?: string;
+  maxTokens?: number;
 }): Promise<QuizContainer> {
   const { prompt, expectedCount, label, weaknessFocus } = params;
   let currentPrompt = prompt;
   let best: QuizContainer | null = null;
   let bestScore = 0;
 
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    const { text } = await generateText({ model, prompt: currentPrompt, maxOutputTokens: 12288, temperature: 0.6 });
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    const { text } = await generateText({
+      model,
+      prompt: currentPrompt,
+      maxOutputTokens: quizMaxTokens(expectedCount, params.maxTokens),
+      temperature: 0.6,
+    });
     const parsed = parseAiJson<QuizContainer>(text);
     if (!parsed) {
       currentPrompt += `\n\nRespons tidak valid (bukan JSON). Kembalikan HANYA JSON.`;

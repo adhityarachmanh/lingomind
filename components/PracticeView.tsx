@@ -27,7 +27,7 @@ const STRINGS: Record<Mode, { loading: string; loadingSub: string; badge: string
   },
   weakness: {
     loading: "Menyiapkan Latihan Kelemahan...",
-    loadingSub: "Sedang menganalisis riwayat kelemahan Anda dan menyusun soal latihan yang tepat.",
+    loadingSub: "Soal disusun AI secara langsung, butuh 20-60 detik. Jangan tutup halaman ini.",
     badge: "Fokus Kelemahan",
     finished: "Latihan Selesai!",
     finishedSub: "Kamu berhasil menuntaskan latihan fokus kelemahan.",

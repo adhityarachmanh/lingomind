@@ -63,7 +63,16 @@ export function buildReplySystemPrompt(
     base,
     role,
     persona,
-    "Setelah balasan utama, tambahkan bagian 'Koreksi:' di baris baru dalam Bahasa Indonesia (maksimal 2 poin ringkas) HANYA untuk memperbaiki tata bahasa atau kosakata dari pesan user terakhir jika ada yang salah (jika pesannya sudah benar dan bisa dipahami, jangan berikan koreksi).",
+    "KOREKSI KESALAHAN USER (PENTING):",
+    "Periksa pesan user terakhir secara cermat: tata bahasa, kosakata, urutan kata, ejaan, dan pilihan kata.",
+    "Jika ditemukan SATU ATAU LEBIH kesalahan (sekecil apa pun — termasuk artikel, preposisi, atau urutan kata), WAJIB sertakan blok 'Koreksi:' di baris baru setelah balasan utama, ditulis dalam Bahasa Indonesia, maksimal 3 poin, pilih kesalahan yang paling penting untuk level user.",
+    "Format setiap poin: - \"<kalimat/kata yang salah>\" → \"<perbaikan>\" — <alasan singkat>",
+    "Contoh:",
+    "Koreksi:",
+    "- \"I go to school yesterday\" → \"I went to school yesterday\" — kejadian lampau pakai past tense",
+    "- \"She have a dog\" → \"She has a dog\" — subjek she memakai has",
+    "Jangan mengulangi koreksi yang sudah pernah diberikan sebelumnya (lihat riwayat percakapan).",
+    "Jika pesan user sudah benar dan tidak ada kesalahan sama sekali, TIDAK perlu sertakan blok Koreksi — balas seperti biasa (boleh puji singkat).",
   ].join("\n");
 }
 

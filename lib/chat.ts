@@ -6,10 +6,10 @@ export function normalizeSetting(setting: string): string {
 }
 
 export function splitKoreksi(content: string): { main: string; koreksi: string | null } {
-  const idx = content.indexOf("Koreksi:");
-  if (idx < 0) return { main: content, koreksi: null };
+  const match = content.match(/\n*\s*koreksi\s*:\s*/i);
+  if (!match || match.index === undefined) return { main: content, koreksi: null };
   return {
-    main: content.slice(0, idx).trim(),
-    koreksi: content.slice(idx + "Koreksi:".length).trim() || null,
+    main: content.slice(0, match.index).trim(),
+    koreksi: content.slice(match.index + match[0].length).trim() || null,
   };
 }
