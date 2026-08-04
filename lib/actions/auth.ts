@@ -63,3 +63,20 @@ export async function logoutAction(): Promise<void> {
   await clearSessionCookie();
   redirect("/login");
 }
+
+export async function resendVerificationAction(email: string): Promise<ActionResult> {
+  const user = await db.user.findUnique({ where: { email: email.trim() } });
+  if (!user) return { error: "Email tidak terdaftar." };
+  if (user.isVerified) return { error: "Akun ini sudah diverifikasi." };
+
+  await db.emailVerificationToken.deleteMany({ where: { email: user.email } });
+  const token = crypto.randomUUID();
+  await db.emailVerificationToken.create({ data: { email: user.email, token, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) } });
+
+  const verifyLink = `${APP_URL()}/verify-email?token=${token}`;
+  const subject = "Verifikasi Akun - LingoMind";
+  const body = `Halo ${user.fullName},\n\nKlik link untuk verifikasi (berlaku 24 jam): ${verifyLink}\n\nSalam,\nLingoMind Team`;
+  await sendMail(user.email, subject, body);
+
+  return { message: "Tautan verifikasi telah dikirim ulang ke email Anda." };
+}
