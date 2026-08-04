@@ -4,7 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { deductHeart, submitExamResult } from "../progress";
 import { getCurriculum } from "../dashboard";
-import { shuffleOptions } from "../ai-content/quiz";
+import { shuffleQuiz } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -96,7 +96,7 @@ export async function getExamAction(level: string): Promise<{ quiz: QuizContaine
   }
 
   const levelData = await db.level.findUnique({ where: { id: level } });
-  return { quiz: shuffleOptions(quiz), language: gate.language, ptsPerQuestion: levelData?.baseRewardPoints ?? 10 };
+  return { quiz: shuffleQuiz(quiz), language: gate.language, ptsPerQuestion: levelData?.baseRewardPoints ?? 10 };
 }
 
 export async function deductExamHeartAction(): Promise<{ hearts: number } | { error: string }> {

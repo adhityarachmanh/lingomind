@@ -109,6 +109,7 @@ export default function PracticeView({
   async function finish() {
     if (submitting) return;
     setSubmitting(true);
+    playSfx("winner"); // dalam jendela gesture klik — autoplay policy aman
     if (mode === "general") {
       const res = await submitGeneralPracticeResultAction({ perfect: mistakes === 0 });
       if (res.error) {
@@ -116,11 +117,9 @@ export default function PracticeView({
         setSubmitting(false);
         return;
       }
-      playSfx("winner");
       setReward(mistakes === 0 ? "1 Nyawa ❤️ & 15 Poin + Koin 🪙" : "10 Poin + Koin 🪙");
     } else {
       await incrementMissionAction("weakness").catch(() => {});
-      playSfx("winner");
     }
     setSubmitting(false);
     setPhase("finished");

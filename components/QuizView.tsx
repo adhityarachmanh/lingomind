@@ -109,6 +109,7 @@ export default function QuizView({
   async function finishQuiz() {
     if (submitting) return;
     setSubmitting(true);
+    playSfx("winner"); // dalam jendela gesture klik "Selesai" — autoplay policy aman
     let res;
     try {
       res = await submitQuizResultAction({ goal, language, score, correctCount });
@@ -122,7 +123,6 @@ export default function QuizView({
       setError(res.error);
       return;
     }
-    playSfx("winner");
     if (battleId) {
       const bres = await submitBattleScoreAction(battleId, score).catch(() => null);
       if (bres?.message) setBattleMessage(bres.message);

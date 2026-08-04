@@ -314,3 +314,23 @@ export function shuffleOptions(container: QuizContainer): QuizContainer {
     }),
   };
 }
+
+// Acak urutan SOAL + opsi tiap soal saat disajikan ke user — anti-hafalan posisi & urutan.
+// correct_answer tetap string, penilaian aman; input tidak diubah.
+export function shuffleQuiz(container: QuizContainer): QuizContainer {
+  const questions = [...container.questions];
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]];
+  }
+  return {
+    questions: questions.map((qq) => {
+      const options = [...qq.options];
+      for (let i = options.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [options[i], options[j]] = [options[j], options[i]];
+      }
+      return { ...qq, options };
+    }),
+  };
+}

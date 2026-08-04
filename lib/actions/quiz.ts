@@ -4,7 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getEngagementStats, getCurriculum } from "../dashboard";
 import { logSkillProgress, logWeakness, classifySkill, classifyWeaknessTopic } from "../weakness";
-import { shuffleOptions } from "../ai-content/quiz";
+import { shuffleQuiz } from "../ai-content/quiz";
 import { parseAiJson } from "../ai-content/parse";
 import { addFlashcards } from "../flashcards";
 import { applyQuizResult, deductHeart, updateEngagementAfterQuiz } from "../progress";
@@ -42,7 +42,7 @@ export async function getQuizAction(goal: string): Promise<{ quiz: QuizContainer
     const picked = randomPick(variants);
     const quiz = parseAiJson<QuizContainer>(picked.contentJson);
     if (quiz && quiz.questions && quiz.questions.length > 0) {
-      return { quiz: shuffleOptions(quiz), language };
+      return { quiz: shuffleQuiz(quiz), language };
     }
   }
 

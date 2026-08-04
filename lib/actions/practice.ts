@@ -4,7 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getPriorityWeakness, logWeakness } from "../weakness";
 import { addHeart, updateEngagementAfterQuiz } from "../progress";
-import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleOptions } from "../ai-content/quiz";
+import { GENERAL_PRACTICE_THEMES, buildGeneralPracticePrompt, buildWeaknessContext, buildWeaknessPrompt, generateQuizWithPrompt, shuffleQuiz } from "../ai-content/quiz";
 import { CONTENT_GENERAL_PRACTICE_VARIANTS, CONTENT_WEAKNESS_VARIANTS } from "../admin";
 import { parseAiJson } from "../ai-content/parse";
 import { db } from "../db";
@@ -57,7 +57,7 @@ export async function getGeneralPracticeAction(): Promise<{ quiz: QuizContainer;
       label: "general practice quiz",
     }),
   });
-  return { quiz: shuffleOptions(quiz), language };
+  return { quiz: shuffleQuiz(quiz), language };
 }
 
 export async function getWeaknessPracticeAction(goal: string): Promise<{ quiz: QuizContainer; language: string; topic: string } | { error: string }> {
@@ -88,7 +88,7 @@ export async function getWeaknessPracticeAction(goal: string): Promise<{ quiz: Q
       weaknessFocus: topic,
     }),
   });
-  return { quiz: shuffleOptions(quiz), language, topic };
+  return { quiz: shuffleQuiz(quiz), language, topic };
 }
 
 export async function logPracticeAnswerAction(input: {

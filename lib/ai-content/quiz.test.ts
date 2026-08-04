@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { buildGeneralPracticePrompt, buildQuizPrompt, formatExistingQuestions, quizMaxTokens } from "./quiz";
+import { describe, expect, it, vi } from "vitest";
+import { buildGeneralPracticePrompt, buildQuizPrompt, formatExistingQuestions, quizMaxTokens, shuffleQuiz } from "./quiz";
+import type { QuizContainer } from "../types";
 
 describe("formatExistingQuestions", () => {
   it("mengembalikan daftar soal yang dilarang ditiru (termasuk audio listening)", () => {
@@ -57,5 +58,39 @@ describe("quizMaxTokens", () => {
   });
   it("override menang saat diberikan", () => {
     expect(quizMaxTokens(5, 12288)).toBe(12288);
+  });
+});
+
+describe("shuffleQuiz", () => {
+  const quiz: QuizContainer = {
+    questions: [
+      { question: "Q1", question_type: "text", listen_text: "", options: ["A", "B", "C", "D"], correct_answer: "B", explanation: "x" },
+      { question: "Q2", question_type: "text", listen_text: "", options: ["1", "2", "3", "4"], correct_answer: "3", explanation: "y" },
+    ],
+  };
+
+  it("mengacak urutan soal dan opsi (deterministik saat Math.random = 0)", () => {
+    const rnd = vi.spyOn(Math, "random").mockReturnValue(0);
+    try {
+      const out = shuffleQuiz(quiz);
+      expect(out.questions.map((q) => q.question)).toEqual(["Q2", "Q1"]);
+      expect(out.questions[0].options).toEqual(["2", "3", "4", "1"]);
+      expect(out.questions[1].options).toEqual(["B", "C", "D", "A"]);
+      for (const q of out.questions) {
+        expect(q.options).toContain(q.correct_answer);
+      }
+    } finally {
+      rnd.mockRestore();
+    }
+  });
+
+  it("mempertahankan semua soal & opsi dan tidak mengubah input", () => {
+    const before = JSON.stringify(quiz);
+    const out = shuffleQuiz(quiz);
+    expect(JSON.stringify(quiz)).toBe(before);
+    expect(out.questions.map((q) => q.question).sort()).toEqual(["Q1", "Q2"]);
+    const opts = (q: QuizContainer["questions"][number]) => [...q.options].sort().join(",");
+    expect(opts(out.questions.find((q) => q.question === "Q1")!)).toBe("A,B,C,D");
+    expect(opts(out.questions.find((q) => q.question === "Q2")!)).toBe("1,2,3,4");
   });
 });

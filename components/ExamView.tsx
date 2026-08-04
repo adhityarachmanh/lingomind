@@ -117,14 +117,11 @@ export default function ExamView({
     const score = correctCount * ptsPerQuestion;
     setPhase({ name: "result", passed, correct: correctCount, total, passingScore, score, submitting: true });
     setSubmitError(null);
+    playSfx(passed ? "winner" : "wrong"); // dalam jendela gesture klik — autoplay policy aman
     try {
       const res = await submitExamResultAction({ passed, score });
       if ("error" in res) {
         setSubmitError(res.error);
-      } else if (passed) {
-        playSfx("winner");
-      } else {
-        playSfx("wrong");
       }
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : "Gagal menyimpan hasil ujian.");
