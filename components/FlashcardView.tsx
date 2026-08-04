@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { redirectIfSessionExpired } from "./sessionGuard";
 import { getDueFlashcardsAction, reviewFlashcardAction } from "@/lib/actions/flashcard";
 import SpeakButton from "./SpeakButton";
 import type { FlashcardItem } from "@/lib/types";
@@ -18,7 +19,7 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
     getDueFlashcardsAction(20)
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) setError(res.error);
+        if ("error" in res) { redirectIfSessionExpired(res.error); setError(res.error); }
         else setCards(res.cards);
       })
       .catch((e) => setError(e instanceof Error ? e.message : "Gagal memuat flashcard."));

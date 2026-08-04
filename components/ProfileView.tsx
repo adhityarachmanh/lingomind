@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { equipColorAction, equipFrameAction, equipTitleAction, getPublicProfileAction } from "@/lib/actions/profile";
@@ -41,7 +43,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
     getPublicProfileAction(email)
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }

@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getAnalyticsAction } from "@/lib/actions/analytics";
@@ -29,7 +31,7 @@ export default function AnalyticsView() {
     getAnalyticsAction()
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }

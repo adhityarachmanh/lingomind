@@ -1,5 +1,8 @@
 "use client";
 
+import Image from "next/image";
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getOrCreateChatSessionAction } from "@/lib/actions/chat";
@@ -117,7 +120,7 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     setError(null);
     const res = await getOrCreateChatSessionAction(goal, setting);
     if (!mountedRef.current) return;
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(`Gagal memuat sesi panggilan: ${res.error}`);
       setStatus("muted");
       return;
@@ -297,9 +300,12 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
 
       <div className="relative">
         <div className={`w-28 h-28 rounded-full border-4 ${borderColor} ${status === "mendengarkan" ? "animate-pulse" : ""} flex items-center justify-center overflow-hidden bg-white dark:bg-slate-900`}>
-          <img
+          <Image
             src={status === "berbicara" ? "/avatar_male_talking.gif" : "/avatar_male_idle.png"}
             alt="Avatar AI"
+            width={112}
+            height={112}
+            unoptimized
             className="w-full h-full object-cover"
           />
         </div>

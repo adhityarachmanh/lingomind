@@ -16,6 +16,19 @@ export const metadata: Metadata = {
   title: "LingoMind",
   description: "Belajar bahasa asing dengan AI",
   icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
+  openGraph: {
+    title: "LingoMind",
+    description: "Belajar bahasa asing dengan AI — latihan, quiz, chat AI, dan banyak lagi.",
+    type: "website",
+    siteName: "LingoMind",
+    locale: "id_ID",
+  },
+  twitter: {
+    card: "summary",
+    title: "LingoMind",
+    description: "Belajar bahasa asing dengan AI — latihan, quiz, chat AI, dan banyak lagi.",
+  },
 };
 
 export default function RootLayout({

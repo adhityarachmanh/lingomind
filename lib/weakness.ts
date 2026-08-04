@@ -79,11 +79,11 @@ import type { SkillProgressPoint, WeaknessAnalyticsItem } from "./types";
 
 export async function getWeaknessAnalytics(email: string, language: string, limit: number): Promise<WeaknessAnalyticsItem[]> {
   const safeLimit = limit <= 0 ? 8 : Math.min(limit, 20);
-  // Prisma groupBy tidak mendukung COUNT FILTER per rentang — ambil semua lalu hitung di JS
+  // Prisma groupBy tidak mendukung COUNT FILTER per rentang — ambil data 30 hari lalu hitung di JS
   const since7 = new Date(Date.now() - 7 * 86400000);
   const since30 = new Date(Date.now() - 30 * 86400000);
   const logs = await db.weaknessLog.findMany({
-    where: { email, language },
+    where: { email, language, createdAt: { gte: since30 } },
     select: { topic: true, createdAt: true },
   });
   const map = new Map<string, WeaknessAnalyticsItem>();

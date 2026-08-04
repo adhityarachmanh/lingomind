@@ -106,7 +106,12 @@ export async function deductExamHeartAction(): Promise<{ hearts: number } | { er
   return { hearts };
 }
 
-export async function submitExamResultAction(input: { passed: boolean; score: number }): Promise<{ profile: UserProfile } | { error: string }> {
+export async function submitExamResultAction(input: {
+  passed: boolean;
+  score: number;
+  correctCount: number;
+  total: number;
+}): Promise<{ profile: UserProfile } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const profile = await getUserProfile(session.email);
@@ -115,6 +120,13 @@ export async function submitExamResultAction(input: { passed: boolean; score: nu
   const baseLevel = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
   const curriculum = await getCurriculum();
   const pts = curriculum.find((c) => c.level === baseLevel)?.base_reward_points ?? 10;
+  // anti-cheat: pastikan jumlah benar & skor konsisten dengan jawaban benar
+  if (!Number.isInteger(input.correctCount) || input.correctCount < 0 || !Number.isInteger(input.total) || input.total <= 0) {
+    return { error: "Skor tidak valid." };
+  }
+  if (input.correctCount > input.total || input.score !== input.correctCount * pts) {
+    return { error: "Skor tidak valid." };
+  }
   const clampedScore = Math.min(Math.max(0, input.score), 8 * pts);
   const updated = await submitExamResult(session.email, language, input.passed, clampedScore);
   return { profile: updated };

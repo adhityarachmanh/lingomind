@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -34,7 +36,7 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="h-16 flex items-center justify-between gap-3">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <img src="/logo.png" alt="LingoMind Logo" className="w-8 h-8 rounded-xl shadow-card object-cover border border-slate-100 dark:border-slate-800" />
+            <Image src="/logo.png" alt="LingoMind Logo" width={32} height={32} className="w-8 h-8 rounded-xl shadow-card object-cover border border-slate-100 dark:border-slate-800"  />
             <span className="text-xl font-black tracking-wider bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">LingoMind</span>
           </Link>
 

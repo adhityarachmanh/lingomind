@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import { buyItemAction, getShopAction } from "@/lib/actions/shop";
 import type { ShopItem } from "@/lib/types";
@@ -21,7 +23,7 @@ export default function ShopView() {
     getShopAction()
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }
@@ -44,7 +46,7 @@ export default function ShopView() {
     setError(null);
     const res = await buyItemAction(item.id).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal membeli item." }));
     setBuyingId(null);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(res.error ?? "Gagal membeli item.");
       return;
     }

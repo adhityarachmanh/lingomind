@@ -95,6 +95,13 @@ export async function submitQuizResultAction(input: {
   const baseLevel = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
   const curriculum = await getCurriculum();
   const pts = curriculum.find((c) => c.level === baseLevel)?.base_reward_points ?? 10;
+  // anti-cheat: kuis maksimal 5 soal; skor wajib konsisten dengan jumlah jawaban benar
+  if (!Number.isInteger(input.correctCount) || input.correctCount < 0 || input.correctCount > 5) {
+    return { error: "Skor tidak valid." };
+  }
+  if (input.score !== input.correctCount * pts) {
+    return { error: "Skor tidak valid." };
+  }
   const clampedScore = Math.min(Math.max(0, input.score), pts * 5);
   const clampedCorrect = Math.min(Math.max(0, input.correctCount), 5);
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useState } from "react";
 import Link from "next/link";
 import { evaluatePlacementAction } from "@/lib/actions/placement";
@@ -47,7 +49,7 @@ export default function PlacementView({ language }: { language: string }) {
     setError(null);
     try {
       const res = await evaluatePlacementAction(messages);
-      if ("error" in res) {
+      if ("error" in res) { redirectIfSessionExpired(res.error);
         setError(res.error);
         return;
       }

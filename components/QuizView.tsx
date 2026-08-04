@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getQuizAction, recordAnswerAction, submitQuizResultAction } from "@/lib/actions/quiz";
@@ -56,7 +58,7 @@ export default function QuizView({
       getQuizAction(goal)
         .then((res) => {
           if (cancelled) return;
-          if ("error" in res) {
+          if ("error" in res) { redirectIfSessionExpired(res.error);
             setError(res.error);
             setPhase({ name: "hearts", hearts: initialHearts });
             return;
@@ -118,7 +120,7 @@ export default function QuizView({
       setError(e instanceof Error ? e.message : "Gagal menyimpan skor.");
       return;
     }
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setSubmitting(false);
       setError(res.error);
       return;

@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import { createBattleAction, getLeaderboardSummaryAction, searchUsersAction, toggleFollowAction } from "@/lib/actions/leaderboard";
 import type { LeaderboardRow, LeagueMemberRow, SearchUserRow } from "@/lib/types";
@@ -45,7 +47,7 @@ export default function LeaderboardView({ myEmail }: { myEmail: string }) {
     getLeaderboardSummaryAction()
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }
@@ -70,7 +72,7 @@ export default function LeaderboardView({ myEmail }: { myEmail: string }) {
       return;
     }
     const res = await searchUsersAction(searchQuery).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal mencari." }));
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setSearchResults(null);
       setSearchMsg(res.error);
       return;
@@ -95,7 +97,7 @@ export default function LeaderboardView({ myEmail }: { myEmail: string }) {
     setChallengeStatus("Mengirim tantangan...");
     const res = await createBattleAction(challengeTarget, goal).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal mengirim." }));
     setChallengePending(false);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setChallengeStatus(`Gagal: ${res.error}`);
       return;
     }

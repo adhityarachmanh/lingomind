@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getGeneralPracticeAction, getWeaknessPracticeAction, logPracticeAnswerAction, submitGeneralPracticeResultAction } from "@/lib/actions/practice";
@@ -64,7 +66,7 @@ export default function PracticeView({
     load
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           setPhase("answering"); // layar error dirender lewat branch error di bawah
           return;

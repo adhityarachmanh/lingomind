@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import { refillHeartsAction } from "@/lib/actions/shop";
 
@@ -28,7 +30,7 @@ export default function HeartsRefillModal({ hearts, coins }: { hearts: number; c
     setMessage(null);
     const res = await refillHeartsAction().catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal isi ulang nyawa." }));
     setPending(false);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(res.error);
       return;
     }

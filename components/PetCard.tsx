@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import { feedPetAction, getPetsAction, setActivePetAction } from "@/lib/actions/pets";
 import type { PetItem } from "@/lib/types";
@@ -18,7 +20,7 @@ export default function PetCard() {
     getPetsAction()
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }
@@ -43,7 +45,7 @@ export default function PetCard() {
     setStatus(null);
     setError(null);
     const res = await feedPetAction(active.id).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal memberi makan." }));
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(res.error);
       return;
     }

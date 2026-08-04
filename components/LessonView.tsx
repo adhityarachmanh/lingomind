@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getLessonAction } from "@/lib/actions/lesson";
@@ -40,7 +42,7 @@ export default function LessonView({
     getLessonAction(goal, part)
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setState({ status: "error", message: res.error });
           return;
         }

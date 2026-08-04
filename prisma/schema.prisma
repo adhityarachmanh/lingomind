@@ -174,20 +174,6 @@ model CachedQuiz {
   @@map("cached_quizzes")
 }
 
-model ContentGenerationJob {
-  id        Int      @id @default(autoincrement())
-  language  String   @db.VarChar(50)
-  status    String   @default("running") // running | done | failed | cancelled
-  error     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([language, status])
-  @@map("content_generation_jobs")
-}
-
-// Unit konten yang gagal di-generate AI berulang kali — di-skip agar tidak deadlock;
-// dihitung "belum siap" sampai berhasil digenerate (reset via panel admin).
 model FailedContentUnit {
   id           Int      @id @default(autoincrement())
   language     String   @db.VarChar(50)

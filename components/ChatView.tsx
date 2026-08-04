@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { getOrCreateChatSessionAction } from "@/lib/actions/chat";
@@ -35,7 +37,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
     setPhase("loading");
     setError(null);
     const res = await getOrCreateChatSessionAction(goal, setting);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(res.error);
       setPhase(goal === "Bebas" ? "picker" : "chat");
       return;
@@ -53,7 +55,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
       getOrCreateChatSessionAction(goal)
         .then((res) => {
           if (cancelled) return;
-          if ("error" in res) {
+          if ("error" in res) { redirectIfSessionExpired(res.error);
             setError(res.error);
             setPhase("chat");
             return;

@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -32,7 +34,7 @@ export default function LoginForm() {
   return (
     <div className="min-h-dvh bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6 font-sans">
       <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-xl shadow-card max-w-md w-full border border-slate-200 dark:border-slate-700 text-center">
-        <img src="/logo.png" alt="LingoMind Logo" className="w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800" />
+        <Image src="/logo.png" alt="LingoMind Logo" width={80} height={80} className="w-20 h-20 rounded-3xl mx-auto mb-4 shadow-md object-cover border border-slate-100/30 dark:border-slate-800"  />
         <h2 className="text-3xl font-extrabold text-teal-600 dark:text-teal-400 mb-2">Welcome Back</h2>
         <p className="text-slate-500/30 dark:text-slate-400 text-sm mb-6 font-medium">Learn English & German powered by Gemini AI</p>
 

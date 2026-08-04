@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { evaluatePronunciationAction, getSentencesAction } from "@/lib/actions/pronunciation";
@@ -24,7 +26,7 @@ export default function PronunciationView({ language, ttsLang }: { language: str
     getSentencesAction()
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }
@@ -49,7 +51,7 @@ export default function PronunciationView({ language, ttsLang }: { language: str
     setSttError(null);
     evaluatePronunciationAction({ sentence, transcript })
       .then((res) => {
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
         } else {
           setEvaluation(res.evaluation);

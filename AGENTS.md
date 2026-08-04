@@ -36,6 +36,8 @@ Aplikasi belajar bahasa. **Migrasi dari Dioxus ke Next.js SELESAI (Fase 6)** —
 - Setiap server action yang butuh user memanggil `getSession()` — jangan pakai parameter email dari client
 - Setiap server action admin memanggil `requireAdmin()` (di `lib/auth.ts`) → `"Akses ditolak."`; middleware melindungi `/admin` (session), role di-check layout admin (`app/(admin)/layout.tsx`)
 - Dark mode: class `.dark` di `<html>`, key localStorage `lingomind_theme` (konsisten dengan aplikasi lama). Session localStorage lama TIDAK dipakai — user harus login ulang
+- Aksesibilitas & polish: font Geist dipakai via `--font-geist-sans` (globals.css `body`), `:focus-visible` ring teal global, `prefers-reduced-motion` dihormati; security headers di `next.config.ts` (nosniff/SAMEORIGIN/Referrer-Policy/Permissions-Policy; CSP hanya production); `components/sessionGuard.ts` — `redirectIfSessionExpired(res.error)` dipanggil di tiap handler error server action user (redirect /login saat "Sesi berakhir")
+- Anti-cheat skor: `submitQuizResultAction` & `submitExamResultAction` menolak `"Skor tidak valid."` bila `score !== correctCount * pts` / `correctCount` di luar jangkauan (hardening tingkat 1; anti-cheat penuh butuh tabel attempt — tercatat di AGENTS.md bawah)
 - Admin seed: `admin@lingomind.com` (password `admin`) — **ganti password di produksi** (belum ada aksi ganti password admin di panel; gunakan Prisma Studio atau tambahkan nanti)
 - Rate limit login: maks 5 gagal/15 menit per (email, IP) via model `login_attempts` (`lib/actions/auth.ts` — berlaku untuk user + admin)
 - Jangan commit `.env`

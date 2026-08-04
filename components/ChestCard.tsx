@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useState } from "react";
 import { claimMissionRewardAction } from "@/lib/actions/mission";
 
@@ -19,7 +21,7 @@ export default function ChestCard({
     setError(null);
     const res = await claimMissionRewardAction(tier).catch((e: unknown) => ({ error: e instanceof Error ? e.message : "Gagal klaim." }));
     setPending(false);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setError(res.error ?? null);
       return;
     }

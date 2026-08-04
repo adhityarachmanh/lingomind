@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -48,7 +50,7 @@ export default function ExamView({
   const loadExam = useCallback(async () => {
     setPhase({ name: "loading" });
     const res = await getExamAction(level);
-    if ("error" in res) {
+    if ("error" in res) { redirectIfSessionExpired(res.error);
       setLoadingError(res.error);
       setPhase({ name: "ready" }); // error dirender di branch error bawah
       return;
@@ -86,7 +88,7 @@ export default function ExamView({
     setTicketPending(true);
     try {
       const res = await consumeRetakeTicketAction(level);
-      if ("error" in res) {
+      if ("error" in res) { redirectIfSessionExpired(res.error);
         setGateError(res.error ?? "Gagal menggunakan tiket.");
         return;
       }
@@ -119,8 +121,8 @@ export default function ExamView({
     setSubmitError(null);
     playSfx(passed ? "winner" : "wrong"); // dalam jendela gesture klik — autoplay policy aman
     try {
-      const res = await submitExamResultAction({ passed, score });
-      if ("error" in res) {
+      const res = await submitExamResultAction({ passed, score, correctCount, total });
+      if ("error" in res) { redirectIfSessionExpired(res.error);
         setSubmitError(res.error);
       }
     } catch (e: unknown) {

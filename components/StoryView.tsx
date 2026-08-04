@@ -1,5 +1,7 @@
 "use client";
 
+import { redirectIfSessionExpired } from "./sessionGuard";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { completeStoryAction, getStoryAction } from "@/lib/actions/story";
@@ -21,7 +23,7 @@ export default function StoryView({ goal, language, ttsLang }: { goal: string; l
     getStoryAction(goal)
       .then((res) => {
         if (cancelled) return;
-        if ("error" in res) {
+        if ("error" in res) { redirectIfSessionExpired(res.error);
           setError(res.error);
           return;
         }
