@@ -298,7 +298,7 @@ export default function ExamView({
       </div>
 
       {showExplanation && (
-        <div className={`mt-4 p-4 rounded-2xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
+        <div className={`mt-4 p-4 rounded-xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
           <p className="font-black mb-1">{selected === question.correct_answer ? "✓ Tepat Sekali" : "✗ Jawaban Salah"}</p>
           {selected !== question.correct_answer && <p className="font-bold mb-1">Kunci Jawaban: {question.correct_answer}</p>}
           <p className="text-slate-600 dark:text-slate-300">{question.explanation}</p>

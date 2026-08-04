@@ -16,7 +16,7 @@ export default function GuidePage() {
       <h1 className="text-2xl sm:text-3xl font-extrabold mb-6 text-center">Panduan Lengkap LingoMind 🚀</h1>
       <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {CARDS.map((c) => (
-          <div key={c.title} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+          <div key={c.title} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card">
             <p className="text-2xl">{c.icon}</p>
             <p className="font-extrabold mt-2">{c.title}</p>
             <p className="text-xs text-slate-400 mt-1 leading-relaxed">{c.desc}</p>

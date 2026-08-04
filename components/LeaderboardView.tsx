@@ -145,7 +145,7 @@ export default function LeaderboardView({ myEmail }: { myEmail: string }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
-      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-2xl p-6 text-white mb-6 shadow-md">
+      <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-xl p-6 text-white mb-6 shadow-md">
         <h1 className="text-2xl font-extrabold">🏆 Papan Peringkat</h1>
         <p className="text-sm mt-1">Pantau progresmu dan tantang temanmu!</p>
       </div>
@@ -246,7 +246,7 @@ export default function LeaderboardView({ myEmail }: { myEmail: string }) {
 
       {challengeTarget && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4" onClick={() => setChallengeTarget(null)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-extrabold mb-1">⚔️ Tantang Teman</h3>
             <p className="text-xs text-slate-400 mb-4">Pilih topik kuis yang ingin Anda ujikan. Siapa yang paling tinggi skornya, dia yang dapat Koin!</p>
             <input

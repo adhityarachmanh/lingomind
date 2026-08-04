@@ -88,7 +88,7 @@ export default function StoryView({ goal, language, ttsLang }: { goal: string; l
         <p className="text-2xl font-black">Cerita Selesai!</p>
         <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">Anda telah menyelesaikan cerita &quot;{story.title}&quot;. Sangat bagus untuk melatih pendengaran Anda!</p>
         {reward && (
-          <div className="bg-teal-500/10 border border-teal-500/40 rounded-2xl p-4">
+          <div className="bg-teal-500/10 border border-teal-500/40 rounded-xl p-4">
             <p className="text-sm font-bold text-teal-700 dark:text-teal-400">{reward}</p>
           </div>
         )}
@@ -116,7 +116,7 @@ export default function StoryView({ goal, language, ttsLang }: { goal: string; l
         <SpeakButton text={segment.text} lang={ttsLang} rate={0.9} />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         {segment.speaker && (
           <span className="inline-block px-2 py-0.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[11px] font-bold mb-3">
             {segment.speaker}
@@ -154,7 +154,7 @@ export default function StoryView({ goal, language, ttsLang }: { goal: string; l
             })}
           </div>
           {answered !== null && (
-            <div className={`mt-4 p-4 rounded-2xl border text-sm ${answered ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
+            <div className={`mt-4 p-4 rounded-xl border text-sm ${answered ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
               <p className="font-black mb-1">{answered ? "✨ Benar!" : "❌ Salah"}</p>
               <p className="text-slate-600 dark:text-slate-300">{segment.question.explanation}</p>
             </div>

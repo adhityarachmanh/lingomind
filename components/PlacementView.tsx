@@ -83,7 +83,7 @@ export default function PlacementView({ language }: { language: string }) {
       <div className="space-y-3 mb-6">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "User" ? "justify-end" : "justify-start"}`}>
-            <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm ${
+            <div className={`max-w-[80%] px-4 py-3 rounded-xl text-sm ${
               m.role === "User"
                 ? "bg-teal-500 text-white rounded-br-sm"
                 : "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-bl-sm"

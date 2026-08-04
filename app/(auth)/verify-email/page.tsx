@@ -11,7 +11,7 @@ export default async function VerifyEmailPage({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col justify-center items-center p-6">
-      <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl shadow-lg max-w-md w-full border border-slate-200 dark:border-slate-700 text-center">
+      <div className="bg-white dark:bg-slate-900 p-8 rounded-xl shadow-card max-w-md w-full border border-slate-200 dark:border-slate-700 text-center">
         <h2 className="text-2xl font-extrabold text-teal-600 dark:text-teal-400 mb-3">Verifikasi Email</h2>
         {result.error ? (
           <p className="text-rose-600 dark:text-rose-400 text-sm font-semibold mb-4">⚠️ {result.error}</p>

@@ -129,7 +129,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
               key={p.key}
               type="button"
               onClick={() => start(p.key, p.title)}
-              className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 transition-colors"
+              className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 transition-all hover:shadow-card-hover"
             >
               <p className="font-bold text-sm">{p.title}</p>
               <p className="text-xs text-slate-400 mt-0.5">{p.desc}</p>
@@ -203,7 +203,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
           if (m.sender === "user") {
             return (
               <div key={i} className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-teal-500 text-white text-sm whitespace-pre-wrap">{m.content}</div>
+                <div className="max-w-[80%] px-4 py-2.5 rounded-xl rounded-tr-none bg-teal-500 text-white text-sm whitespace-pre-wrap">{m.content}</div>
               </div>
             );
           }
@@ -211,7 +211,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
           return (
             <div key={i} className="flex justify-start">
               <div className="max-w-[85%] space-y-1.5">
-                <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm whitespace-pre-wrap">
+                <div className="px-4 py-2.5 rounded-xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm whitespace-pre-wrap">
                   {main}
                 </div>
                 {koreksi && (
@@ -226,7 +226,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
         })}
         {(sending && streamingText) && (
           <div className="flex justify-start">
-            <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm whitespace-pre-wrap">
+            <div className="px-4 py-2.5 rounded-xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm whitespace-pre-wrap">
               {streamingText}
               <span className="inline-block w-1.5 h-4 bg-teal-500 animate-pulse ml-0.5 align-middle" />
             </div>
@@ -234,7 +234,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
         )}
         {sending && !streamingText && (
           <div className="flex justify-start">
-            <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-400">
+            <div className="px-4 py-2.5 rounded-xl rounded-tl-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-sm text-slate-400">
               Partner AI sedang mengetik...
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function ChatView({ goal, language }: { goal: string; language: s
                 setError(null);
                 setReloadKey((k) => k + 1);
               }}
-              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-bold hover:border-teal-500/50 transition-colors"
+              className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-xs font-bold hover:border-teal-500/50 transition-all hover:shadow-card-hover"
             >
               Coba Lagi
             </button>

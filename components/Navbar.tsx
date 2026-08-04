@@ -30,11 +30,11 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
       : "text-slate-600/50 dark:text-slate-400 hover:text-teal-600 dark:hover:text-teal-400 font-bold transition-colors";
 
   return (
-    <header className="fixed top-0 inset-x-0 z-40 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-sm">
+    <header className="fixed top-0 inset-x-0 z-40 border-b border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-card">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="h-16 flex items-center justify-between gap-3">
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-90 transition-opacity">
-            <img src="/logo.png" alt="LingoMind Logo" className="w-8 h-8 rounded-xl shadow-sm object-cover border border-slate-100 dark:border-slate-800" />
+            <img src="/logo.png" alt="LingoMind Logo" className="w-8 h-8 rounded-xl shadow-card object-cover border border-slate-100 dark:border-slate-800" />
             <span className="text-xl font-black tracking-wider bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">LingoMind</span>
           </Link>
 
@@ -48,7 +48,7 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
           </nav>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm items-center gap-1">
+            <div className="hidden sm:flex px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-card items-center gap-1">
               <span>🔥</span>
               <span>{score} pts</span>
             </div>
@@ -81,7 +81,7 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
 
       {/* drawer mobile */}
       {menuOpen && (
-        <nav className="md:hidden border-t border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-sm">
+        <nav className="md:hidden border-t border-slate-200/80 dark:border-slate-700/80 bg-white/95 dark:bg-slate-900/95 backdrop-blur shadow-card">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 space-y-1">
             {NAV_LINKS.map((l) => (
               <Link
@@ -98,7 +98,7 @@ export default function Navbar({ full_name, score, email }: NavbarProps) {
               </Link>
             ))}
             <div className="flex items-center justify-between px-3 py-2.5">
-              <span className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-sm flex items-center gap-1">
+              <span className="px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/30 dark:bg-amber-900/30 text-xs font-black text-amber-700 shadow-card flex items-center gap-1">
                 <span>🔥</span>
                 <span>{score} pts</span>
               </span>

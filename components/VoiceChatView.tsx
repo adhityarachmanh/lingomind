@@ -245,7 +245,7 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {PRESETS.map((p) => (
             <button key={p.key} type="button" onClick={() => startSession(p.key, p.title)}
-              className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 transition-colors">
+              className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 transition-all hover:shadow-card-hover">
               <p className="font-bold text-sm">{p.title}</p>
               <p className="text-xs text-slate-400 mt-0.5">{p.desc}</p>
             </button>
@@ -345,7 +345,7 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
         <button
           type="button"
           onClick={hangUp}
-          className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-2xl flex items-center justify-center shadow-lg"
+          className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-2xl flex items-center justify-center shadow-card"
         >
           📞
         </button>

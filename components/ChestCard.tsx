@@ -28,7 +28,7 @@ export default function ChestCard({
   }
 
   return (
-    <div className={`rounded-2xl border p-4 ${highlight ? "border-yellow-500/50 bg-yellow-500/5" : "border-slate-200 dark:border-slate-700"}`}>
+    <div className={`rounded-xl border p-4 ${highlight ? "border-yellow-500/50 bg-yellow-500/5" : "border-slate-200 dark:border-slate-700"}`}>
       <p className="text-2xl">{icon}</p>
       <p className="font-extrabold mt-1">{title}</p>
       <p className="text-xs text-slate-400 mt-0.5">{desc}</p>

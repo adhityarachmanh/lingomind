@@ -80,7 +80,7 @@ export default function ShopView() {
     const canAfford = coins >= item.cost;
     const busy = buyingId === item.id;
     return (
-      <div key={item.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm flex flex-col">
+      <div key={item.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card flex flex-col">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-xl">{item.icon_name}</div>
           <div>
@@ -108,7 +108,7 @@ export default function ShopView() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8">
-      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-2xl p-6 text-white mb-6 shadow-md">
+      <div className="bg-gradient-to-r from-teal-500 to-emerald-500 rounded-xl p-6 text-white mb-6 shadow-md">
         <h1 className="text-2xl font-extrabold">Toko LingoMind 🏪</h1>
         <p className="text-sm mt-1 font-bold">Saldo Koin: 🪙 {coins}</p>
       </div>

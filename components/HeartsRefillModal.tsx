@@ -52,7 +52,7 @@ export default function HeartsRefillModal({ hearts, coins }: { hearts: number; c
             role="dialog"
             aria-modal="true"
             aria-label="Isi Ulang Nyawa"
-            className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700"
+            className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-sm border border-slate-200 dark:border-slate-700"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-extrabold mb-1">Isi Ulang Nyawa</h3>

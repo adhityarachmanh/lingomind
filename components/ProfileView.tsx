@@ -94,7 +94,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
       {status && <div className="mb-4 px-4 py-3 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm font-semibold">{status}</div>}
       {error && <div className="mb-4 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-sm">{error}</div>}
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm text-center">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card text-center">
         <div className="flex flex-col items-center">
           <div className={frameClass}>
             {(profile.full_name || "?").charAt(0).toUpperCase()}
@@ -125,7 +125,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
         </div>
       </div>
 
-      <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <div className="mt-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         <h2 className="text-lg font-extrabold mb-3">🏅 Lencana yang Diraih</h2>
         {profile.badges.length === 0 ? (
           <p className="text-sm text-slate-400">Pengguna ini belum mengumpulkan lencana apapun.</p>
@@ -156,7 +156,7 @@ export default function ProfileView({ email, isOwn }: { email: string; isOwn: bo
 
       {galleryOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4" onClick={() => setGalleryOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700 max-h-[80vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-extrabold mb-4">Galeri Kosmetik</h3>
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">🖼️ Bingkai</p>
             <div className="flex flex-wrap gap-2 mb-4">

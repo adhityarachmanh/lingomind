@@ -59,7 +59,7 @@ export default function PetCard() {
   }
 
   return (
-    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
       <h2 className="text-lg font-extrabold mb-3">🐾 Peliharaan</h2>
       {active && (
         <div className="flex flex-col items-center gap-2 text-center">
@@ -84,7 +84,7 @@ export default function PetCard() {
 
       {modalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 flex items-center justify-center p-4" onClick={() => setModalOpen(false)}>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white dark:bg-slate-900 rounded-xl p-6 w-full max-w-md border border-slate-200 dark:border-slate-700" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-extrabold mb-4">🐾 Koleksi Peliharaan</h3>
             {all.length === 0 ? (
               <p className="text-sm text-slate-400">Anda belum memiliki peliharaan. Beli telur di Toko!</p>

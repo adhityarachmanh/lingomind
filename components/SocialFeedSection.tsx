@@ -29,7 +29,7 @@ export default function SocialFeedSection() {
   if (feed === null) return null;
   if (feed.length === 0) {
     return (
-      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         <h2 className="text-lg font-extrabold mb-3">📰 Beranda Aktivitas Teman</h2>
         <p className="text-sm text-slate-400">Belum ada aktivitas baru dari teman yang Anda ikuti.</p>
       </section>
@@ -37,7 +37,7 @@ export default function SocialFeedSection() {
   }
 
   return (
-    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
       <h2 className="text-lg font-extrabold mb-3">📰 Beranda Aktivitas Teman</h2>
       <div className="space-y-3">
         {feed.map((f) => (

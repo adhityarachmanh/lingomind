@@ -24,7 +24,7 @@ export default function BattleArenaSection() {
   if (battles === null) return null;
 
   return (
-    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+    <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
       <h2 className="text-lg font-extrabold mb-3">⚔️ Arena Pertarungan</h2>
       {battles.length === 0 ? (
         <p className="text-sm text-slate-400">Belum ada pertarungan aktif.</p>

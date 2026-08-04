@@ -84,17 +84,17 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Streak</p>
           <p className="text-2xl font-black text-orange-500 mt-1">🔥 {stats?.current_streak ?? 0} hari</p>
           <p className="text-[11px] text-slate-400 mt-1">Terpanjang: {stats?.longest_streak ?? 0}</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Koin</p>
           <p className="text-2xl font-black text-amber-500 mt-1">🪙 {stats?.coins ?? 0}</p>
           <p className="text-[11px] text-slate-400 mt-1">Total {stats?.total_points_earned ?? 0} pts</p>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Nyawa</p>
           <p className="text-2xl font-black text-rose-500 mt-1">❤️ {stats?.hearts ?? 0}/5</p>
           <div>
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
             <HeartsRefillModal hearts={stats?.hearts ?? 5} coins={stats?.coins ?? 0} />
           </div>
         </div>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-4 shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card">
           <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Skor</p>
           <p className="text-2xl font-black text-teal-600 dark:text-teal-400 mt-1">⭐ {profile.score}</p>
           <p className="text-[11px] text-slate-400 mt-1">{baseLevel}</p>
@@ -110,32 +110,32 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Link href="/general-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/general-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">🎲</p>
           <p className="font-extrabold mt-2">Latihan Acak</p>
           <p className="text-xs text-slate-400 mt-1">+1 Nyawa ❤️ dan +15 Poin + Koin 🪙</p>
         </Link>
-        <Link href="/practice/General" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/practice/General" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">🎯</p>
           <p className="font-extrabold mt-2">Latihan Kelemahan</p>
           <p className="text-xs text-slate-400 mt-1">Fokus pada topik yang paling sering salah</p>
         </Link>
-        <Link href="/placement" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/placement" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">📝</p>
           <p className="font-extrabold mt-2">Tes Penempatan</p>
           <p className="text-xs text-slate-400 mt-1">Belum yakin dengan level Anda?</p>
         </Link>
-        <Link href="/chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">💬</p>
           <p className="font-extrabold mt-2">Chat AI</p>
           <p className="text-xs text-slate-400 mt-1">Simulasi percakapan teks bebas.</p>
         </Link>
-        <Link href="/voice-chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/voice-chat/Bebas" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">🎙️</p>
           <p className="font-extrabold mt-2">Live Voice AI</p>
           <p className="text-xs text-slate-400 mt-1">Ngobrol langsung dengan suara.</p>
         </Link>
-        <Link href="/pronunciation-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm hover:border-teal-500/50 transition-colors">
+        <Link href="/pronunciation-practice" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
           <p className="text-xl">🗣️</p>
           <p className="font-extrabold mt-2">Speech Scoring</p>
           <p className="text-xs text-slate-400 mt-1">Latih akurasi pronunciation.</p>
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
           <h2 className="text-lg font-extrabold mb-3">Misi Harian</h2>
           <ul className="space-y-2 text-sm">
             <li className="flex justify-between">
@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           </ul>
         </section>
 
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
           <h2 className="text-lg font-extrabold mb-3">Lanjutkan</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Topik berikutnya: <span className="font-bold text-slate-800 dark:text-slate-200">{nextTopic}</span>
@@ -182,7 +182,7 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
           <h2 className="text-lg font-extrabold mb-3">📈 Skill Progress 7 Hari</h2>
           <svg viewBox="0 0 280 96" className="w-full h-24" preserveAspectRatio="none" aria-hidden="true">
             <polyline
@@ -203,7 +203,7 @@ export default async function DashboardPage() {
           <p className="text-xs text-slate-400 mt-2">Total {weekTotal} poin minggu ini</p>
         </section>
 
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
           <h2 className="text-lg font-extrabold mb-3">🎯 Kelemahan Teratas</h2>
           {topWeaknesses.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Belum ada data kelemahan.</p>
@@ -220,7 +220,7 @@ export default async function DashboardPage() {
         </section>
       </div>
 
-      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         <h2 className="text-lg font-extrabold mb-3">📜 Quest Harian Bertingkat</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           <ChestCard
@@ -252,7 +252,7 @@ export default async function DashboardPage() {
       </section>
 
       {badges.length > 0 && (
-        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+        <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
           <h2 className="text-lg font-extrabold mb-3">🏅 Badges / Lencana</h2>
           <div className="space-y-2">
             {badges.map((b) => (
@@ -268,7 +268,7 @@ export default async function DashboardPage() {
         </section>
       )}
 
-      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         <h2 className="text-lg font-extrabold mb-3">Kurikulum ({langId})</h2>
         <div className="space-y-4">
           {curriculum.map((c) => (

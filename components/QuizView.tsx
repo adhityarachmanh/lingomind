@@ -187,12 +187,12 @@ export default function QuizView({
         {battleMessage && <p className="text-sm font-bold text-amber-600 dark:text-amber-400 mt-2">{battleMessage}</p>}
         <p className="text-3xl font-black text-teal-600 dark:text-teal-400">+{phase.score} Poin</p>
         {phase.passed ? (
-          <div className="max-w-md bg-teal-500/10 border border-teal-500/40 rounded-2xl p-4">
+          <div className="max-w-md bg-teal-500/10 border border-teal-500/40 rounded-xl p-4">
             <p className="font-bold text-teal-700 dark:text-teal-400">🌟 Luar Biasa! Nilai Sempurna!</p>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Anda telah menguasai materi ini. Tahap selanjutnya telah terbuka!</p>
           </div>
         ) : (
-          <div className="max-w-md bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4">
+          <div className="max-w-md bg-amber-500/10 border border-amber-500/40 rounded-xl p-4">
             <p className="font-bold text-amber-700 dark:text-amber-400">🔒 Topik Berikutnya Masih Terkunci</p>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Sistem LingoMind mensyaratkan Anda untuk mendapatkan nilai sempurna (semua benar) untuk membuktikan penguasaan materi.
@@ -282,7 +282,7 @@ export default function QuizView({
       </div>
 
       {showExplanation && (
-        <div className={`mt-4 p-4 rounded-2xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
+        <div className={`mt-4 p-4 rounded-xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
           <p className="font-black mb-1">
             {selected === question.correct_answer ? "✓ Jawaban Benar!" : "✗ Jawaban Salah!"}
           </p>

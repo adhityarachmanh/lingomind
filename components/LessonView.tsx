@@ -122,7 +122,7 @@ export default function LessonView({
 
       <div className="grid lg:grid-cols-12 gap-6">
         <div className="lg:col-span-8">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm prose-sm">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card prose-sm">
             <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(lesson.content) }} />
           </div>
 

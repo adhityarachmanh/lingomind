@@ -94,7 +94,7 @@ export default function AnalyticsView() {
             </div>
           ) : (
             weakness.map((w) => (
-              <div key={w.topic} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+              <div key={w.topic} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card">
                 <p className="font-bold text-sm">{w.topic}</p>
                 <p className="text-[11px] text-slate-400 mt-0.5">Akurasi kesalahan terdistribusi secara berkala.</p>
                 <div className="mt-3">
@@ -129,7 +129,7 @@ export default function AnalyticsView() {
               <p className="text-xs text-slate-400 mt-1">Selesaikan materi pelajaran &amp; kuis harian untuk melihat grafik tren keterampilan Anda.</p>
             </div>
           ) : (
-            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card">
               <svg viewBox="0 0 560 220" className="w-full h-auto">
                 {[0, 0.25, 0.5, 0.75, 1].map((f) => (
                   <line key={f} x1={50} x2={530} y1={20 + f * 160} y2={20 + f * 160} stroke="#e2e8f0" strokeWidth="1" />

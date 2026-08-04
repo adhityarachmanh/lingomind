@@ -102,7 +102,7 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
         <div className="h-full bg-teal-500 transition-all duration-300" style={{ width: `${((idx + 1) / cards.length) * 100}%` }} />
       </div>
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 sm:p-8 shadow-sm min-h-[200px] flex flex-col items-center justify-center gap-4 text-center">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 sm:p-8 shadow-card min-h-[200px] flex flex-col items-center justify-center gap-4 text-center">
         <div className="flex items-center gap-2">
           <SpeakButton text={card.front_text} lang={ttsLang} rate={0.9} />
         </div>

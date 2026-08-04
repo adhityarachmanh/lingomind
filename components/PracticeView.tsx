@@ -155,13 +155,13 @@ export default function PracticeView({
         <p className="text-2xl font-black">{strings.finished}</p>
         <p className="text-sm text-slate-500 dark:text-slate-400">{strings.finishedSub}</p>
         {mode === "general" && reward && (
-          <div className="bg-teal-500/10 border border-teal-500/40 rounded-2xl p-4">
+          <div className="bg-teal-500/10 border border-teal-500/40 rounded-xl p-4">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Hadiah Didapatkan</p>
             <p className="font-bold text-teal-700 dark:text-teal-400 mt-1">{reward}</p>
           </div>
         )}
         {mode === "weakness" && topic && (
-          <div className="bg-amber-500/10 border border-amber-500/40 rounded-2xl p-4">
+          <div className="bg-amber-500/10 border border-amber-500/40 rounded-xl p-4">
             <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Topik Fokus</p>
             <p className="font-bold text-amber-700 dark:text-amber-400 mt-1">{topic}</p>
           </div>
@@ -233,7 +233,7 @@ export default function PracticeView({
       </div>
 
       {showExplanation && (
-        <div className={`mt-4 p-4 rounded-2xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
+        <div className={`mt-4 p-4 rounded-xl border text-sm ${selected === question.correct_answer ? "bg-emerald-500/10 border-emerald-500/40" : "bg-rose-500/10 border-rose-500/40"}`}>
           <p className="font-black mb-1">{selected === question.correct_answer ? "✓ Jawaban Benar!" : "✗ Jawaban Salah!"}</p>
           {selected !== question.correct_answer && <p className="font-bold mb-1">Kunci Jawaban: {question.correct_answer}</p>}
           <p className="text-slate-600 dark:text-slate-300">{question.explanation}</p>

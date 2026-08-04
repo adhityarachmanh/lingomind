@@ -114,7 +114,7 @@ export default function PronunciationView({ language, ttsLang }: { language: str
 
       {error && <p className="text-xs text-rose-500 mb-4">{error}</p>}
 
-      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-6 shadow-card">
         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Ucapkan Kalimat Ini:</p>
         <div className="flex items-center justify-center gap-3 mb-2">
           <SpeakButton text={sentence} lang={ttsLang} rate={0.9} />
