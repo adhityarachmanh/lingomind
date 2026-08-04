@@ -259,7 +259,7 @@ export async function generateQuizWithPrompt(params: {
   let best: QuizContainer | null = null;
   let bestScore = 0;
 
-  for (let attempt = 1; attempt <= 2; attempt++) {
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const { text } = await generateText({
       model,
       prompt: currentPrompt,
@@ -268,11 +268,15 @@ export async function generateQuizWithPrompt(params: {
     });
     const parsed = parseAiJson<QuizContainer>(text);
     if (!parsed) {
+      console.warn(`[AI ${label}] percobaan ${attempt}: respons tidak valid (bukan JSON / terpotong).`);
       currentPrompt += `\n\nRespons tidak valid (bukan JSON). Kembalikan HANYA JSON.`;
       continue;
     }
     const normalized = normalizeQuiz(parsed);
     const shapeErrors = validateQuizShape(normalized.questions, expectedCount, label);
+    if (shapeErrors.length > 0) {
+      console.warn(`[AI ${label}] percobaan ${attempt}: shape tidak valid — ${shapeErrors.join("; ")}`);
+    }
     const issues = shapeErrors.length > 0 ? shapeErrors : qualityIssues(normalized.questions, expectedCount, weaknessFocus);
     const score = qualityScore(issues);
     if (score > bestScore) {
