@@ -1,11 +1,9 @@
 name: Content Generation (cicil otomatis)
 
-# Fokus English: tiap jam generate maks 12 unit konten (lesson/quiz) + 12 varian pool kelemahan
-# untuk bahasa terpilih (default English). Idempotent & resume otomatis — run manual kapan pun
-# via "Run workflow" (bisa pilih bahasa lain lewat input).
+# Generasi konten MANUAL SAJA (schedule dimatikan sementara — hemat token AI):
+# jalankan kapan pun via tab Actions → "Run workflow" (bisa pilih bahasa lewat input).
+# Idempotent & resume otomatis — aman dijalankan berulang.
 on:
-  schedule:
-    - cron: "0 * * * *"
   workflow_dispatch:
     inputs:
       language:
