@@ -165,6 +165,16 @@ export default async function DashboardPage() {
           <p className="font-extrabold mt-2">Speech Scoring</p>
           <p className="text-xs text-slate-400 mt-1">Latih akurasi pronunciation.</p>
         </Link>
+        <Link href="/dictation" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
+          <p className="text-xl">✍️</p>
+          <p className="font-extrabold mt-2">Latihan Dikte</p>
+          <p className="text-xs text-slate-400 mt-1">Dengar lalu ketik — listening & writing.</p>
+        </Link>
+        <Link href="/translation" className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-5 shadow-card hover:border-teal-500/50 transition-all hover:shadow-card-hover">
+          <p className="text-xl">🌐</p>
+          <p className="font-extrabold mt-2">Latihan Terjemahan</p>
+          <p className="text-xs text-slate-400 mt-1">Pilih arti kalimat yang tepat.</p>
+        </Link>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">

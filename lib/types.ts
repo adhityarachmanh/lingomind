@@ -31,6 +31,7 @@ export interface FlashcardItem {
 }
 export interface NewFlashcard { language: string; front_text: string; back_text: string; kind?: string; }
 export interface VocabularyItem { word: string; meaning: string; }
+export interface TranslationQuestion { sentence: string; options: string[]; correct: string; }
 export interface ExampleSentence { target: string; meaning: string; }
 export interface LessonContainer {
   title: string;
