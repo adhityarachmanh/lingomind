@@ -87,7 +87,7 @@ export async function generateChatReply(params: {
     model,
     instructions: system,
     messages: [...buildChatHistory(history), { role: "user", content: lastUserMessage }],
-    maxOutputTokens: 8192,
+    maxOutputTokens: 4096,
     temperature,
   });
   if (!text.trim()) throw new Error("AI mengembalikan respons kosong.");

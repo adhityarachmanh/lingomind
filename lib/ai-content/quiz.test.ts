@@ -52,12 +52,12 @@ describe("buildQuizPrompt anti-duplikat", () => {
 });
 
 describe("quizMaxTokens", () => {
-  it("kuis 3 soal pakai 4096, 5+ soal pakai 8192", () => {
+  it("default 4096 untuk semua ukuran (maks 5 soal pun ringkas)", () => {
     expect(quizMaxTokens(3)).toBe(4096);
-    expect(quizMaxTokens(5)).toBe(8192);
+    expect(quizMaxTokens(5)).toBe(4096);
   });
   it("override menang saat diberikan", () => {
-    expect(quizMaxTokens(5, 12288)).toBe(12288);
+    expect(quizMaxTokens(5, 8192)).toBe(8192);
   });
 });
 

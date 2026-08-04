@@ -158,9 +158,9 @@ export async function generateLesson(params: {
 
   // path cepat: 3 generateText paralel (konten / kosakata / kalimat)
   const [contentRes, vocabRes, sentencesRes] = await Promise.all([
-    generateText({ model, prompt: buildContentPrompt(language, level, goal, part, modifier), maxOutputTokens: 12288 }),
-    generateText({ model, prompt: buildVocabularyPrompt(language, level, goal, part, modifier), maxOutputTokens: 8192 }),
-    generateText({ model, prompt: buildSentencesPrompt(language, level, goal, part, modifier), maxOutputTokens: 8192 }),
+  generateText({ model, prompt: buildContentPrompt(language, level, goal, part, modifier), maxOutputTokens: 8192 }),
+  generateText({ model, prompt: buildVocabularyPrompt(language, level, goal, part, modifier), maxOutputTokens: 6144 }),
+  generateText({ model, prompt: buildSentencesPrompt(language, level, goal, part, modifier), maxOutputTokens: 6144 }),
   ]);
 
   const merged = mergeLessonParts(contentRes.text, vocabRes.text, sentencesRes.text);

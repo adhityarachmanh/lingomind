@@ -562,7 +562,7 @@ export async function findNextUndoneUnit(language: string, levelId: string): Pro
 // Anti-duplikat: hasil dibandingkan dengan varian existing (pertanyaan/judul+konten) — jika mirip,
 // generate ulang otomatis (maks 3x); tetap mirip → throw error jujur.
 export async function generateOneContentUnit(language: string, unit: ContentUnit, levelId: string): Promise<void> {
-  const MAX_RETRY = 3;
+  const MAX_RETRY = 2;
   if (unit.kind === "lesson") {
     const existing = await db.cachedLesson.findMany({
       where: { language, level: levelId, goal: unit.goal },

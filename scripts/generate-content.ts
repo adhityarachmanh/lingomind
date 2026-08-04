@@ -18,7 +18,7 @@ import {
 } from "../lib/admin";
 import type { QuizRowQuestions } from "../lib/admin";
 
-const PARALLEL = 3;
+const PARALLEL = 5;
 const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju
 
 const args = process.argv.slice(2);

@@ -241,10 +241,10 @@ function qualityScore(issues: string[]): number {
   return Math.max(0, 100 - issues.length * 10);
 }
 
-// Budget token generasi sesuai jumlah soal — 3 soal tidak butuh 12k token (latensi turun drastis).
+// Budget token generasi — cukup 4096 untuk 3-5 soal (output ringkas, latensi turun drastis).
 export function quizMaxTokens(expectedCount: number, override?: number): number {
   if (override !== undefined) return override;
-  return expectedCount >= 5 ? 8192 : 4096;
+  return 4096;
 }
 
 export async function generateQuizWithPrompt(params: {

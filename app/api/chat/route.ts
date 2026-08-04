@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       model,
       instructions: system,
       messages: [...history, { role: "user", content: message }],
-      maxOutputTokens: 8192,
+      maxOutputTokens: 4096,
       temperature: 0.7,
       onFinish: async ({ text }) => {
         const reply = text.trim();
