@@ -4,6 +4,7 @@ import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getDailyMission, getDueFlashcardCount, getEngagementStats, getLanguages } from "@/lib/dashboard";
 import { getDueVocabularyCount } from "@/lib/flashcards";
+import { getGoalMastery } from "@/lib/mastery";
 import { getUserBadges } from "@/lib/badges";
 import { getTopWeaknesses } from "@/lib/weakness";
 import { db } from "@/lib/db";
@@ -28,7 +29,7 @@ export default async function DashboardPage() {
 
   const langId = languages.some((l) => l.id === profile.preferred_language) ? profile.preferred_language : "English";
 
-  const [curriculum, mission, dueCount, dueVocabCount, badges, topWeaknesses, dailyLogs] = await Promise.all([
+  const [curriculum, mission, dueCount, dueVocabCount, badges, topWeaknesses, dailyLogs, goalMastery] = await Promise.all([
     getCurriculum(),
     getDailyMission(session.email, langId),
     getDueFlashcardCount(session.email, langId),
@@ -39,6 +40,7 @@ export default async function DashboardPage() {
       where: { email: session.email, createdAt: { gte: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d; })() } },
       select: { createdAt: true, scoreGained: true },
     }),
+    getGoalMastery(session.email, langId),
   ]);
 
   const byDay = new Map<string, number>();
@@ -65,6 +67,17 @@ export default async function DashboardPage() {
   const level = curriculum.find((c) => c.level === baseLevel);
   const nextTopic = level?.topics[topicIdx] ?? "Belajar";
 
+  // ---- Rekomendasi adaptif hari ini (prioritas: re-review mastery → kosakata → kelemahan → lanjutkan) ----
+  const reviewDueGoal = [...goalMastery.entries()].find(([, m]) => m.reviewDue)?.[0] ?? null;
+  const topWeakness = topWeaknesses[0]?.topic ?? null;
+  const recommendation = reviewDueGoal
+    ? { icon: "🔄", text: `Re-review topik "${reviewDueGoal}" agar tidak lupa`, href: `/lesson/${encodeURIComponent(reviewDueGoal)}` }
+    : dueVocabCount > 0
+      ? { icon: "📖", text: `Review ${dueVocabCount} kosakata hari ini`, href: "/vocabulary" }
+      : topWeakness
+        ? { icon: "🎯", text: `Latih kelemahan: ${topWeakness}`, href: "/practice/General" }
+        : { icon: "🚀", text: "Lanjutkan kurikulum berikutnya", href: "/roadmap" };
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -84,6 +97,16 @@ export default async function DashboardPage() {
       <div className="flex justify-end">
         <AiStatus />
       </div>
+
+      <Link
+        href={recommendation.href}
+        className="block bg-gradient-to-r from-teal-500/10 to-emerald-500/10 border border-teal-500/30 rounded-xl px-5 py-4 shadow-card hover:shadow-card-hover transition-all hover:border-teal-500/50"
+      >
+        <p className="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider">Rekomendasi Hari Ini</p>
+        <p className="text-sm font-bold mt-1">
+          {recommendation.icon} {recommendation.text}
+        </p>
+      </Link>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 shadow-card">

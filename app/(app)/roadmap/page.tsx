@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getLanguages } from "@/lib/dashboard";
+import { getGoalMastery } from "@/lib/mastery";
 import RoadmapClient from "@/components/RoadmapClient";
 
 const LEVELS_ORDER = ["A1", "A2", "B1", "B2", "C1", "C2"];
@@ -25,6 +26,8 @@ export default async function RoadmapPage() {
   const activeLevelIdx = Math.max(0, LEVELS_ORDER.indexOf(current[0] ?? "A1"));
   const activeTopicIdx = Number(current[1] ?? 0);
 
+  const mastery = await getGoalMastery(session.email, langId);
+
   const levels = LEVELS_ORDER.map((levelId, idx) => {
     const data = curriculum.find((c) => c.level === levelId);
     const unlocked = idx <= activeLevelIdx;
@@ -33,6 +36,7 @@ export default async function RoadmapPage() {
       title,
       unlocked: unlocked && (idx < activeLevelIdx || topicIdx <= activeTopicIdx),
       current: currentLevel && topicIdx === activeTopicIdx,
+      mastery: mastery.get(title),
     }));
     return {
       level: levelId,
@@ -67,7 +71,14 @@ export default async function RoadmapPage() {
             <p className="text-xs text-slate-400 mb-3">{lv.description}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {lv.topics.map((t) => (
-                <RoadmapClient key={t.title} topic={t.title} unlocked={t.unlocked} current={t.current} />
+                <RoadmapClient
+                  key={t.title}
+                  topic={t.title}
+                  unlocked={t.unlocked}
+                  current={t.current}
+                  masteryLevel={t.mastery?.level}
+                  reviewDue={t.mastery?.reviewDue}
+                />
               ))}
             </div>
             {lv.currentLevel && (

@@ -59,6 +59,21 @@ export async function getLessonAction(
       if (vocabCards.length > 0) {
         addFlashcards(session.email, vocabCards).catch(() => {});
       }
+      // log pembukaan lesson (fire-and-forget) — dipakai hitung mastery per topik
+      db.userProgressLog
+        .create({
+          data: {
+            email: session.email,
+            language,
+            activityType: "lesson",
+            topic: goal,
+            scoreGained: 0,
+            passed: true,
+            baseLevel: level,
+            topicIdx: 0,
+          },
+        })
+        .catch(() => {});
       return { lesson: parsed, language, totalParts: CONTENT_PARTS };
     }
   }
