@@ -174,6 +174,31 @@ model CachedQuiz {
   @@map("cached_quizzes")
 }
 
+// Cerita interaktif pre-generated per (language, level, goal) — kunjungan kedua+ instan, tanpa AI.
+model CachedStory {
+  id          Int       @id @default(autoincrement())
+  language    String    @db.VarChar(50)
+  level       String    @db.VarChar(10)
+  goal        String    @db.VarChar(100)
+  contentJson String    @map("content_json")
+  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  @@unique([language, level, goal])
+  @@map("cached_stories")
+}
+
+// Kalimat pronunciation per (language, level) — dibuat sekali, kunjungan berikutnya instan.
+model CachedPronunciation {
+  id          Int       @id @default(autoincrement())
+  language    String    @db.VarChar(50)
+  level       String    @db.VarChar(10)
+  contentJson String    @map("content_json")
+  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+
+  @@unique([language, level])
+  @@map("cached_pronunciations")
+}
+
 model FailedContentUnit {
   id           Int      @id @default(autoincrement())
   language     String   @db.VarChar(50)

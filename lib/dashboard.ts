@@ -185,7 +185,7 @@ export const getLanguages = cache(async (): Promise<LanguageCourse[]> => {
     }));
 });
 
-export async function getCurriculum(): Promise<CurriculumLevel[]> {
+export const getCurriculum = cache(async (): Promise<CurriculumLevel[]> => {
   const levels = await db.level.findMany({ orderBy: { orderIndex: "asc" } });
   const topics = await db.topic.findMany({ orderBy: { orderIndex: "asc" } });
   return levels.map((l) => ({
@@ -195,4 +195,4 @@ export async function getCurriculum(): Promise<CurriculumLevel[]> {
     base_reward_points: l.baseRewardPoints,
     topics: topics.filter((t) => t.levelId === l.id).map((t) => t.title),
   }));
-}
+});

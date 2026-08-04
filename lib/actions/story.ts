@@ -3,6 +3,7 @@
 import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { generateStory } from "../ai-content/story";
+import { parseAiJson } from "../ai-content/parse";
 import { applyQuizResult, updateEngagementAfterQuiz } from "../progress";
 import { db } from "../db";
 import type { ActionResult } from "./types";
@@ -18,7 +19,22 @@ export async function getStoryAction(goal: string): Promise<{ story: StoryData; 
   const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
 
   try {
+    // cache-first: cerita pre-generated per (language, level, goal) — kunjungan kedua+ instan
+    const cached = await db.cachedStory.findUnique({
+      where: { language_level_goal: { language, level, goal } },
+    });
+    if (cached) {
+      const story = parseAiJson<StoryData>(cached.contentJson);
+      if (story) return { story, language, level };
+    }
     const story = await generateStory({ language, level, goal });
+    await db.cachedStory
+      .upsert({
+        where: { language_level_goal: { language, level, goal } },
+        update: { contentJson: JSON.stringify(story) },
+        create: { language, level, goal, contentJson: JSON.stringify(story) },
+      })
+      .catch(() => {});
     return { story, language, level };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal memuat cerita." };
