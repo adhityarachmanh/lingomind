@@ -13,11 +13,15 @@ import { buildWeaknessPrompt, generateQuizWithPrompt } from "../lib/ai-content/q
 const args = process.argv.slice(2);
 const languages = args.filter((a) => !a.startsWith("--"));
 const dryRun = args.includes("--dry-run");
+const allLanguages = args.includes("--all");
+const maxUnitsArg = args.indexOf("--max-units");
+const maxUnits =
+  maxUnitsArg >= 0 && args[maxUnitsArg + 1] ? Math.max(1, Math.floor(Number(args[maxUnitsArg + 1])) || 1) : Infinity;
 
-async function fillTopicPool(language: string, levelId: string, topic: string): Promise<{ added: number; failed: string | null }> {
+async function fillTopicPool(language: string, levelId: string, topic: string, maxNew: number): Promise<{ added: number; failed: string | null }> {
   let added = 0;
   let failed: string | null = null;
-  for (let v = 0; v < CONTENT_WEAKNESS_VARIANTS; v++) {
+  for (let v = 0; v < Math.min(CONTENT_WEAKNESS_VARIANTS, maxNew); v++) {
     const count = await db.cachedQuiz.count({
       where: { language, level: levelId, goal: "weakness", modifier: topic },
     });
@@ -58,7 +62,8 @@ async function fillTopicPool(language: string, levelId: string, topic: string): 
   return { added, failed };
 }
 
-async function generateLanguage(language: string): Promise<void> {
+// budget = jumlah varian yang boleh ditambah di run ini (Infinity = tanpa batas); return = varian baru.
+async function generateLanguage(language: string, budget: number): Promise<number> {
   const [levels, topics] = await Promise.all([
     db.level.findMany({ orderBy: { orderIndex: "asc" } }),
     db.topic.findMany({ orderBy: { orderIndex: "asc" } }),
@@ -71,6 +76,7 @@ async function generateLanguage(language: string): Promise<void> {
     if (goals.length === 0) continue;
     const topicList = [...WEAKNESS_TOPICS, ...goals];
     for (const topic of topicList) {
+      if (totalAdded >= budget) break;
       const count = await db.cachedQuiz.count({
         where: { language, level: lvl.id, goal: "weakness", modifier: topic },
       });
@@ -79,7 +85,7 @@ async function generateLanguage(language: string): Promise<void> {
         continue;
       }
       if (count >= CONTENT_WEAKNESS_VARIANTS) continue;
-      const { added, failed } = await fillTopicPool(language, lvl.id, topic);
+      const { added, failed } = await fillTopicPool(language, lvl.id, topic, budget - totalAdded);
       if (failed) {
         totalFailed++;
         console.error(`  ✗ ${lvl.title} — ${topic}: ${failed}`);
@@ -93,22 +99,30 @@ async function generateLanguage(language: string): Promise<void> {
     console.log("(dry-run — tidak ada generate)");
   } else {
     console.log(`✅ Selesai: +${totalAdded} varian${totalFailed > 0 ? `, ${totalFailed} topik gagal (jalankan ulang)` : ""}`);
+    if (budget !== Infinity && totalAdded >= budget) {
+      console.log(`⏹ --max-units tercapai (${totalAdded} varian) — lanjut di run berikutnya (resume idempotent).`);
+    }
   }
+  return totalAdded;
 }
 
 async function main(): Promise<void> {
-  if (languages.length === 0) {
-    console.log("Usage: npm run content:weakness <Bahasa> [bahasa lain...] [--dry-run]");
+  const existing = await db.language.findMany();
+  const targets = allLanguages ? existing.map((l) => l.id) : languages;
+  if (targets.length === 0) {
+    console.log("Usage: npm run content:weakness <Bahasa> [bahasa lain...] [--dry-run] [--all] [--max-units <N>]");
     process.exit(1);
   }
-  const existing = await db.language.findMany();
-  for (const language of languages) {
+  let remaining = maxUnits;
+  for (const language of targets) {
     const lang = existing.find((l) => l.id.toLowerCase() === language.trim().toLowerCase());
     if (!lang) {
-      console.error(`Bahasa "${language}" tidak ditemukan di DB.`);
+      if (!allLanguages) console.error(`Bahasa "${language}" tidak ditemukan di DB.`);
       continue;
     }
-    await generateLanguage(lang.id);
+    const made = await generateLanguage(lang.id, remaining);
+    remaining -= made;
+    if (remaining <= 0) break;
   }
 }
 

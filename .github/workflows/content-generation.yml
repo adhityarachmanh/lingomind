@@ -1,0 +1,35 @@
+name: Content Generation (cicil otomatis)
+
+# Mengisi konten semua bahasa secara bertahap: tiap jam generate maks 6 unit konten
+# (lesson/quiz) + 6 varian pool kelemahan. Idempotent & resume otomatis — jalankan ulang
+# kapan pun via tombol "Run workflow" (workflow_dispatch).
+on:
+  schedule:
+    - cron: "0 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: content-generation
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      OPENCODE_AI_API_KEY: ${{ secrets.OPENCODE_AI_API_KEY }}
+      OPENCODE_AI_ENDPOINT: ${{ secrets.OPENCODE_AI_ENDPOINT }}
+      OPENCODE_AI_MODEL: ${{ secrets.OPENCODE_AI_MODEL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Terapkan migration yang belum jalan
+        run: npx prisma migrate deploy
+      - name: Generate konten (maks 6 unit)
+        run: npm run content:generate -- --all --max-units 6
+      - name: Isi pool latihan kelemahan (maks 6 varian)
+        run: npm run content:weakness -- --all --max-units 6

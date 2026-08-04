@@ -24,6 +24,10 @@ const RATE_WINDOW_MS = 3 * 60 * 1000; // jendela bergulir untuk laju
 const args = process.argv.slice(2);
 const languages = args.filter((a) => !a.startsWith("--"));
 const dryRun = args.includes("--dry-run");
+const allLanguages = args.includes("--all");
+const maxUnitsArg = args.indexOf("--max-units");
+const maxUnits =
+  maxUnitsArg >= 0 && args[maxUnitsArg + 1] ? Math.max(1, Math.floor(Number(args[maxUnitsArg + 1])) || 1) : Infinity;
 const isTTY = process.stdout.isTTY === true;
 
 // ---- utilitas tampilan (ANSI; fallback polos saat bukan TTY / redirect) ----
@@ -63,7 +67,8 @@ function parseQuizQuestions(contentJson: string): { question: string; listenText
 }
 
 // ---- engine per bahasa ----
-async function generateLanguage(language: string): Promise<void> {
+// budget = jumlah unit yang boleh digenerate di run ini (Infinity = tanpa batas); return = unit selesai.
+async function generateLanguage(language: string, budget: number): Promise<number> {
   const startedAt = Date.now();
   let totalNow = 0;
   let startDone = 0;
@@ -93,7 +98,7 @@ async function generateLanguage(language: string): Promise<void> {
       console.log(`  ${tag} ${lvl.title}: ${lvl.done}/${lvl.total} (lesson ${lvl.lessonDone}/${lvl.lessonTotal}, quiz ${lvl.quizDone}/${lvl.quizTotal})`);
     }
     console.log(col("(dry-run — tidak ada generate)", C.dim));
-    return;
+    return 0;
   }
 
   // Progress bar (cli-progress): ETA rolling built-in (etaBuffer), update hanya saat state berubah.
@@ -137,11 +142,12 @@ async function generateLanguage(language: string): Promise<void> {
       totalNow = s.total;
       levelTitle = s.levels.find((l) => l.done < l.total)?.title ?? "";
       if (s.done >= s.total) break;
+      if (doneInRun >= budget) break; // batas --max-units tercapai
 
       const level = s.levels.find((l) => l.done < l.total);
       if (!level) break;
 
-      const units = await findNextUndoneUnits(language, level.levelId, PARALLEL);
+      const units = await findNextUndoneUnits(language, level.levelId, Math.min(PARALLEL, budget - doneInRun));
       if (units.length === 0) {
         // semua unit tersisa sedang dalam cooldown → tunggu lalu lanjut otomatis
         const failed = await db.failedContentUnit.findMany({
@@ -364,21 +370,29 @@ async function generateLanguage(language: string): Promise<void> {
     console.error(col(`ERROR: ${e instanceof Error ? e.message : String(e)}`, C.red));
     throw e;
   }
+  if (budget !== Infinity && doneInRun >= budget) {
+    console.log(col(`⏹ --max-units tercapai (${doneInRun} unit) — lanjut di run berikutnya (resume idempotent).`, C.yellow));
+  }
+  return doneInRun;
 }
 
 async function main(): Promise<void> {
-  if (languages.length === 0) {
-    console.log("Usage: npm run content:generate <Bahasa> [bahasa lain...] [--dry-run]");
+  const existing = await db.language.findMany();
+  const targets = allLanguages ? existing.map((l) => l.id) : languages;
+  if (targets.length === 0) {
+    console.log("Usage: npm run content:generate <Bahasa> [bahasa lain...] [--dry-run] [--all] [--max-units <N>]");
     process.exit(1);
   }
-  const existing = await db.language.findMany();
-  for (const language of languages) {
+  let remaining = maxUnits;
+  for (const language of targets) {
     const lang = existing.find((l) => l.id.toLowerCase() === language.trim().toLowerCase());
     if (!lang) {
-      console.error(`Bahasa "${language}" tidak ditemukan di DB.`);
+      if (!allLanguages) console.error(`Bahasa "${language}" tidak ditemukan di DB.`);
       continue;
     }
-    await generateLanguage(lang.id);
+    const made = await generateLanguage(lang.id, remaining);
+    remaining -= made;
+    if (remaining <= 0) break;
   }
 }
 
