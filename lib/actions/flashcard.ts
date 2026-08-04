@@ -6,12 +6,12 @@ import { getDueFlashcards, reviewFlashcard, addFlashcards } from "../flashcards"
 import type { ActionResult } from "./types";
 import type { FlashcardItem, NewFlashcard } from "../types";
 
-export async function getDueFlashcardsAction(limit: number): Promise<{ cards: FlashcardItem[] } | { error: string }> {
+export async function getDueFlashcardsAction(limit: number, kind?: string): Promise<{ cards: FlashcardItem[] } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const profile = await getUserProfile(session.email);
   if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
-  const cards = await getDueFlashcards(session.email, profile.preferred_language, limit);
+  const cards = await getDueFlashcards(session.email, profile.preferred_language, limit, kind);
   return { cards };
 }
 

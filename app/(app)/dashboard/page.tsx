@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getCurriculum, getDailyMission, getDueFlashcardCount, getEngagementStats, getLanguages } from "@/lib/dashboard";
+import { getDueVocabularyCount } from "@/lib/flashcards";
 import { getUserBadges } from "@/lib/badges";
 import { getTopWeaknesses } from "@/lib/weakness";
 import { db } from "@/lib/db";
@@ -27,10 +28,11 @@ export default async function DashboardPage() {
 
   const langId = languages.some((l) => l.id === profile.preferred_language) ? profile.preferred_language : "English";
 
-  const [curriculum, mission, dueCount, badges, topWeaknesses, dailyLogs] = await Promise.all([
+  const [curriculum, mission, dueCount, dueVocabCount, badges, topWeaknesses, dailyLogs] = await Promise.all([
     getCurriculum(),
     getDailyMission(session.email, langId),
     getDueFlashcardCount(session.email, langId),
+    getDueVocabularyCount(session.email, langId),
     getUserBadges(session.email),
     getTopWeaknesses(session.email, langId, 5),
     db.userProgressLog.findMany({
@@ -175,6 +177,12 @@ export default async function DashboardPage() {
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
             🃏 {dueCount} flashcard menunggu review
           </p>
+          <Link
+            href="/vocabulary"
+            className="inline-block text-sm text-slate-500 dark:text-slate-400 mt-2 hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
+          >
+            📖 {dueVocabCount > 0 ? `${dueVocabCount} kosakata perlu review` : "Kosakata bank"}
+          </Link>
           <p className="text-xs text-slate-400 mt-4">
             Level {level?.title ?? baseLevel}: {level?.topics.join(" · ") ?? ""}
           </p>

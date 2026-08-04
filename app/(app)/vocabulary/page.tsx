@@ -2,13 +2,9 @@ import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { getUserProfile } from "@/lib/profile";
 import { getLanguages } from "@/lib/dashboard";
-import FlashcardView from "@/components/FlashcardView";
+import VocabularyView from "@/components/VocabularyView";
 
-export default async function FlashcardReviewPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ kind?: string }>;
-}) {
+export default async function VocabularyPage() {
   const session = await getSession();
   if (!session) redirect("/login");
   const [profile, languages] = await Promise.all([
@@ -20,6 +16,5 @@ export default async function FlashcardReviewPage({
     ? profile.preferred_language
     : "English";
   const ttsLang = languages.find((l) => l.id === langId)?.tts_lang_code ?? "en-US";
-  const { kind } = await searchParams;
-  return <FlashcardView language={langId} ttsLang={ttsLang} kind={kind} />;
+  return <VocabularyView language={langId} ttsLang={ttsLang} />;
 }

@@ -7,7 +7,7 @@ import { getDueFlashcardsAction, reviewFlashcardAction } from "@/lib/actions/fla
 import SpeakButton from "./SpeakButton";
 import type { FlashcardItem } from "@/lib/types";
 
-export default function FlashcardView({ language, ttsLang }: { language: string; ttsLang: string }) {
+export default function FlashcardView({ language, ttsLang, kind }: { language: string; ttsLang: string; kind?: string }) {
   const [cards, setCards] = useState<FlashcardItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [idx, setIdx] = useState(0);
@@ -16,7 +16,7 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
 
   useEffect(() => {
     let cancelled = false;
-    getDueFlashcardsAction(20)
+    getDueFlashcardsAction(20, kind)
       .then((res) => {
         if (cancelled) return;
         if ("error" in res) { redirectIfSessionExpired(res.error); setError(res.error); }
@@ -26,7 +26,7 @@ export default function FlashcardView({ language, ttsLang }: { language: string;
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [kind]);
 
   function grade(quality: number) {
     const card = cards?.[idx];

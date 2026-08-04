@@ -17,6 +17,7 @@ interface NavbarProps {
 const NAV_LINKS = [
   { href: "/dashboard", label: "Beranda" },
   { href: "/roadmap", label: "Kurikulum" },
+  { href: "/vocabulary", label: "Kosakata" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/analytics", label: "Analisis" },
   { href: "/shop", label: "Toko" },

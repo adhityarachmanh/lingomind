@@ -67,6 +67,7 @@ model Flashcard {
   language       String
   frontText      String    @map("front_text")
   backText       String    @map("back_text")
+  kind           String    @default("quiz") @db.VarChar(20) // "quiz" (soal) | "vocab" (kosakata)
   easeFactor     Float     @default(2.5) @map("ease_factor")
   intervalDays   Int       @default(1) @map("interval_days")
   repetition     Int       @default(0)
@@ -76,6 +77,7 @@ model Flashcard {
 
   @@unique([email, language, frontText, backText])
   @@index([email, dueAt])
+  @@index([email, kind, dueAt])
   @@map("flashcards")
 }
 

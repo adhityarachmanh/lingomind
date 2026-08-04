@@ -4,6 +4,7 @@ import { getSession } from "../auth";
 import { getUserProfile } from "../profile";
 import { getEngagementStats } from "../dashboard";
 import { parseAiJson } from "../ai-content/parse";
+import { addFlashcards } from "../flashcards";
 import { CONTENT_PARTS } from "../admin";
 import { db } from "../db";
 import type { LessonContainer } from "../types";
@@ -51,6 +52,13 @@ export async function getLessonAction(
   if (cached) {
     const parsed = parseAiJson<LessonContainer>(cached.contentJson);
     if (parsed && parsed.title && parsed.content) {
+      // auto-populate bank kosakata dari vocab lesson (idempotent via skipDuplicates — tanpa biaya AI)
+      const vocabCards = (parsed.vocabulary ?? [])
+        .filter((v) => v.word?.trim() && v.meaning?.trim())
+        .map((v) => ({ language, front_text: v.word.trim(), back_text: v.meaning.trim(), kind: "vocab" as const }));
+      if (vocabCards.length > 0) {
+        addFlashcards(session.email, vocabCards).catch(() => {});
+      }
       return { lesson: parsed, language, totalParts: CONTENT_PARTS };
     }
   }

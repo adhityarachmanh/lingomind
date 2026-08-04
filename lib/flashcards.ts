@@ -18,12 +18,13 @@ export function sm2Next(
 }
 
 function toItem(f: {
-  id: number; email: string; language: string; frontText: string; backText: string;
+  id: number; email: string; language: string; frontText: string; backText: string; kind: string;
   easeFactor: number; intervalDays: number; repetition: number;
 }): FlashcardItem {
   return {
     id: f.id, email: f.email, language: f.language, front_text: f.frontText,
-    back_text: f.backText, ease_factor: f.easeFactor, interval_days: f.intervalDays, repetition: f.repetition,
+    back_text: f.backText, kind: f.kind, ease_factor: f.easeFactor,
+    interval_days: f.intervalDays, repetition: f.repetition,
   };
 }
 
@@ -36,23 +37,31 @@ export async function addFlashcards(email: string, cards: NewFlashcard[]): Promi
       language: c.language,
       frontText: c.front_text,
       backText: c.back_text,
+      kind: c.kind ?? "quiz",
     })),
     skipDuplicates: true,
   });
 }
 
-export async function getDueFlashcards(email: string, language: string, limit: number): Promise<FlashcardItem[]> {
+export async function getDueFlashcards(
+  email: string,
+  language: string,
+  limit: number,
+  kind?: string
+): Promise<FlashcardItem[]> {
   const safeLimit = limit <= 0 ? 10 : Math.min(limit, 50);
   const rows = await db.flashcard.findMany({
-    where: { email, language, dueAt: { lte: new Date() } },
+    where: { email, language, dueAt: { lte: new Date() }, ...(kind ? { kind } : {}) },
     orderBy: { dueAt: "asc" },
     take: safeLimit,
   });
   return rows.map(toItem);
 }
 
-export async function getDueFlashcardCount(email: string, language: string): Promise<number> {
-  return db.flashcard.count({ where: { email, language, dueAt: { lte: new Date() } } });
+export async function getDueFlashcardCount(email: string, language: string, kind?: string): Promise<number> {
+  return db.flashcard.count({
+    where: { email, language, dueAt: { lte: new Date() }, ...(kind ? { kind } : {}) },
+  });
 }
 
 export async function reviewFlashcard(id: number, quality: number, email: string): Promise<void> {
@@ -71,4 +80,41 @@ export async function reviewFlashcard(id: number, quality: number, email: string
     data: { easeFactor: next.easeFactor, intervalDays: next.intervalDays, repetition: next.repetition, dueAt, lastReviewedAt: now },
   });
   await incrementMissionProgress(card.email, "flashcard");
+}
+
+// ---- Kosakata (kind="vocab") ----
+
+export async function getVocabulary(email: string, language: string, query?: string): Promise<FlashcardItem[]> {
+  const q = query?.trim();
+  return (
+    await db.flashcard.findMany({
+      where: {
+        email,
+        language,
+        kind: "vocab",
+        ...(q ? { frontText: { contains: q, mode: "insensitive" as const } } : {}),
+      },
+      orderBy: { createdAt: "desc" },
+      take: 300,
+    })
+  ).map(toItem);
+}
+
+export async function getDueVocabularyCount(email: string, language: string): Promise<number> {
+  return getDueFlashcardCount(email, language, "vocab");
+}
+
+export async function addVocabularyCard(email: string, language: string, word: string, translation: string): Promise<void> {
+  const front = word.trim();
+  const back = translation.trim();
+  if (!front || !back) return;
+  if (front.length > 120 || back.length > 300) return;
+  await db.flashcard.createMany({
+    data: [{ email, language, frontText: front, backText: back, kind: "vocab" }],
+    skipDuplicates: true,
+  });
+}
+
+export async function deleteVocabularyCard(id: number, email: string): Promise<void> {
+  await db.flashcard.deleteMany({ where: { id, email, kind: "vocab" } });
 }
