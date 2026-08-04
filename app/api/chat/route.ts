@@ -4,6 +4,8 @@ import { model } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildReplySystemPrompt } from "@/lib/ai-content/chat";
+import { extractVocabularyFromChat } from "@/lib/ai-content/vocab";
+import { addFlashcards } from "@/lib/flashcards";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -55,6 +57,24 @@ export async function POST(req: NextRequest) {
         const reply = text.trim();
         if (reply) {
           await db.chatMessage.create({ data: { sessionId, sender: "ai", content: reply } }).catch(() => {});
+          // Ekstraksi kosakata latar belakang (fire-and-forget — tidak menahan stream):
+          // kata baru dari percakapan masuk bank kosakata SRS user.
+          if (reply.length >= 40) {
+            void (async () => {
+              const items = await extractVocabularyFromChat({
+                language: chatSession.language,
+                level: chatSession.level,
+                userMessage: message,
+                aiReply: reply,
+              });
+              if (items.length > 0) {
+                await addFlashcards(
+                  session.email,
+                  items.map((i) => ({ language: chatSession.language, front_text: i.word, back_text: i.meaning, kind: "vocab" as const }))
+                ).catch(() => {});
+              }
+            })();
+          }
         }
       },
     });
