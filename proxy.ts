@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const PROTECTED_PREFIX = ["/dashboard"];
+const PROTECTED_PREFIX = ["/chat", "/voice-chat"];
 
 async function verifyToken(token: string): Promise<boolean> {
   const secret = process.env.AUTH_SECRET;
@@ -27,13 +27,7 @@ export async function proxy(req: NextRequest) {
 
   if ((pathname === "/login" || pathname === "/register") && hasSession) {
     const url = req.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
-  }
-
-  if (pathname.startsWith("/admin") && pathname !== "/admin/login" && !hasSession) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/admin/login";
+    url.pathname = "/chat";
     return NextResponse.redirect(url);
   }
 
@@ -41,5 +35,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register", "/admin/:path*"],
+  matcher: ["/chat/:path*", "/voice-chat/:path*", "/login", "/register"],
 };

@@ -1,21 +1,14 @@
 import { redirect } from "next/navigation";
 import { getSession, clearSessionCookie } from "@/lib/auth";
-import { getUserProfile } from "@/lib/profile";
 import Navbar from "@/components/Navbar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect("/login");
-  const profile = await getUserProfile(session.email);
-  if (!profile) {
-    await clearSessionCookie();
-    redirect("/login");
-  }
-
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
-      <Navbar full_name={profile.full_name} score={profile.score} email={profile.email} />
-      <main className="pt-16">{children}</main>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      <Navbar full_name={session.full_name} />
+      <main className="pt-14">{children}</main>
     </div>
   );
 }

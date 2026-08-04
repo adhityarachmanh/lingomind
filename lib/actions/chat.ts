@@ -1,82 +1,127 @@
 "use server";
 
+import { generateText } from "ai";
+import { model } from "../ai";
 import { getSession } from "../auth";
-import { getUserProfile } from "../profile";
-import { normalizeSetting } from "../chat";
-import { buildOpeningPrompt, generateChatReply } from "../ai-content/chat";
 import { db } from "../db";
-import type { ChatMessageItem } from "../types";
+import { buildPolyglotUserMessage } from "../ai-content/chat";
+import { parseAiJson } from "../ai-content/parse";
+import type { ActionResult } from "./types";
 
-// trim history: maks 20 pesan terakhir agar latency AI rendah
-async function fetchHistory(sessionId: number, limit: number): Promise<ChatMessageItem[]> {
-  const rows = await db.chatMessage.findMany({
-    where: { sessionId },
-    orderBy: { createdAt: "asc" },
-    take: limit,
-  });
-  return rows.map((m) => ({ id: m.id, sender: (m.sender as "user" | "ai") ?? "user", content: m.content }));
+export interface PolyglotAnalysis {
+  scores: { grammar: number; fluency: string };
+  detailed_analysis: {
+    original_segment: string;
+    corrected_segment: string;
+    rule: string;
+    explanation_in_indonesian: string;
+  }[];
+  native_rephrasing: { formal: string; casual: string };
+  vocab_highlight: { word_target: string; meaning_in_indonesian: string };
+  reply_in_target_language: string;
+  reply_translation_in_indonesian: string;
 }
 
-async function findOrCreateSession(
+export interface ChatResult {
+  analysis: PolyglotAnalysis;
+  sessionId: string;
+  messageId: string;
+}
+
+async function getOrCreateSession(
   email: string,
   language: string,
-  level: string,
-  goal: string,
-  setting: string
-): Promise<{ sessionId: number; messages: ChatMessageItem[] }> {
-  const existing = await db.chatSession.findFirst({
-    where: { email, language, level, goal, roleplaySetting: setting },
+  scenario: string
+): Promise<string> {
+  const existing = await db.session.findFirst({
+    where: { userId: email, language, scenario },
   });
-  if (existing) {
-    return { sessionId: existing.id, messages: await fetchHistory(existing.id, 20) };
-  }
-  const created = await db.chatSession.create({
-    data: { email, language, level, goal, roleplaySetting: setting },
+  if (existing) return existing.id;
+  const level = "A1";
+  const created = await db.session.create({
+    data: { userId: email, language, level, scenario },
   });
-  return { sessionId: created.id, messages: [] };
+  return created.id;
 }
 
-export async function getOrCreateChatSessionAction(
-  goal: string,
-  setting?: string
-): Promise<{ sessionId: number; messages: ChatMessageItem[]; language: string; level: string } | { error: string }> {
+export async function sendPolyglotMessageAction(
+  scenario: string,
+  language: string,
+  userMessage: string
+): Promise<ChatResult | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
-  const profile = await getUserProfile(session.email);
-  if (!profile) return { error: "Sesi berakhir. Silakan login kembali." };
+  if (!userMessage.trim()) return { error: "Pesan tidak boleh kosong." };
 
-  const language = profile.preferred_language;
-  const level = (profile.current_level[language] ?? "A1.0").split(".")[0] || "A1";
+  const email = session.email;
+  const sessionId = await getOrCreateSession(email, language, scenario);
 
-  let resolvedSetting: string;
+  const history = await db.message.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
+    take: 20,
+  });
+  const aiMessages = history
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.role === "ai" ? (m.analysisJson ? (m.analysisJson as unknown as { reply_in_target_language?: string }).reply_in_target_language : m.content) ?? "" : m.content ?? "",
+    }))
+    .filter((m) => m.content.trim() !== "");
+
+  aiMessages.push({ role: "user", content: userMessage.trim() });
+
+  const level = "A1";
+  const { messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
+
+  let text: string;
   try {
-    resolvedSetting = setting ? normalizeSetting(setting) : normalizeSetting(goal);
+    const result = await generateText({ model, messages, maxOutputTokens: 4096, temperature: 0.7 });
+    text = result.text.trim();
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Nama skenario tidak valid." };
+    return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
   }
 
-  const { sessionId, messages } = await findOrCreateSession(session.email, language, level, goal, resolvedSetting);
-
-  let resultMessages = messages;
-  if (messages.length === 0) {
-    const isTopicBased = resolvedSetting === goal && goal !== "Bebas";
-    const prompts = buildOpeningPrompt(language, level, goal, resolvedSetting, isTopicBased);
-    let opening: string;
-    try {
-      opening = await generateChatReply({
-        system: prompts.system,
-        history: [],
-        lastUserMessage: prompts.user,
-        temperature: 0.8,
-      });
-    } catch (e) {
-      return { error: e instanceof Error ? e.message : "Gagal membuka sesi chat." };
-    }
-    await db.chatMessage.create({
-      data: { sessionId, sender: "ai", content: opening },
-    });
-    resultMessages = await fetchHistory(sessionId, 20);
+  const analysis = parseAiJson<PolyglotAnalysis>(text);
+  if (!analysis || !analysis.reply_in_target_language) {
+    return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
   }
 
-  return { sessionId, messages: resultMessages, language, level };
+  await db.message.create({
+    data: { sessionId, role: "user", content: userMessage.trim() },
+  });
+  const aiMsg = await db.message.create({
+    data: {
+      sessionId,
+      role: "ai",
+      content: analysis.reply_in_target_language,
+      analysisJson: analysis as never,
+    },
+  });
+
+  return { analysis, sessionId, messageId: aiMsg.id };
+}
+
+export async function saveFlashcardAction(
+  frontText: string,
+  backText: string,
+  language: string
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  await db.flashcard.create({
+    data: { userId: session.email, frontText, backText, language },
+  });
+  return { message: "ok" };
+}
+
+export async function getFlashcardsAction(
+  language: string
+): Promise<{ cards: { id: string; frontText: string; backText: string }[] } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const cards = await db.flashcard.findMany({
+    where: { userId: session.email, language },
+    orderBy: { createdAt: "desc" },
+  });
+  return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
 }

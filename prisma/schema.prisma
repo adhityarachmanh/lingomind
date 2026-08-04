@@ -7,494 +7,75 @@ datasource db {
 }
 
 model User {
-  id                Int      @id @default(autoincrement())
-  email             String   @unique @db.VarChar(255)
-  passwordHash      String   @map("password_hash") @db.VarChar(255)
-  score             Int?     @default(0)
-  fullName          String   @map("full_name") @db.VarChar(120)
-  preferredLanguage String   @map("preferred_language")
-  isVerified        Boolean? @map("is_verified") @default(false)
-  role              String?  @default("user") @db.VarChar(50)
-
-  userBadges        UserBadge[]
-  followers         Follower[]          @relation("UserFollowers")
-  following         Follower[]          @relation("UserFollowing")
-  challengerBattles QuizBattle[]        @relation("QuizBattleChallenger")
-  challengedBattles QuizBattle[]        @relation("QuizBattleChallenged")
-  progressLogs      UserProgressLog[]
-  inventory         UserInventory[]
-  dailyMissions     UserDailyMission[]
-  leagueMembers     UserLeagueMember[]
-  pets              UserPet[]
-  socialPosts       SocialFeed[]        @relation("SocialFeedAuthor")
-  socialFeedLikes   SocialFeedLike[]    @relation("SocialFeedLiker")
-  languageProgress  UserLanguageProgress[]
+  id             String         @id @default(uuid())
+  email          String         @unique
+  fullName       String?
+  passwordHash   String?
+  role           String?        @default("user")
+  isVerified     Boolean?       @default(false)
+  targetLanguage String?        @default("English")
+  createdAt      DateTime       @default(now())
+  sessions       Session[]
+  flashcards     Flashcard[]
+  engagementStat UserEngagementStat?
 
   @@map("users")
 }
 
-model ChatSession {
-  id              Int      @id @default(autoincrement())
-  email           String   @db.VarChar(255)
-  language        String   @db.VarChar(20)
-  level           String   @db.VarChar(10)
-  roleplaySetting String   @map("roleplay_setting") @db.VarChar(50)
-  goal            String   @default("General")
-  createdAt       DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  messages ChatMessage[]
-
-  @@index([email, language, level, goal, roleplaySetting])
-  @@map("chat_sessions")
-}
-
-model ChatMessage {
-  id        Int       @id @default(autoincrement())
-  sessionId Int?      @map("session_id")
-  sender    String    @db.VarChar(10)
-  content   String
-  createdAt DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  session ChatSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([sessionId, createdAt])
-  @@map("chat_messages")
-}
-
-model Flashcard {
-  id             Int       @id @default(autoincrement())
-  email          String
-  language       String
-  frontText      String    @map("front_text")
-  backText       String    @map("back_text")
-  kind           String    @default("quiz") @db.VarChar(20) // "quiz" (soal) | "vocab" (kosakata)
-  easeFactor     Float     @default(2.5) @map("ease_factor")
-  intervalDays   Int       @default(1) @map("interval_days")
-  repetition     Int       @default(0)
-  dueAt          DateTime  @default(now()) @map("due_at") @db.Timestamptz(6)
-  lastReviewedAt DateTime? @map("last_reviewed_at") @db.Timestamptz(6)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
-
-  @@unique([email, language, frontText, backText])
-  @@index([email, dueAt])
-  @@index([email, kind, dueAt])
-  @@map("flashcards")
-}
-
-model WeaknessLog {
-  id        Int      @id @default(autoincrement())
-  email     String
-  language  String
-  topic     String
-  note      String
-  createdAt DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  @@index([email, language, createdAt(sort: Desc)])
-  @@map("weakness_logs")
-}
-
-model UserLanguageGoal {
-  id        Int      @id @default(autoincrement())
-  email     String
-  language  String
-  goal      String
-  updatedAt DateTime @map("updated_at") @default(now()) @db.Timestamptz(6)
-
-  @@unique([email, language])
-  @@map("user_language_goals")
-}
-
-model SkillProgressLog {
-  id        Int      @id @default(autoincrement())
-  email     String
-  language  String
-  skill     String
-  isCorrect Boolean  @map("is_correct")
-  createdAt DateTime @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  @@index([email, language, createdAt(sort: Desc)])
-  @@index([email, language, skill, createdAt(sort: Desc)])
-  @@map("skill_progress_logs")
-}
-
 model UserEngagementStat {
-  email              String    @id
-  currentStreak      Int       @default(0) @map("current_streak")
-  longestStreak      Int       @default(0) @map("longest_streak")
-  totalQuizCompleted Int       @default(0) @map("total_quiz_completed")
-  totalPointsEarned  Int       @default(0) @map("total_points_earned")
-  lastActiveDate     DateTime? @map("last_active_date") @db.Date
-  coins              Int       @default(0)
-  streakFreezes      Int       @default(0) @map("streak_freezes")
-  doubleXpUntil      DateTime? @map("double_xp_until") @db.Timestamptz(6)
-  hasWeekendAmulet   Boolean?  @default(false) @map("has_weekend_amulet")
-  activeFrame        String?   @map("active_frame") @db.VarChar(255)
-  previousStreak     Int       @default(0) @map("previous_streak")
-  examRetakeTickets  Int       @default(0) @map("exam_retake_tickets")
-  activeTitle        String?   @map("active_title")
-  activeNameColor    String?   @map("active_name_color")
-  hearts             Int       @default(5)
-  lastHeartRefill    DateTime? @map("last_heart_refill") @db.Timestamptz(6)
+  email         String      @id
+  user          User        @relation(fields: [email], references: [email], onDelete: Cascade)
+  score         Int?        @default(0)
+  currentStreak Int?        @default(0) @map("current_streak")
+  longestStreak Int?        @default(0) @map("longest_streak")
+  totalXp       Int?        @default(0) @map("total_xp")
+  createdAt     DateTime    @default(now()) @map("created_at")
 
   @@map("user_engagement_stats")
 }
 
-model PasswordReset {
-  id        Int      @id @default(autoincrement())
-  email     String   @db.VarChar(255)
-  token     String   @unique @db.VarChar(255)
-  expiresAt DateTime @map("expires_at") @db.Timestamp(6)
-  createdAt DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
-
-  @@map("password_resets")
-}
-
-model CachedLesson {
-  id          Int       @id @default(autoincrement())
-  language    String    @db.VarChar(50)
-  level       String    @db.VarChar(10)
-  goal        String    @db.VarChar(100)
-  part        Int
-  contentJson String    @map("content_json")
-  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
-  modifier    String    @default("normal") @db.VarChar(50)
-
-  @@index([language, level, goal, part, modifier])
-  @@map("cached_lessons")
-}
-
-model CachedQuiz {
-  id          Int       @id @default(autoincrement())
-  language    String    @db.VarChar(50)
-  level       String    @db.VarChar(10)
-  goal        String    @db.VarChar(100)
-  contentJson String    @map("content_json")
-  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
-  modifier    String    @default("normal") @db.VarChar(50)
-
-  @@index([language, level, goal, modifier])
-  @@map("cached_quizzes")
-}
-
-// Cerita interaktif pre-generated per (language, level, goal) — kunjungan kedua+ instan, tanpa AI.
-model CachedStory {
-  id          Int       @id @default(autoincrement())
-  language    String    @db.VarChar(50)
-  level       String    @db.VarChar(10)
-  goal        String    @db.VarChar(100)
-  contentJson String    @map("content_json")
-  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
-
-  @@unique([language, level, goal])
-  @@map("cached_stories")
-}
-
-// Kalimat pronunciation per (language, level) — dibuat sekali, kunjungan berikutnya instan.
-model CachedPronunciation {
-  id          Int       @id @default(autoincrement())
-  language    String    @db.VarChar(50)
-  level       String    @db.VarChar(10)
-  contentJson String    @map("content_json")
-  createdAt   DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
-
-  @@unique([language, level])
-  @@map("cached_pronunciations")
-}
-
-model FailedContentUnit {
-  id           Int      @id @default(autoincrement())
-  language     String   @db.VarChar(50)
-  level        String   @db.VarChar(10)
-  goal         String   @db.VarChar(100)
-  part         Int
-  modifier     String   @default("normal") @db.VarChar(50)
-  failures     Int      @default(1)
-  lastFailedAt DateTime @default(now())
-
-  @@unique([language, level, goal, part, modifier])
-  @@map("failed_content_units")
-}
-
-model Badge {
-  id               Int    @id @default(autoincrement())
-  name             String @unique @db.VarChar(255)
-  description      String
-  iconName         String @map("icon_name") @db.VarChar(255)
-  requirementType  String @map("requirement_type") @db.VarChar(50)
-  requirementValue Int    @map("requirement_value")
-
-  userBadges UserBadge[]
-
-  @@map("badges")
-}
-
-model UserBadge {
-  email    String    @db.VarChar(255)
-  badgeId  Int       @map("badge_id")
-  earnedAt DateTime? @map("earned_at") @default(now()) @db.Timestamptz(6)
-
-  user  User  @relation(fields: [email], references: [email], onDelete: Cascade, onUpdate: NoAction)
-  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([email, badgeId])
-  @@map("user_badges")
-}
-
-model Follower {
-  followerEmail String    @map("follower_email") @db.VarChar(255)
-  followedEmail String    @map("followed_email") @db.VarChar(255)
-  createdAt     DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  follower User @relation("UserFollowers", fields: [followerEmail], references: [email], onDelete: Cascade, onUpdate: NoAction)
-  followed User @relation("UserFollowing", fields: [followedEmail], references: [email], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([followerEmail, followedEmail])
-  @@map("followers")
-}
-
-model QuizBattle {
-  id              Int       @id @default(autoincrement())
-  challengerEmail String    @map("challenger_email") @db.VarChar(255)
-  challengedEmail String    @map("challenged_email") @db.VarChar(255)
-  language        String    @db.VarChar(50)
-  goal            String    @db.VarChar(255)
-  challengerScore Int?      @default(0) @map("challenger_score")
-  challengedScore Int?      @map("challenged_score")
-  status          String?   @default("pending") @db.VarChar(50)
-  createdAt       DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  challenger User @relation("QuizBattleChallenger", fields: [challengerEmail], references: [email], onDelete: Cascade, onUpdate: NoAction)
-  challenged User @relation("QuizBattleChallenged", fields: [challengedEmail], references: [email], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([challengerEmail])
-  @@index([challengedEmail])
-  @@map("quiz_battles")
-}
-
 model EmailVerificationToken {
-  id        Int       @id @default(autoincrement())
-  email     String    @db.VarChar(255)
-  token     String    @unique @db.VarChar(255)
-  expiresAt DateTime @map("expires_at") @db.Timestamp(6)
-  createdAt DateTime? @map("created_at") @default(now()) @db.Timestamp(6)
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
 
   @@map("email_verification_tokens")
 }
 
-model UserProgressLog {
-  id           Int       @id @default(autoincrement())
-  email        String    @db.VarChar(255)
-  language     String    @db.VarChar(50)
-  activityType String    @map("activity_type") @db.VarChar(50)
-  topic        String    @db.VarChar(255)
-  scoreGained  Int       @map("score_gained")
-  passed       Boolean
-  baseLevel    String    @map("base_level") @db.VarChar(10)
-  topicIdx     Int       @map("topic_idx")
-  createdAt    DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
+model Session {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language  String
+  level     String    @default("A1")
+  scenario  String
+  createdAt DateTime  @default(now())
+  messages  Message[]
 
-  user User @relation(fields: [email], references: [email], onDelete: Cascade, onUpdate: NoAction)
-
-  @@index([email, language])
-  @@map("user_progress_logs")
+  @@map("chat_sessions")
 }
 
-model Language {
-  id           String @id @db.VarChar(50)
-  name         String @db.VarChar(255)
-  nativeName   String @map("native_name") @db.VarChar(255)
-  flag         String @db.VarChar(20)
-  description  String
-  themeClass   String @map("theme_class") @db.VarChar(255)
-  buttonClass  String @map("button_class") @db.VarChar(255)
-  category     String @db.VarChar(100)
-  ttsLangCode  String @map("tts_lang_code") @db.VarChar(20)
-  edgeTtsVoice String @map("edge_tts_voice") @db.VarChar(50)
+model Message {
+  id           String    @id @default(uuid())
+  sessionId    String
+  session      Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  role         String    // 'user' | 'ai'
+  content      String?
+  analysisJson Json?     @map("analysis_json")
+  createdAt    DateTime  @default(now())
 
-  languageProgress UserLanguageProgress[]
-
-  @@map("languages")
+  @@map("chat_messages")
 }
 
-model Level {
-  id               String @id @db.VarChar(10)
-  title            String @db.VarChar(100)
-  description      String
-  baseRewardPoints Int    @map("base_reward_points")
-  orderIndex       Int    @map("order_index")
+model Flashcard {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frontText       String   @map("front_text")
+  backText        String   @map("back_text")
+  language        String   @default("English")
+  createdAt       DateTime @default(now())
 
-  topics           Topic[]
-  languageProgress UserLanguageProgress[]
-
-  @@map("levels")
-}
-
-model Topic {
-  id         Int    @id @default(autoincrement())
-  levelId    String @map("level_id") @db.VarChar(10)
-  title      String @db.VarChar(255)
-  orderIndex Int    @map("order_index")
-
-  level Level @relation(fields: [levelId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
-  @@map("topics")
-}
-
-model UserLanguageProgress {
-  email             String    @db.VarChar(255)
-  languageId        String    @map("language_id") @db.VarChar(50)
-  baseLevel         String    @map("base_level") @db.VarChar(10)
-  topicIdx          Int       @default(0) @map("topic_idx")
-  updatedAt         DateTime? @map("updated_at") @default(now()) @db.Timestamptz(6)
-  examCooldownUntil DateTime? @map("exam_cooldown_until") @db.Timestamptz(6)
-
-  user     User     @relation(fields: [email], references: [email], onDelete: Cascade, onUpdate: NoAction)
-  language Language @relation(fields: [languageId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  level    Level    @relation(fields: [baseLevel], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@id([email, languageId])
-  @@map("user_language_progress")
-}
-
-model AppConfig {
-  key         String  @id @db.VarChar(255)
-  value       String  @db.VarChar(255)
-  description String?
-
-  @@map("app_config")
-}
-
-model ShopItem {
-  id          Int     @id @default(autoincrement())
-  name        String  @db.VarChar(255)
-  description String?
-  cost        Int
-  effectType  String  @map("effect_type") @db.VarChar(255)
-  iconName    String? @map("icon_name") @db.VarChar(255)
-
-  @@index([effectType])
-  @@map("shop_items")
-}
-
-model MissionConfig {
-  id                 Int    @id @default(autoincrement())
-  name               String @db.VarChar(255)
-  lessonTarget       Int?   @default(1) @map("lesson_target")
-  quizTarget         Int?   @default(1) @map("quiz_target")
-  weaknessTarget     Int?   @default(3) @map("weakness_target")
-  flashcardTargetMin Int?   @default(5) @map("flashcard_target_min")
-  flashcardTargetMax Int?   @default(15) @map("flashcard_target_max")
-
-  @@map("mission_config")
-}
-
-model UserInventory {
-  id         Int       @id @default(autoincrement())
-  email      String
-  itemType   String    @map("item_type")
-  itemValue  String    @map("item_value")
-  acquiredAt DateTime? @map("acquired_at") @default(now()) @db.Timestamptz(6)
-
-  user User @relation(fields: [email], references: [email], onDelete: Cascade, onUpdate: NoAction)
-
-  @@unique([email, itemType, itemValue])
-  @@index([email])
-  @@map("user_inventory")
-}
-
-model UserDailyMission {
-  email                      String    @db.VarChar(255)
-  date                       DateTime  @db.Date
-  lessonsCompleted           Int?      @default(0) @map("lessons_completed")
-  quizzesCompleted           Int?      @default(0) @map("quizzes_completed")
-  weaknessPracticesCompleted Int?      @default(0) @map("weakness_practices_completed")
-  flashcardsReviewed         Int?      @default(0) @map("flashcards_reviewed")
-  isCompleted                Boolean?  @default(false) @map("is_completed")
-  rewardClaimed              Boolean?  @default(false) @map("reward_claimed")
-  correctAnswersToday        Int?      @default(0) @map("correct_answers_today")
-  pvpWinsToday               Int?      @default(0) @map("pvp_wins_today")
-  tier1Claimed               Boolean?  @default(false) @map("tier1_claimed")
-  tier2Claimed               Boolean?  @default(false) @map("tier2_claimed")
-  tier3Claimed               Boolean?  @default(false) @map("tier3_claimed")
-
-  user User @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction)
-
-  @@id([email, date])
-  @@map("user_daily_missions")
-}
-
-model LeagueGroup {
-  id            Int      @id @default(autoincrement())
-  division      String   @db.VarChar(50)
-  weekStartDate DateTime @map("week_start_date") @db.Date
-  memberCount   Int?     @default(0) @map("member_count")
-
-  members UserLeagueMember[]
-
-  @@index([weekStartDate, division])
-  @@map("league_groups")
-}
-
-model UserLeagueMember {
-  email       String @db.VarChar(255)
-  groupId     Int    @map("group_id")
-  leagueScore Int?   @default(0) @map("league_score")
-
-  user  User        @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction)
-  group LeagueGroup @relation(fields: [groupId], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  @@id([email, groupId])
-  @@map("user_league_members")
-}
-
-model UserPet {
-  id        Int       @id @default(autoincrement())
-  email     String    @db.VarChar(255)
-  petType   String    @map("pet_type") @db.VarChar(50)
-  stage     Int?      @default(1)
-  exp       Int?      @default(0)
-  isActive  Boolean?  @default(false) @map("is_active")
-  createdAt DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  user User @relation(fields: [email], references: [email], onDelete: NoAction, onUpdate: NoAction)
-
-  @@index([email])
-  @@map("user_pets")
-}
-
-model SocialFeed {
-  id           Int       @id @default(autoincrement())
-  email        String
-  activityType String    @map("activity_type")
-  content      String
-  likesCount   Int?      @default(0) @map("likes_count")
-  createdAt    DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  user  User              @relation("SocialFeedAuthor", fields: [email], references: [email], onDelete: Cascade, onUpdate: NoAction)
-  likes SocialFeedLike[]
-
-  @@map("social_feed")
-}
-
-model SocialFeedLike {
-  feedId     Int       @map("feed_id")
-  likerEmail String    @map("liker_email")
-  createdAt  DateTime? @map("created_at") @default(now()) @db.Timestamptz(6)
-
-  feed  SocialFeed @relation(fields: [feedId], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  liker User       @relation("SocialFeedLiker", fields: [likerEmail], references: [email], onDelete: Cascade, onUpdate: NoAction)
-
-  @@id([feedId, likerEmail])
-  @@map("social_feed_likes")
-}
-
-model LoginAttempt {
-  id        Int      @id @default(autoincrement())
-  email     String
-  ip        String
-  success   Boolean  @default(false)
-  createdAt DateTime @default(now())
-
-  @@index([email, ip, createdAt])
-  @@map("login_attempts")
+  @@map("flashcards")
 }

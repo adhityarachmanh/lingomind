@@ -1,62 +1,35 @@
 "use client";
 
-import Image from "next/image";
-import { redirectIfSessionExpired } from "./sessionGuard";
-
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getOrCreateChatSessionAction } from "@/lib/actions/chat";
+import { sendPolyglotMessageAction, saveFlashcardAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
-import { splitKoreksi } from "@/lib/chat";
 
-const PRESETS = [
-  { key: "Cafe", title: "Kasir Kedai Kopi", desc: "Latihan memesan minuman secara verbal." },
-  { key: "Hotel", title: "Resepsionis Hotel", desc: "Latihan check-in dan tanya fasilitas hotel." },
-  { key: "Airport", title: "Imigrasi Bandara", desc: "Latihan menjawab pertanyaan petugas imigrasi." },
-  { key: "Restaurant", title: "Pelayan Restoran", desc: "Latihan verbal memesan menu utama." },
-  { key: "Office", title: "Meeting Kantor", desc: "Latihan presentasi singkat dan diskusi kerja." },
-  { key: "Shopping", title: "Pusat Belanja", desc: "Latihan tanya harga, ukuran, dan negosiasi." },
-  { key: "Hospital", title: "Rumah Sakit", desc: "Latihan menjelaskan gejala dan konsultasi dokter." },
-  { key: "Taxi", title: "Taksi / Ride-Hailing", desc: "Latihan arah tujuan dan percakapan perjalanan." },
+const SCENARIOS = [
+  { id: "Daily Standup", title: "Daily Standup Meeting" },
+  { id: "Restaurant", title: "Restaurant Ordering" },
+  { id: "Hotel", title: "Hotel Check-in" },
+  { id: "Shopping", title: "Shopping" },
+  { id: "Hospital", title: "Hospital Visit" },
+  { id: "Office", title: "Office Meeting" },
+  { id: "Airport", title: "Airport Immigration" },
+  { id: "Small Talk", title: "Small Talk" },
 ];
 
-const STATUS_LABEL: Record<string, string> = {
-  menghubungkan: "Menghubungkan asisten AI...",
-  mendengarkan: "Silakan berbicara... (AI Mendengarkan)",
-  berpikir: "AI sedang berpikir...",
-  berbicara: "AI sedang berbicara...",
-  muted: "Mikrofon Dinonaktifkan (Muted)",
-};
-
-export default function VoiceChatView({ goal, language, ttsLang }: { goal: string; language: string; ttsLang: string }) {
+export default function VoiceChatView({ language, ttsLang }: { language: string; ttsLang: string }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<"picker" | "chat">(goal !== "Bebas" ? "chat" : "picker");
-  const [status, setStatus] = useState<"menghubungkan" | "mendengarkan" | "berpikir" | "berbicara" | "muted">("menghubungkan");
-  const [sessionId, setSessionId] = useState<number | null>(null);
-  const [settingTitle, setSettingTitle] = useState<string | null>(null);
+  const [phase, setPhase] = useState<"picker" | "chat">("picker");
+  const [scenario, setScenario] = useState("");
+  const [status, setStatus] = useState<"menghubungkan" | "mendengarkan" | "berpikir" | "berbicara">("menghubungkan");
   const [userCaption, setUserCaption] = useState<string | null>(null);
   const [aiCaption, setAiCaption] = useState<string | null>(null);
-  const [aiKoreksi, setAiKoreksi] = useState<string | null>(null);
+  const [aiTranslation, setAiTranslation] = useState<string | null>(null);
+  const [aiScore, setAiScore] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [reloadKey, setReloadKey] = useState(0);
-  const [isMuted, setIsMuted] = useState(false);
-  const [customs, setCustoms] = useState<string[]>([]);
-  const [customInput, setCustomInput] = useState("");
-  const statusRef = useRef(status);
-  statusRef.current = status;
-  const sessionIdRef = useRef(sessionId);
-  sessionIdRef.current = sessionId;
+  const isMutedRef = useRef(false);
   const mountedRef = useRef(true);
-  const timersRef = useRef<number[]>([]);
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
-  function schedule(fn: () => void, ms: number) {
-    const id = window.setTimeout(fn, ms);
-    timersRef.current.push(id);
-    return id;
-  }
-
-  const { supported, listening, transcript, error: sttError, timedOut, start: startRec, stop: stopRec, setError: setSttError } = useSpeechRecognition(ttsLang);
+  const { supported, transcript, error: sttError, start: startRec, stop: stopRec } = useSpeechRecognition(ttsLang);
 
   function speak(text: string) {
     if (!("speechSynthesis" in window)) return;
@@ -64,298 +37,82 @@ export default function VoiceChatView({ goal, language, ttsLang }: { goal: strin
     const u = new SpeechSynthesisUtterance(text);
     u.lang = ttsLang;
     u.rate = 1.0;
-    utteranceRef.current = u;
-    u.onend = () => {
-      if (utteranceRef.current !== u) return;
-      if (!mountedRef.current) return;
-      setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-    };
-    u.onerror = () => {
-      if (utteranceRef.current !== u) return;
-      if (!mountedRef.current) return;
-      setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-    };
+    u.onend = () => { if (mountedRef.current) setStatus("mendengarkan"); };
+    u.onerror = () => { if (mountedRef.current) setStatus("mendengarkan"); };
     window.speechSynthesis.speak(u);
-    schedule(() => {
-      if (utteranceRef.current !== u) return;
-      if (!mountedRef.current) return;
-      if (statusRef.current === "berbicara") {
-        setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-      }
-    }, 10000);
   }
 
-  function stopSpeaking() {
-    utteranceRef.current = null;
-    if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-  }
-
-  // Streaming balasan AI token-per-token (persepsi cepat); teks final dipakai untuk TTS.
-  async function streamReply(sid: number, text: string): Promise<string> {
-    const res = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sessionId: sid, message: text }),
-    });
-    if (!res.ok || !res.body) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(typeof data?.error === "string" ? data.error : "Gagal mengirim pesan.");
-    }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let full = "";
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      full += decoder.decode(value, { stream: true });
-      if (mountedRef.current) setAiCaption(full);
-    }
-    full += decoder.decode();
-    return full.trim();
-  }
-
-  const startSession = useCallback(async (setting: string, title: string) => {
+  function startChat(s: string) {
+    setScenario(s);
     setPhase("chat");
-    setStatus("menghubungkan");
-    setError(null);
-    const res = await getOrCreateChatSessionAction(goal, setting);
-    if (!mountedRef.current) return;
-    if ("error" in res) { redirectIfSessionExpired(res.error);
-      setError(`Gagal memuat sesi panggilan: ${res.error}`);
-      setStatus("muted");
-      return;
-    }
-    setSessionId(res.sessionId);
-    setSettingTitle(title);
-    const lastAi = [...res.messages].reverse().find((m) => m.sender === "ai");
-    if (lastAi) {
-      const { main, koreksi } = splitKoreksi(lastAi.content);
-      setAiCaption(main);
-      setAiKoreksi(koreksi);
-      setStatus("berbicara");
-      speak(main);
-    } else {
-      setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-    }
-  }, [goal]);
-
-  const isMutedRef = useRef(isMuted);
-  isMutedRef.current = isMuted;
+    setStatus("mendengarkan");
+  }
 
   useEffect(() => {
-    if (goal !== "Bebas") {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      startSession(goal, goal);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [goal, reloadKey]);
+    if (phase !== "chat" || status !== "mendengarkan") return;
+    startRec();
+    const t = setTimeout(() => stopRec(), 8000);
+    return () => { clearTimeout(t); stopRec(); };
+  }, [phase, status, startRec, stopRec]);
 
-  // transcript dari STT → kirim
   useEffect(() => {
-    if (transcript === null || transcript.trim() === "") return;
-    if (statusRef.current !== "mendengarkan" && statusRef.current !== "berpikir") return;
-    const sid = sessionIdRef.current;
-    if (sid === null) return;
+    if (!transcript?.trim() || status !== "mendengarkan") return;
     const text = transcript.trim();
     setUserCaption(text);
     setStatus("berpikir");
-    stopSpeaking();
-    setSttError(null);
-    streamReply(sid, text)
-      .then((final) => {
+    sendPolyglotMessageAction(scenario, language, text)
+      .then((res) => {
         if (!mountedRef.current) return;
-        if (!final) {
-          setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-          return;
-        }
-        const { main, koreksi } = splitKoreksi(final);
-        setAiCaption(main);
-        setAiKoreksi(koreksi);
+        if ("error" in res) { setError(res.error); setStatus("mendengarkan"); return; }
+        setAiCaption(res.analysis.reply_in_target_language);
+        setAiTranslation(res.analysis.reply_translation_in_indonesian ?? null);
+        setAiScore(`Grammar: ${res.analysis.scores.grammar}/100 · ${res.analysis.scores.fluency}`);
         setStatus("berbicara");
-        speak(main);
+        speak(res.analysis.reply_in_target_language);
       })
-      .catch((e: unknown) => {
-        if (!mountedRef.current) return;
-        setError(`Gagal mengirim pesan suara: ${e instanceof Error ? e.message : "Terjadi kesalahan."}`);
-        setStatus(isMutedRef.current ? "muted" : "mendengarkan");
-      });
+      .catch(() => { if (mountedRef.current) { setError("Gagal."); setStatus("mendengarkan"); } });
   }, [transcript]);
-
-  // loop: saat mendengarkan → mulai STT; timeout → restart
-  useEffect(() => {
-    if (status !== "mendengarkan" || isMuted) return;
-    startRec();
-    const t = window.setTimeout(() => stopRec(), 8000);
-    return () => {
-      window.clearTimeout(t);
-      stopRec();
-    };
-  }, [status, isMuted, startRec, stopRec]);
-
-  useEffect(() => {
-    if (timedOut) {
-      schedule(() => setStatus(isMutedRef.current ? "muted" : "mendengarkan"), 1000);
-    }
-  }, [timedOut]);
 
   useEffect(() => {
     mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-      timersRef.current.forEach((t) => window.clearTimeout(t));
-      timersRef.current = [];
-      stopRec();
-      stopSpeaking();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => { mountedRef.current = false; stopRec(); window.speechSynthesis?.cancel(); };
   }, []);
-
-  function toggleMute() {
-    const next = !isMuted;
-    setIsMuted(next);
-    if (next) {
-      stopRec();
-      stopSpeaking();
-      setStatus("muted");
-    } else {
-      setStatus("mendengarkan");
-    }
-  }
-
-  function hangUp() {
-    timersRef.current.forEach((t) => window.clearTimeout(t));
-    timersRef.current = [];
-    stopRec();
-    stopSpeaking();
-    if (goal !== "Bebas") {
-      router.push("/roadmap");
-    } else {
-      setSessionId(null);
-      setSettingTitle(null);
-      setUserCaption(null);
-      setAiCaption(null);
-      setAiKoreksi(null);
-      setPhase("picker");
-      setStatus("menghubungkan");
-    }
-  }
 
   if (phase === "picker") {
     return (
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8">
-        <span className="inline-block px-2.5 py-1 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400 text-[11px] font-bold mb-3">Gemini Live Voice - {language}</span>
-        <h1 className="text-2xl font-extrabold mb-6">Pilih Partner Panggilan Suara</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {PRESETS.map((p) => (
-            <button key={p.key} type="button" onClick={() => startSession(p.key, p.title)}
-              className="text-left px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-teal-500/50 transition-all hover:shadow-card-hover">
-              <p className="font-bold text-sm">{p.title}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{p.desc}</p>
+      <div className="max-w-md mx-auto px-4 py-8">
+        <h1 className="text-xl font-extrabold mb-4">Voice Practice · {language}</h1>
+        <div className="grid gap-3">
+          {SCENARIOS.map((s) => (
+            <button key={s.id} type="button" onClick={() => startChat(s.id)}
+              className="text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-teal-500/50 transition-colors">
+              <p className="font-bold text-sm">{s.title}</p>
             </button>
           ))}
         </div>
-        <div className="mt-8">
-          <p className="text-sm font-bold mb-2">Buat Skenario Telepon Kustom</p>
-          <div className="flex gap-2">
-            <input value={customInput} onChange={(e) => setCustomInput(e.target.value)} maxLength={50}
-              placeholder="Contoh: Wawancara Visa, Telpon Customer Service..."
-              className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20" />
-            <button type="button" onClick={() => { const v = customInput.trim(); if (v) { setCustoms((c) => (c.some((x) => x.toLowerCase() === v.toLowerCase()) ? c : [...c, v])); setCustomInput(""); } }}
-              className="px-4 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold">Telepon Now</button>
-          </div>
-          {customs.length > 0 && (
-            <div className="mt-4 space-y-2">
-              {customs.map((c) => (
-                <button key={c} type="button" onClick={() => startSession(c, c)} className="w-full text-left px-4 py-2.5 rounded-xl border border-teal-500/50 text-sm font-semibold">{c}</button>
-              ))}
-            </div>
-          )}
-        </div>
-        {error && <p className="text-xs text-rose-500 mt-4">{error}</p>}
+        {!supported && <p className="text-xs text-rose-500 mt-4">Browser tidak mendukung speech recognition.</p>}
       </div>
     );
   }
 
-  const borderColor =
-    status === "mendengarkan" ? "border-teal-500" :
-    status === "berbicara" ? "border-amber-500" :
-    status === "berpikir" ? "border-indigo-500" : "border-slate-400";
-
   return (
-    <div className="max-w-md mx-auto px-4 sm:px-6 py-8 flex flex-col items-center gap-6">
-      {(error || sttError) && (
-        <div className="w-full flex items-start justify-between gap-2 px-4 py-3 rounded-xl bg-rose-500/10 border border-rose-500/40 text-rose-600 dark:text-rose-400 text-xs">
-          <span>{error ?? sttError}</span>
-          <button type="button" onClick={() => { setError(null); setSttError(null); }} className="font-bold">×</button>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between w-full">
-        <div>
-          <p className="text-lg font-extrabold">Live Voice</p>
-          <p className="text-xs text-slate-400">{settingTitle} · {language}</p>
-        </div>
-        <span className="text-xs font-bold text-slate-400">{status === "muted" ? "Muted" : status === "mendengarkan" ? "Mendengarkan" : status === "berbicara" ? "Berbicara" : "Memproses"}</span>
+    <div className="max-w-md mx-auto px-4 py-6 flex flex-col items-center gap-6">
+      {(error || sttError) && <p className="text-xs text-rose-500">{error ?? sttError}</p>}
+      <div className="text-center">
+        <p className="text-lg font-extrabold">{scenario}</p>
+        <p className="text-xs text-slate-400">{language}</p>
       </div>
-
-      <div className="relative">
-        <div className={`w-28 h-28 rounded-full border-4 ${borderColor} ${status === "mendengarkan" ? "animate-pulse" : ""} flex items-center justify-center overflow-hidden bg-white dark:bg-slate-900`}>
-          <Image
-            src={status === "berbicara" ? "/avatar_male_talking.gif" : "/avatar_male_idle.png"}
-            alt="Avatar AI"
-            width={112}
-            height={112}
-            unoptimized
-            className="w-full h-full object-cover"
-          />
-        </div>
+      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center
+        ${status === "mendengarkan" ? "border-teal-500 animate-pulse" : status === "berpikir" ? "border-indigo-500" : "border-amber-500"}`}>
+        <span className="text-3xl">{status === "mendengarkan" ? "🎙️" : status === "berpikir" ? "💭" : "🗣️"}</span>
       </div>
-
-      {aiCaption && (
-        <div className="w-full text-center px-4 py-2.5 rounded-xl bg-teal-500/10 border border-teal-500/40 text-teal-700 dark:text-teal-400 text-sm">
-          {aiCaption}
-        </div>
-      )}
-
-      <div className="w-full px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-center text-xs font-bold text-slate-500 dark:text-slate-300">
-        {STATUS_LABEL[status]}
-      </div>
-
-      <div className="w-full space-y-3 text-xs">
-        {userCaption && (
-          <div className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-            <p className="font-bold text-slate-400 mb-1">Anda berkata</p>
-            <p className="text-slate-600 dark:text-slate-300">&quot;{userCaption}&quot;</p>
-          </div>
-        )}
-        {aiKoreksi && (
-          <div className="px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/40 text-amber-700 dark:text-amber-400">
-            <p className="font-bold mb-0.5">💡 Koreksi AI</p>
-            <p className="whitespace-pre-wrap">{aiKoreksi}</p>
-          </div>
-        )}
-        {!userCaption && !aiKoreksi && (
-          <p className="text-center text-slate-400">Transkrip ucapan akan muncul di sini...</p>
-        )}
-      </div>
-
-      <div className="flex items-center gap-4">
-        <button
-          type="button"
-          onClick={toggleMute}
-          disabled={!supported}
-          className="w-14 h-14 rounded-full border border-slate-300 dark:border-slate-700 text-xl flex items-center justify-center disabled:opacity-40"
-        >
-          {isMuted ? "🔇" : "🎙️"}
-        </button>
-        <button
-          type="button"
-          onClick={hangUp}
-          className="w-16 h-16 rounded-full bg-rose-500 hover:bg-rose-600 text-white text-2xl flex items-center justify-center shadow-card"
-        >
-          📞
-        </button>
-      </div>
+      <p className="text-xs font-bold text-slate-500">{status}</p>
+      {userCaption && <p className="text-sm text-slate-500">"{userCaption}"</p>}
+      {aiCaption && <p className="text-sm font-semibold text-slate-800">{aiCaption}</p>}
+      {aiScore && <p className="text-[11px] text-amber-600">{aiScore}</p>}
+      {aiTranslation && <p className="text-[11px] text-slate-400 italic">{aiTranslation}</p>}
+      <button onClick={() => { setPhase("picker"); window.speechSynthesis?.cancel(); }}
+        className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold">Hang Up</button>
     </div>
   );
 }
