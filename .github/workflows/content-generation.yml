@@ -1,12 +1,17 @@
 name: Content Generation (cicil otomatis)
 
-# Mengisi konten semua bahasa secara bertahap: tiap jam generate maks 6 unit konten
-# (lesson/quiz) + 6 varian pool kelemahan. Idempotent & resume otomatis — jalankan ulang
-# kapan pun via tombol "Run workflow" (workflow_dispatch).
+# Fokus English: tiap jam generate maks 12 unit konten (lesson/quiz) + 12 varian pool kelemahan
+# untuk bahasa terpilih (default English). Idempotent & resume otomatis — run manual kapan pun
+# via "Run workflow" (bisa pilih bahasa lain lewat input).
 on:
   schedule:
     - cron: "0 * * * *"
   workflow_dispatch:
+    inputs:
+      language:
+        description: "Bahasa yang di-generate (default English)"
+        required: false
+        default: "English"
 
 concurrency:
   group: content-generation
@@ -29,7 +34,7 @@ jobs:
       - run: npm ci
       - name: Terapkan migration yang belum jalan
         run: npx prisma migrate deploy
-      - name: Generate konten (maks 6 unit)
-        run: npm run content:generate -- --all --max-units 6
-      - name: Isi pool latihan kelemahan (maks 6 varian)
-        run: npm run content:weakness -- --all --max-units 6
+      - name: Generate konten (maks 12 unit)
+        run: npm run content:generate -- ${{ inputs.language || 'English' }} --max-units 12
+      - name: Isi pool latihan kelemahan (maks 12 varian)
+        run: npm run content:weakness -- ${{ inputs.language || 'English' }} --max-units 12
