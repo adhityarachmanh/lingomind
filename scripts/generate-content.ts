@@ -265,8 +265,13 @@ async function generateLanguage(language: string, budget: number): Promise<numbe
     const quizTotalToFill = quizTargets.reduce((s, t) => s + (CONTENT_QUIZ_MAX_VARIANTS - t.count), 0);
     console.log(col(`\n=== Fill Varian Quiz → ${CONTENT_QUIZ_MAX_VARIANTS} ===`, C.bold));
     console.log(`Unit quiz perlu diisi: ${quizTargets.length} (total ${quizTotalToFill} varian)`);
+    // --max-units juga membatasi fase fill varian (sisa budget dari fase unit)
+    const quizBudget = Math.max(0, budget - doneInRun);
+    if (quizTargets.length > 0 && quizBudget === 0) {
+      console.log(col("⏹ --max-units habis — fase fill varian di-skip, lanjut di run berikutnya.", C.yellow));
+    }
 
-    if (quizTargets.length > 0) {
+    if (quizTargets.length > 0 && quizBudget > 0) {
       const quizBar = new cliProgress.SingleBar({
         format: "{bar} {percentage}% | {value}/{total} | ETA {eta_formatted} | {active}",
         barCompleteChar: "█", barIncompleteChar: "░",
@@ -277,7 +282,7 @@ async function generateLanguage(language: string, budget: number): Promise<numbe
       async function processQuizUnit(t: { levelId: string; levelTitle: string; goal: string; count: number }): Promise<void> {
         const label = `Quiz: ${t.goal}`;
         let currentCount = t.count;
-        while (currentCount < CONTENT_QUIZ_MAX_VARIANTS) {
+        while (currentCount < CONTENT_QUIZ_MAX_VARIANTS && quizGenerated < quizBudget) {
           const unitStart = Date.now();
           quizBar.update(quizGenerated, { active: `${label} (${currentCount + 1}/${CONTENT_QUIZ_MAX_VARIANTS})` });
           try {
@@ -308,6 +313,9 @@ async function generateLanguage(language: string, budget: number): Promise<numbe
       quizBar.stop();
       clearLine();
       console.log(col(`Quiz fill selesai dalam ${fmtDuration(Date.now() - quizFillStarted)} — +${quizGenerated} varian`, C.green));
+      if (quizBudget !== Infinity && quizGenerated >= quizBudget) {
+        console.log(col(`⏹ --max-units tercapai di fase fill varian (${quizGenerated} varian) — lanjut di run berikutnya (resume idempotent).`, C.yellow));
+      }
     } else {
       console.log(col("Semua varian quiz sudah penuh.", C.dim));
     }
