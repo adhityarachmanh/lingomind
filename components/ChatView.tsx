@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LanguageBadge } from "./chat-lists";
 import ChatSidebar from "./ChatSidebar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface Message {
   id: string;
@@ -143,7 +144,8 @@ export default function ChatView() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-3.5rem)]">
+    <TooltipProvider delayDuration={200}>
+      <div className="flex h-[calc(100dvh-3.5rem)]">
       <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
         <ChatSidebar activeSessionId={sessionId} />
       </div>
@@ -296,6 +298,7 @@ export default function ChatView() {
           </Button>
         </div>
       </div>
-    </div>
+      </div>
+    </TooltipProvider>
   );
 }
