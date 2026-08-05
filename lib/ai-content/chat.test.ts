@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPolyglotOpeningPrompt, buildPolyglotStreamPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
+import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildPolyglotOpeningPrompt, buildPolyglotStreamPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
 
 describe("buildPolyglotSystemPrompt", () => {
   it("mencantumkan suggested_replies di skema JSON", () => {
@@ -103,5 +103,30 @@ describe("buildPolyglotStreamPrompt", () => {
   it("tidak menyertakan pemisah romanisasi untuk bahasa Latin", () => {
     const { instructions } = buildPolyglotStreamPrompt("Hello", "English", "A1", "Restaurant", []);
     expect(instructions).not.toContain("||ROM||");
+  });
+});
+
+describe("buildGeneralStreamPrompt", () => {
+  it("menghasilkan instruksi role umum dengan markdown, LaTeX, dan Bahasa Indonesia", () => {
+    const history = [{ role: "assistant" as const, content: "Silakan tanya!" }];
+    const { instructions, messages } = buildGeneralStreamPrompt("Guru Matematika", "Guru Matematika — Diskusi rumus", "Halo", history);
+    expect(instructions).toContain("Guru Matematika");
+    expect(instructions).toContain("Markdown");
+    expect(instructions).toContain("LaTeX");
+    expect(instructions).toContain("Bahasa Indonesia");
+    expect(instructions).not.toContain("||ROM||");
+    expect(messages).toEqual([
+      { role: "assistant", content: "Silakan tanya!" },
+      { role: "user", content: "Halo" },
+    ]);
+  });
+});
+
+describe("buildGeneralOpeningPrompt", () => {
+  it("menghasilkan pembuka umum dalam Bahasa Indonesia", () => {
+    const { instructions, messages } = buildGeneralOpeningPrompt("Guru Matematika", "Guru Matematika — Diskusi rumus");
+    expect(instructions).toContain("Guru Matematika");
+    expect(instructions).toContain("Bahasa Indonesia");
+    expect(messages).toEqual([{ role: "user", content: "Mulai percakapan!" }]);
   });
 });

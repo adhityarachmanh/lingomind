@@ -125,3 +125,39 @@ export function buildPolyglotStreamPrompt(
     messages: [...history, { role: "user", content: userMessage }],
   };
 }
+
+export function buildGeneralStreamPrompt(
+  role: string,
+  scenario: string,
+  userMessage: string,
+  history: { role: "user" | "assistant"; content: string }[]
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  return {
+    instructions: [
+      `Anda adalah ${role}. Konteks: ${scenario}.`,
+      "Jawab dalam Bahasa Indonesia.",
+      "Gunakan Markdown untuk keterbacaan: judul (##), daftar (-), teks tebal, blok kode bila perlu.",
+      "Tulis rumus matematika dengan LaTeX: $...$ untuk inline, $$...$$ untuk blok.",
+      "Jelaskan langkah penyelesaian secara bertahap dan jelas.",
+      "Akhiri dengan satu pertanyaan lanjutan agar percakapan berlanjut.",
+      "JANGAN menambahkan teks di luar jawaban — tanpa JSON, tanpa pembungkus markdown fence.",
+    ].join("\n"),
+    messages: [...history, { role: "user", content: userMessage }],
+  };
+}
+
+export function buildGeneralOpeningPrompt(
+  role: string,
+  scenario: string
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  return {
+    instructions: [
+      `Anda adalah ${role}. Konteks: ${scenario}.`,
+      "Tugas Anda: MULAI percakapan dengan user dalam Bahasa Indonesia.",
+      "Perkenalkan diri singkat sebagai role Anda (1-2 kalimat), tawarkan bantuan, dan akhiri dengan satu pertanyaan.",
+      "Gunakan Markdown sederhana dan rumus LaTeX bila relevan ($...$).",
+      "JANGAN menambahkan teks di luar jawaban — tanpa JSON.",
+    ].join("\n"),
+    messages: [{ role: "user", content: "Mulai percakapan!" }],
+  };
+}
