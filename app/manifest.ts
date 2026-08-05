@@ -5,10 +5,20 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "LingoMind",
     short_name: "LingoMind",
     description: "Belajar bahasa asing dengan AI",
+    id: "/",
+    lang: "id",
     start_url: "/",
+    scope: "/",
     display: "standalone",
-    background_color: "#0f172a",
+    background_color: "#161a20",
     theme_color: "#14b8a6",
-    icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
+    icons: [
+      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+    ],
+    shortcuts: [
+      { name: "Chat", url: "/chat", icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }] },
+    ],
   };
 }
