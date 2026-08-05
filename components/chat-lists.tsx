@@ -5,15 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import type { ScenarioSummary, SessionSummary } from "@/lib/actions/scenario";
+import { getLanguageFlag } from "@/lib/languages";
 
 export function LanguageBadge({ language }: { language: string }) {
-  const labels: Record<string, string> = {
-    English: "🇬🇧", Japanese: "🇯🇵", Korean: "🇰🇷", Mandarin: "🇨🇳",
-    Spanish: "🇪🇸", French: "🇫🇷", German: "🇩🇪", Indonesian: "🇮🇩",
-  };
   return (
     <Badge variant="outline" className="text-[11px] text-muted-foreground">
-      {labels[language] ?? "🌐"} {language}
+      {getLanguageFlag(language)} {language}
     </Badge>
   );
 }

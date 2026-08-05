@@ -260,7 +260,7 @@ export default function ChatView() {
           {messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="flex justify-end">
-                <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
+                <div dir="auto" className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
                   {m.content}
                 </div>
               </div>
@@ -344,7 +344,7 @@ export default function ChatView() {
                   <div className="max-w-[85%] space-y-1.5">
                     <div className="flex items-start gap-2">
                       <SpeakButton text={m.content} lang={ttsLang} rate={1.0} />
-                      <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
+                      <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
                         {m.content}
                       </div>
                     </div>
@@ -362,7 +362,7 @@ export default function ChatView() {
                 <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
               </Avatar>
               <div className="max-w-[85%] space-y-1.5">
-                <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
+                <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
                   {streamingText}
                   {streaming && <span className="animate-pulse">▌</span>}
                 </div>
@@ -396,6 +396,7 @@ export default function ChatView() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
             disabled={streaming || analyzing}
+            dir="auto"
             placeholder={`Ketik dalam bahasa ${session?.language ?? "..."}...`}
             className="flex-1 min-w-0"
           />

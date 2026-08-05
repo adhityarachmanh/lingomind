@@ -90,7 +90,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
               </SelectTrigger>
               <SelectContent>
                 {LANGUAGES.map((l) => (
-                  <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+                  <SelectItem key={l.id} value={l.id}>{l.flag} {l.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
