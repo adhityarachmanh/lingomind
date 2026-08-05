@@ -41,7 +41,9 @@ self.addEventListener("fetch", (event) => {
           caches.open(`shell-${CACHE_VERSION}`).then((cache) => cache.put("/", copy));
           return res;
         })
-        .catch(() => caches.match("/") || caches.match("/chat"))
+        .catch(() =>
+          caches.match("/").then((c) => c || caches.match("/chat"))
+        )
     );
     return;
   }
