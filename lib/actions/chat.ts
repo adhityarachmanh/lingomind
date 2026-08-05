@@ -6,7 +6,7 @@ import { getSession } from "../auth";
 import { db } from "../db";
 import { buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
-import { mapHistoryToAiMessages } from "../chat-helpers";
+import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
 
 export interface PolyglotAnalysis {
@@ -34,7 +34,7 @@ export interface PolyglotAnalysis {
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;
   reply_romanization?: string;
-  suggested_replies?: string[];
+  suggested_replies?: SuggestedReply[];
 }
 
 export interface ChatResult {
@@ -201,7 +201,7 @@ export interface OpenSessionResult {
   messageId: string;
   reply: string;
   translation: string;
-  suggestedReplies: string[];
+  suggestedReplies: SuggestedReply[];
 }
 
 export async function openSessionAction(
@@ -235,7 +235,7 @@ export async function openSessionAction(
   const parsed = parseAiJson<{
     reply_in_target_language?: string;
     reply_translation_in_indonesian?: string;
-    suggested_replies?: string[];
+    suggested_replies?: unknown;
   }>(text);
 
   if (!parsed || !parsed.reply_in_target_language) {
@@ -256,7 +256,7 @@ export async function openSessionAction(
     messageId: aiMsg.id,
     reply: parsed.reply_in_target_language,
     translation: parsed.reply_translation_in_indonesian ?? "",
-    suggestedReplies: Array.isArray(parsed.suggested_replies) ? parsed.suggested_replies.slice(0, 3) : [],
+    suggestedReplies: normalizeSuggestedReplies(parsed.suggested_replies).slice(0, 3),
   };
 }
 

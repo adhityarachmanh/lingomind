@@ -26,7 +26,7 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
     ...(isNonLatin
       ? ['  "reply_romanization": "string (cara baca reply_in_target_language dengan huruf Latin)",']
       : []),
-    '  "suggested_replies": ["string 1", "string 2", "string 3"]',
+      '  "suggested_replies": [ { "text": "string (kalimat saran dalam bahasa target)", "romanization": "string (cara baca text — hanya untuk non-Latin; Latin isi string kosong)", "translation_in_indonesian": "string (arti Indonesia dari text)" }, ... 2-3 objek ]',
     "}",
     "",
     "Aturan:",
@@ -41,7 +41,7 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
         ]
       : []),
     "- vocab_highlight: pilih 1 kata berguna dari konteks percakapan, beri arti dalam Bahasa Indonesia.",
-    "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai lanjutan percakapan — bervariasi (mis. 1 pertanyaan + 1 pernyataan/persetujuan). Selalu isi 2-3; jika benar-benar tidak mungkin, isi array kosong [].",
+    "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai lanjutan percakapan — bervariasi (mis. 1 pertanyaan + 1 pernyataan/persetujuan). Tiap saran berupa objek { text, romanization, translation_in_indonesian }: isi translation_in_indonesian selalu (arti dalam Bahasa Indonesia); romanization hanya untuk bahasa non-Latin, untuk bahasa Latin isi string kosong. Selalu isi 2-3; jika benar-benar tidak mungkin, isi array kosong [].",
     "- Balasan roleplay (reply_in_target_language) harus natural, hidup, dan mendorong percakapan berlanjut — ajukan pertanyaan di akhir.",
     "- Pastikan semua string dalam JSON valid (escape tanda kutip, newline dengan \\n).",
     "- JANGAN tambahkan teks apa pun di luar JSON.",
@@ -80,7 +80,7 @@ export function buildPolyglotOpeningPrompt(
       ...(isNonLatin
         ? ['  "reply_romanization": "string (cara baca reply_in_target_language dengan huruf Latin)",']
         : []),
-      '  "suggested_replies": ["string 1", "string 2", "string 3"]',
+    '  "suggested_replies": [ { "text": "string (kalimat saran dalam bahasa target)", "romanization": "string (cara baca text — hanya untuk non-Latin; Latin isi string kosong)", "translation_in_indonesian": "string (arti Indonesia dari text)" }, ... 2-3 objek ]',
       "}",
       "",
       "Aturan:",
@@ -89,7 +89,7 @@ export function buildPolyglotOpeningPrompt(
       ...(isNonLatin
         ? ["- Romanisasi: isi reply_romanization dengan cara baca reply_in_target_language memakai huruf Latin."]
         : []),
-      "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai jawaban atas pertanyaan pembuka — bervariasi (mis. 1 pertanyaan balasan + 1 pernyataan/persetujuan).",
+      "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai jawaban atas pertanyaan pembuka — bervariasi (mis. 1 pertanyaan balasan + 1 pernyataan/persetujuan). Tiap saran berupa objek { text, romanization, translation_in_indonesian }: isi translation_in_indonesian selalu (arti dalam Bahasa Indonesia); romanization hanya untuk bahasa non-Latin, untuk bahasa Latin isi string kosong.",
       "- Pastikan semua string dalam JSON valid (escape tanda kutip, newline dengan \\n).",
       "- JANGAN tambahkan teks apa pun di luar JSON.",
     ].join("\n"),

@@ -5,6 +5,7 @@ import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, 
 import { useRouter, useSearchParams } from "next/navigation";
 import { analyzeChatMessageAction, saveFlashcardAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
+import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
 import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
@@ -28,6 +29,28 @@ interface Message {
   expanded?: boolean;
 }
 
+function RomanizationLine({ text }: { text: string }) {
+  return (
+    <p className="flex items-start gap-1.5">
+      <span className="mt-px inline-flex items-center shrink-0 rounded bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary">
+        Baca
+      </span>
+      <span dir="auto" className="text-[11px] text-foreground/80">{text}</span>
+    </p>
+  );
+}
+
+function TranslationLine({ text }: { text: string }) {
+  return (
+    <p className="flex items-start gap-1.5">
+      <span className="mt-px inline-flex items-center shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+        Arti
+      </span>
+      <span dir="auto" className="text-[11px] text-muted-foreground italic">{text}</span>
+    </p>
+  );
+}
+
 export default function ChatView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,7 +65,7 @@ export default function ChatView() {
   const [streamingRomanization, setStreamingRomanization] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestedReply[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
 
@@ -79,8 +102,7 @@ export default function ChatView() {
           expanded: false,
         })));
         const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
-        const sugg = (lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies;
-        setSuggestions(Array.isArray(sugg) ? sugg : []);
+        setSuggestions(normalizeSuggestedReplies((lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies));
       } catch (e) {
         if (cancelled) return;
         toast.error(e instanceof Error ? e.message : "Gagal memuat percakapan.");
@@ -92,7 +114,7 @@ export default function ChatView() {
     return () => { cancelled = true; };
   }, [sessionId, router]);
 
-  async function send(textOverride?: string) {
+  async function send(textOverride?: string, chipRomanization?: string, chipTranslation?: string) {
     if (!sessionId || streaming || analyzing) return;
     const text = (textOverride ?? input).trim();
     if (!text) return;
@@ -103,7 +125,7 @@ export default function ChatView() {
     setInput("");
     setSuggestions([]);
     setError(null);
-    setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
+    setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text, romanization: chipRomanization, translation: chipTranslation }]);
 
     async function fetchStream(): Promise<string> {
       const controller = new AbortController();
@@ -179,7 +201,7 @@ export default function ChatView() {
           setError(res.error);
           return;
         }
-        setSuggestions(res.analysis.suggested_replies ?? []);
+        setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
         setMessages((m) => [
           ...m,
           {
@@ -214,7 +236,7 @@ export default function ChatView() {
         setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText, romanization: romanization || undefined }]);
         return;
       }
-      setSuggestions(res.analysis.suggested_replies ?? []);
+      setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
       setMessages((m) => [
         ...m,
         {
@@ -310,10 +332,16 @@ export default function ChatView() {
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-4">
           {messages.map((m) =>
             m.role === "user" ? (
-              <div key={m.id} className="flex justify-end">
+              <div key={m.id} className="flex flex-col items-end gap-1">
                 <div dir="auto" className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
                   {m.content}
                 </div>
+                {m.romanization && (
+                  <div className="max-w-[80%]"><RomanizationLine text={m.romanization} /></div>
+                )}
+                {m.translation && (
+                  <div className="max-w-[80%]"><TranslationLine text={m.translation} /></div>
+                )}
               </div>
             ) : (
               <div key={m.id} className="space-y-3">
@@ -411,22 +439,14 @@ export default function ChatView() {
                         {m.content}
                       </div>
                     </div>
-                    {(m.romanization ?? m.analysis?.reply_romanization) && (
-                      <p className="pl-10 flex items-start gap-1.5">
-                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary">
-                          Baca
-                        </span>
-                        <span dir="auto" className="text-[11px] text-foreground/80">{m.romanization ?? m.analysis?.reply_romanization}</span>
-                      </p>
-                    )}
-                    {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
-                      <p className="pl-10 flex items-start gap-1.5">
-                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
-                          Arti
-                        </span>
-                        <span dir="auto" className="text-[11px] text-muted-foreground italic">{m.translation ?? m.analysis?.reply_translation_in_indonesian}</span>
-                      </p>
-                    )}
+                    <div className="pl-10 space-y-1">
+                      {(m.romanization ?? m.analysis?.reply_romanization) && (
+                        <RomanizationLine text={m.romanization ?? m.analysis?.reply_romanization ?? ""} />
+                      )}
+                      {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
+                        <TranslationLine text={m.translation ?? m.analysis?.reply_translation_in_indonesian ?? ""} />
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -444,14 +464,7 @@ export default function ChatView() {
                 </div>
                 {analyzing && (
                   <div className="pl-10 space-y-1">
-                    {streamingRomanization && (
-                      <p className="flex items-start gap-1.5">
-                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary">
-                          Baca
-                        </span>
-                        <span dir="auto" className="text-[11px] text-foreground/80">{streamingRomanization}</span>
-                      </p>
-                    )}
+                    {streamingRomanization && <RomanizationLine text={streamingRomanization} />}
                     <Skeleton className="h-3 w-44" />
                     <p className="text-[11px] text-muted-foreground">Menerjemahkan & menganalisis...</p>
                   </div>
@@ -467,8 +480,8 @@ export default function ChatView() {
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
             {suggestions.map((s, i) => (
-              <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s)}>
-                {s}
+              <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s.text, s.romanization, s.translation_in_indonesian)}>
+                {s.text}
               </Button>
             ))}
           </div>

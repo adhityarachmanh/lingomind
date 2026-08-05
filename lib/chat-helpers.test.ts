@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapHistoryToAiMessages } from "./chat-helpers";
+import { mapHistoryToAiMessages, normalizeSuggestedReplies } from "./chat-helpers";
 
 describe("mapHistoryToAiMessages", () => {
   it("memetakan pesan ai dengan analysisJson ke reply_in_target_language", () => {
@@ -25,5 +25,31 @@ describe("mapHistoryToAiMessages", () => {
       { role: "user", content: "ok", analysisJson: null },
     ]);
     expect(result).toEqual([{ role: "user", content: "ok" }]);
+  });
+});
+
+describe("normalizeSuggestedReplies", () => {
+  it("menormalisasi objek saran dengan romanisasi dan arti", () => {
+    const result = normalizeSuggestedReplies([
+      { text: "네, 좋아요.", romanization: "ne, joayo.", translation_in_indonesian: "Ya, bagus." },
+    ]);
+    expect(result).toEqual([
+      { text: "네, 좋아요.", romanization: "ne, joayo.", translation_in_indonesian: "Ya, bagus." },
+    ]);
+  });
+
+  it("menangani saran lama berbentuk string", () => {
+    const result = normalizeSuggestedReplies(["Hello", "How are you?"]);
+    expect(result).toEqual([{ text: "Hello" }, { text: "How are you?" }]);
+  });
+
+  it("membuang entri tidak valid dan kosong", () => {
+    const result = normalizeSuggestedReplies([null, 42, { text: "" }, { text: "   " }, { text: "ok" }]);
+    expect(result).toEqual([{ text: "ok" }]);
+  });
+
+  it("mengembalikan array kosong untuk input non-array", () => {
+    expect(normalizeSuggestedReplies(undefined)).toEqual([]);
+    expect(normalizeSuggestedReplies({})).toEqual([]);
   });
 });
