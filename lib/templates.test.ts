@@ -43,3 +43,19 @@ describe("isTemplateUsed", () => {
     expect(isTemplateUsed(used, null, "English")).toBe(true);
   });
 });
+
+describe("type skenario", () => {
+  it("semua template memiliki type yang valid", () => {
+    for (const t of SCENARIO_TEMPLATES) {
+      expect(["language", "general"]).toContain(t.type);
+    }
+  });
+
+  it("menyediakan minimal 7 template umum", () => {
+    const general = SCENARIO_TEMPLATES.filter((t) => t.type === "general");
+    expect(general.length).toBeGreaterThanOrEqual(7);
+    for (const t of general) {
+      expect(t.category).toBe("Umum");
+    }
+  });
+});
