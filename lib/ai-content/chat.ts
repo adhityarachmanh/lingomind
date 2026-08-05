@@ -1,5 +1,6 @@
 // Prompt builder untuk Polyglot Tutor — output structured JSON:
 // scores, detailed_analysis, native_rephrasing, vocab_highlight, reply + translation.
+import { NON_LATIN_LANGUAGES } from "../languages";
 export function buildPolyglotSystemPrompt(language: string, level: string, scenario: string): string {
   return [
     `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
@@ -88,6 +89,7 @@ export function buildPolyglotStreamPrompt(
   scenario: string,
   history: { role: "user" | "assistant"; content: string }[]
 ): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  const isNonLatin = NON_LATIN_LANGUAGES.has(language);
   return {
     instructions: [
       `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
@@ -97,6 +99,12 @@ export function buildPolyglotStreamPrompt(
       "",
       "Aturan:",
       `- Balas TANPA JSON, tanpa markdown, tanpa label — hanya teks polos dalam bahasa ${language}.`,
+      ...(isNonLatin
+        ? [
+            "- Setelah balasan, tambahkan baris baru, lalu pemisah persis ||ROM||, lalu cara baca (romanisasi) SELURUH balasan tersebut dengan huruf Latin. Contoh: '안녕하세요!\\n||ROM||\\nannyeonghaseyo!'",
+            "- JANGAN sertakan pemisah atau romanisasi untuk teks lain selain balasan.",
+          ]
+        : []),
       "- JANGAN tambahkan teks apa pun di luar balasan.",
     ].join("\n"),
     messages: [...history, { role: "user", content: userMessage }],

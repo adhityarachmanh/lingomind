@@ -38,6 +38,15 @@ export const TTS_LANG_MAP: Record<string, string> = {
   Turkish: "tr-TR",
 };
 
+export const NON_LATIN_LANGUAGES = new Set([
+  "Japanese",
+  "Korean",
+  "Mandarin",
+  "Arabic",
+  "Russian",
+  "Hindi",
+]);
+
 export function getLanguageFlag(language: string): string {
   return LANGUAGES.find((l) => l.id === language)?.flag ?? "🌐";
 }

@@ -33,6 +33,7 @@ export interface PolyglotAnalysis {
   };
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;
+  reply_romanization?: string;
   suggested_replies?: string[];
 }
 
@@ -221,7 +222,8 @@ export interface AnalyzeResult {
 export async function analyzeChatMessageAction(
   sessionId: string,
   userMessage: string,
-  streamedReply: string
+  streamedReply: string,
+  streamedRomanization?: string
 ): Promise<AnalyzeResult | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -261,6 +263,10 @@ export async function analyzeChatMessageAction(
   const analysis = parseAiJson<PolyglotAnalysis>(text);
   if (!analysis || !analysis.reply_in_target_language) {
     return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
+  }
+
+  if (streamedRomanization && !analysis.reply_romanization) {
+    analysis.reply_romanization = streamedRomanization;
   }
 
   const aiMsg = await db.message.create({

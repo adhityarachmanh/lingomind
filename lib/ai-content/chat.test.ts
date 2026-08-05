@@ -67,4 +67,15 @@ describe("buildPolyglotStreamPrompt", () => {
       { role: "user", content: "Hello" },
     ]);
   });
+
+  it("menyertakan pemisah romanisasi ||ROM|| untuk bahasa non-Latin", () => {
+    const { instructions } = buildPolyglotStreamPrompt("안녕하세요", "Korean", "A1", "Restaurant", []);
+    expect(instructions).toContain("||ROM||");
+    expect(instructions).toContain("romanisasi");
+  });
+
+  it("tidak menyertakan pemisah romanisasi untuk bahasa Latin", () => {
+    const { instructions } = buildPolyglotStreamPrompt("Hello", "English", "A1", "Restaurant", []);
+    expect(instructions).not.toContain("||ROM||");
+  });
 });

@@ -23,6 +23,7 @@ interface Message {
   role: "user" | "ai";
   content: string;
   analysis?: PolyglotAnalysis;
+  romanization?: string;
   translation?: string;
   expanded?: boolean;
 }
@@ -38,6 +39,7 @@ export default function ChatView() {
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+  const [streamingRomanization, setStreamingRomanization] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
@@ -72,6 +74,7 @@ export default function ChatView() {
           role: m.role,
           content: m.content,
           analysis: (m.analysisJson as PolyglotAnalysis | null) ?? undefined,
+          romanization: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_romanization ?? undefined) : undefined,
           translation: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_translation_in_indonesian ?? undefined) : undefined,
           expanded: false,
         })));
@@ -155,14 +158,27 @@ export default function ChatView() {
       return;
     }
 
+    const parts = acc.split("||ROM||");
+    const replyText = (parts[0] ?? "").trim();
+    const romanization = (parts[1] ?? "").trim();
+    setStreamingRomanization(romanization);
+
+    if (!replyText) {
+      toast.error("Balasan kosong.");
+      setAnalyzing(false);
+      setStreamingText("");
+      abortRef.current = null;
+      return;
+    }
+
     if (!mountedRef.current) return;
     setAnalyzing(true);
     try {
-      const res = await analyzeChatMessageAction(sessionId, text, acc);
+      const res = await analyzeChatMessageAction(sessionId, text, replyText, romanization || undefined);
       if (!mountedRef.current) return;
       if ("error" in res) {
         toast.error(res.error);
-        setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
+        setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText, romanization: romanization || undefined }]);
         return;
       }
       setSuggestions(res.analysis.suggested_replies ?? []);
@@ -171,8 +187,9 @@ export default function ChatView() {
         {
           id: res.messageId,
           role: "ai",
-          content: acc,
+          content: replyText,
           analysis: res.analysis,
+          romanization: res.analysis.reply_romanization ?? (romanization || undefined),
           translation: res.analysis.reply_translation_in_indonesian,
           expanded: false,
         },
@@ -180,10 +197,11 @@ export default function ChatView() {
     } catch (e) {
       if (!mountedRef.current) return;
       toast.error(e instanceof Error ? e.message : "Gagal menganalisis.");
-      setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
+      setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText, romanization: romanization || undefined }]);
     } finally {
       setAnalyzing(false);
       setStreamingText("");
+      setStreamingRomanization("");
       abortRef.current = null;
     }
   }
@@ -360,6 +378,9 @@ export default function ChatView() {
                         {m.content}
                       </div>
                     </div>
+                    {(m.romanization ?? m.analysis?.reply_romanization) && (
+                      <p className="text-[11px] text-muted-foreground pl-10">{m.romanization ?? m.analysis?.reply_romanization}</p>
+                    )}
                     {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
                       <p className="text-[11px] text-muted-foreground italic pl-10">{m.translation ?? m.analysis?.reply_translation_in_indonesian}</p>
                     )}
@@ -375,11 +396,12 @@ export default function ChatView() {
               </Avatar>
               <div className="max-w-[85%] space-y-1.5">
                 <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
-                  {streamingText}
+                  {streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText}
                   {streaming && <span className="animate-pulse">▌</span>}
                 </div>
                 {analyzing && (
                   <div className="pl-10 space-y-1">
+                    {streamingRomanization && <p className="text-[11px] text-muted-foreground">{streamingRomanization}</p>}
                     <Skeleton className="h-3 w-44" />
                     <p className="text-[11px] text-muted-foreground">Menerjemahkan & menganalisis...</p>
                   </div>
