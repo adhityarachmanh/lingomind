@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Mic, PhoneOff, Sparkles } from "lucide-react";
+import { AudioLines, Loader2, Mic, PhoneOff } from "lucide-react";
 import { sendPolyglotMessageAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { Button } from "@/components/ui/button";
@@ -33,10 +33,10 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
   const { supported, transcript, error: sttError, start: startRec, stop: stopRec } = useSpeechRecognition(ttsLang);
 
   const statusBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-    mendengarkan: { label: "🎙️ Mendengarkan...", variant: "default" },
-    berpikir: { label: "💭 Menganalisis...", variant: "secondary" },
-    berbicara: { label: "🗣️ Berbicara...", variant: "outline" },
-    menghubungkan: { label: "⏳ Menghubungkan...", variant: "secondary" },
+    mendengarkan: { label: "Mendengarkan", variant: "default" },
+    berpikir: { label: "Menganalisis", variant: "secondary" },
+    berbicara: { label: "Berbicara", variant: "outline" },
+    menghubungkan: { label: "Menghubungkan", variant: "secondary" },
   };
 
   function speak(text: string) {
@@ -94,7 +94,7 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
         <p className="text-sm text-muted-foreground mb-4">{language}</p>
         <div className="grid gap-3">
           {SCENARIOS.map((s) => (
-            <Card key={s.id} className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all" onClick={() => startChat(s.id)}>
+            <Card key={s.id} className="cursor-pointer p-4 hover:border-primary/60 hover:shadow-md transition-all" onClick={() => startChat(s.id)}>
               <p className="font-bold text-sm">{s.title}</p>
             </Card>
           ))}
@@ -112,18 +112,18 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
         <p className="text-xs text-muted-foreground">{language}</p>
       </div>
       <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-card shadow-md transition-colors ${
-        status === "mendengarkan" ? "border-primary animate-pulse" : status === "berpikir" ? "border-amber-400" : "border-slate-300"
+        status === "mendengarkan" ? "border-primary animate-pulse" : status === "berpikir" ? "border-ring" : "border-border"
       }`}>
-        {status === "berpikir" ? <Loader2 className="h-8 w-8 text-amber-500 animate-spin" /> : <span className="text-3xl">🎙️</span>}
+        {status === "berpikir" ? <Loader2 className="h-8 w-8 text-primary animate-spin" /> : <Mic className="h-8 w-8 text-primary" />}
       </div>
       <Badge variant={statusBadge[status]?.variant ?? "secondary"}>{statusBadge[status]?.label ?? status}</Badge>
       {userCaption && <p className="text-sm text-muted-foreground text-center">&ldquo;{userCaption}&rdquo;</p>}
       {aiCaption && (
         <Card className="w-full p-4 space-y-2">
           <p className="text-sm font-semibold flex items-start gap-1.5">
-            <Sparkles className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" /> {aiCaption}
+            <AudioLines className="h-4 w-4 text-primary shrink-0 mt-0.5" /> {aiCaption}
           </p>
-          {aiScore && <p className="text-[11px] text-amber-600">{aiScore}</p>}
+          {aiScore && <p className="text-[11px] text-muted-foreground">{aiScore}</p>}
           {aiTranslation && <p className="text-[11px] text-muted-foreground italic">{aiTranslation}</p>}
         </Card>
       )}

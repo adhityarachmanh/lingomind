@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Loader2, PencilLine, Send, Sparkles } from "lucide-react";
+import { Bookmark, Bot, FileCheck2, Loader2, PencilLine, Send } from "lucide-react";
 import { sendPolyglotMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
@@ -199,56 +199,56 @@ export default function ChatView() {
             ) : (
               <div key={m.id} className="space-y-3">
                 {m.analysis && (
-                  <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-900/20 overflow-hidden">
-                    <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-900/50 bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5" /> Tutor Feedback
+                  <Card className="border-border bg-card overflow-hidden shadow-none">
+                    <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
                       </span>
-                      <Badge variant="outline" className="text-[11px] text-amber-700 dark:text-amber-300 border-amber-300/60">
-                        Grammar: {m.analysis.scores.grammar}/100 · {m.analysis.scores.fluency}
+                      <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                        Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
                       </Badge>
                     </div>
                     {m.analysis.detailed_analysis.length > 0 ? (
                       <div className="px-4 py-3 space-y-2">
                         {m.analysis.detailed_analysis.map((d, i) => (
-                          <div key={i} className="rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/50 dark:bg-rose-900/20 p-3">
+                          <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
                             <p className="text-sm">
-                              <span className="text-rose-600 dark:text-rose-400 line-through">{d.original_segment}</span>
+                              <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
                               <span className="mx-1.5 text-muted-foreground">→</span>
-                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{d.corrected_segment}</span>
+                              <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              <span className="font-bold text-amber-700 dark:text-amber-400">{d.rule}</span>: {d.explanation_in_indonesian}
+                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                              <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
                             </p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="px-4 py-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✅ Tidak ada kesalahan — bagus!</div>
+                      <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
                     )}
                     {m.analysis.native_rephrasing && (
-                      <div className="px-4 py-3 border-t border-amber-200 dark:border-amber-900/50 space-y-1.5">
-                        <p className="text-xs font-bold text-muted-foreground">Native Rephrasing</p>
-                        <p className="text-xs"><span className="font-bold">Formal:</span> {m.analysis.native_rephrasing.formal}</p>
-                        <p className="text-xs"><span className="font-bold">Casual:</span> {m.analysis.native_rephrasing.casual}</p>
+                      <div className="px-4 py-3 border-t border-border space-y-1.5">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
+                        <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
+                        <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
                       </div>
                     )}
                     {m.analysis.vocab_highlight && (
-                      <div className="px-4 py-3 border-t border-amber-200 dark:border-amber-900/50 flex items-center justify-between gap-2">
+                      <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
                         <div className="min-w-0">
-                          <p className="text-xs font-extrabold text-teal-700 dark:text-teal-400 truncate">{m.analysis.vocab_highlight.word_target}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                          <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
+                          <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
                         </div>
-                        <Button size="sm" variant="secondary" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
+                        <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
                           <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
                         </Button>
                       </div>
                     )}
                   </Card>
                 )}
-                <div className="flex justify-start gap-2">
-                  <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
-                    <AvatarFallback className="text-sm">🤖</AvatarFallback>
+                <div className="flex justify-start gap-2.5">
+                  <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
+                    <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
                   </Avatar>
                   <div className="max-w-[85%] space-y-1.5">
                     <div className="flex items-start gap-2">
@@ -268,7 +268,7 @@ export default function ChatView() {
           {sending && (
             <div className="flex justify-start gap-2">
               <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
-                <AvatarFallback className="text-sm">🤖</AvatarFallback>
+                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
               </Avatar>
               <div className="max-w-[85%] space-y-2">
                 <Skeleton className="h-4 w-48" />
