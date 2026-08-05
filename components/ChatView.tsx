@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LanguageBadge } from "./chat-lists";
+import ChatSidebar from "./ChatSidebar";
 
 interface Message {
   id: string;
@@ -132,7 +133,9 @@ export default function ChatView() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)]">
-      <div className="hidden lg:flex w-80 shrink-0 border-r border-border" />
+      <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
+        <ChatSidebar activeSessionId={sessionId} />
+      </div>
       <div className="flex-1 min-w-0 flex flex-col max-w-3xl mx-auto w-full px-4 py-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 min-w-0">
