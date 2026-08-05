@@ -1,9 +1,32 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Bookmark, Loader2, PencilLine, Send, Sparkles } from "lucide-react";
 import { sendPolyglotMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Card } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 interface Message {
   id: string;
@@ -34,6 +57,23 @@ const SCENARIOS = [
   { id: "Small Talk", title: "Small Talk", desc: "Casual conversation with strangers" },
 ];
 
+function ScenarioGrid({ onPick }: { onPick: (id: string, title: string) => void }) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {SCENARIOS.map((s) => (
+        <Card
+          key={s.id}
+          className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all"
+          onClick={() => onPick(s.id, s.title)}
+        >
+          <p className="font-bold text-sm">{s.title}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 export default function ChatView() {
   const [phase, setPhase] = useState<"picker" | "chat">("picker");
   const [language, setLanguage] = useState("English");
@@ -44,7 +84,7 @@ export default function ChatView() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [switchOpen, setSwitchOpen] = useState(false);
 
   const ttsMap: Record<string, string> = {
     English: "en-US", Japanese: "ja-JP", Korean: "ko-KR", Mandarin: "zh-CN",
@@ -58,6 +98,7 @@ export default function ChatView() {
     setMessages([]);
     setPhase("chat");
     setError(null);
+    setSwitchOpen(false);
   }
 
   async function send() {
@@ -66,11 +107,10 @@ export default function ChatView() {
     setInput("");
     setSending(true);
     setError(null);
-    
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
     try {
       const res = await sendPolyglotMessageAction(scenarioId, language, text);
-    if ("error" in res) { setError(res.error ?? null); return; }
+      if ("error" in res) { setError(res.error ?? null); return; }
       setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.analysis.reply_in_target_language, analysis: res.analysis }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
@@ -87,130 +127,175 @@ export default function ChatView() {
 
   if (phase === "picker") {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <h1 className="text-2xl font-extrabold mb-2">Polyglot Tutor</h1>
-        <p className="text-sm text-slate-500 mb-6">AI Language Practice with Deep Feedback</p>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Target Language</label>
-        <select value={language} onChange={(e) => setLanguage(e.target.value)}
-          className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm mb-6 focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20">
-          {LANGUAGES.map((l) => <option key={l.id} value={l.id}>{l.label}</option>)}
-        </select>
-        <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Scenario</label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {SCENARIOS.map((s) => (
-            <button key={s.id} type="button" onClick={() => startChat(s.id, s.title)}
-              className="text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-teal-500/50 transition-colors">
-              <p className="font-bold text-sm">{s.title}</p>
-              <p className="text-xs text-slate-400 mt-0.5">{s.desc}</p>
-            </button>
-          ))}
+      <TooltipProvider delayDuration={200}>
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <h1 className="text-2xl font-extrabold mb-2">Polyglot Tutor</h1>
+          <p className="text-sm text-muted-foreground mb-6">AI Language Practice with Deep Feedback</p>
+          <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Language</Label>
+          <Select value={language} onValueChange={setLanguage}>
+            <SelectTrigger className="w-full mb-6">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((l) => (
+                <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Scenario</Label>
+          <ScenarioGrid onPick={startChat} />
         </div>
-      </div>
+      </TooltipProvider>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col h-[calc(100dvh-3.5rem)]">
-      <div className="flex items-center justify-between mb-3">
-        <div>
-          <h1 className="text-base font-extrabold">{scenarioTitle}</h1>
-          <p className="text-xs text-slate-400">{language}</p>
-        </div>
-        <button onClick={() => setPhase("picker")}
-          className="text-xs font-semibold text-slate-400 hover:text-teal-600">Ganti Scenario</button>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
-        {messages.map((m) =>
-          m.role === "user" ? (
-            <div key={m.id} className="flex justify-end">
-              <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-teal-500 text-white text-sm whitespace-pre-wrap">{m.content}</div>
-            </div>
-          ) : (
-            <div key={m.id} className="space-y-3">
-              {/* Tutor Feedback Card */}
-              {m.analysis && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50/50 overflow-hidden">
-                  <div className="px-4 py-3 border-b border-amber-200 bg-amber-100/50 flex items-center justify-between">
-                    <span className="text-xs font-bold text-amber-800">Tutor Feedback</span>
-                    <span className="text-[11px] font-bold text-amber-600">
-                      Grammar: {m.analysis.scores.grammar}/100 · Fluency: {m.analysis.scores.fluency}
-                    </span>
-                  </div>
-                  {m.analysis.detailed_analysis.length > 0 ? (
-                    <div className="px-4 py-3 space-y-2">
-                      {m.analysis.detailed_analysis.map((d, i) => (
-                        <div key={i} className="rounded-xl border border-rose-200 bg-rose-50/50 p-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm">
-                                <span className="text-rose-600 line-through">{d.original_segment}</span>
-                                <span className="mx-1.5 text-slate-400">→</span>
-                                <span className="text-emerald-600 font-semibold">{d.corrected_segment}</span>
-                              </p>
-                              <p className="text-xs text-slate-500 mt-1">
-                                <span className="font-bold text-amber-700">{d.rule}</span>: {d.explanation_in_indonesian}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+    <TooltipProvider delayDuration={200}>
+      <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col h-[calc(100dvh-3.5rem)]">
+        <div className="flex items-center justify-between mb-3">
+          <div className="min-w-0">
+            <h1 className="text-base font-extrabold truncate">{scenarioTitle}</h1>
+            <Badge variant="secondary" className="mt-0.5 text-[11px]">{language}</Badge>
+          </div>
+          <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
+            <DialogTrigger asChild>
+              <Button variant="ghost" size="sm">
+                <PencilLine className="h-3.5 w-3.5 mr-1.5" />
+                Ganti Skenario
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Pilih Skenario Baru</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Language</Label>
+                  <Select value={language} onValueChange={setLanguage}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
                       ))}
-                    </div>
-                  ) : (
-                    <div className="px-4 py-3 text-xs text-emerald-600 font-semibold">✅ Tidak ada kesalahan — bagus!</div>
-                  )}
-                  {m.analysis.native_rephrasing && (
-                    <div className="px-4 py-3 border-t border-amber-200 space-y-1.5">
-                      <p className="text-xs font-bold text-slate-500">Native Rephrasing</p>
-                      <p className="text-xs"><span className="font-bold text-slate-600">Formal:</span> {m.analysis.native_rephrasing.formal}</p>
-                      <p className="text-xs"><span className="font-bold text-slate-600">Casual:</span> {m.analysis.native_rephrasing.casual}</p>
-                    </div>
-                  )}
-                  {m.analysis.vocab_highlight && (
-                    <div className="px-4 py-3 border-t border-amber-200 flex items-center justify-between gap-2">
-                      <div>
-                        <p className="text-xs font-extrabold text-teal-700">{m.analysis.vocab_highlight.word_target}</p>
-                        <p className="text-[10px] text-slate-500">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
-                      </div>
-                      <button onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)}
-                        className="px-2.5 py-1 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-[11px] font-bold shrink-0">
-                        💾 Simpan
-                      </button>
-                    </div>
-                  )}
+                    </SelectContent>
+                  </Select>
                 </div>
-              )}
-              {/* Roleplay Reply Bubble */}
-              <div className="flex justify-start">
-                <div className="max-w-[85%] space-y-1.5">
-                  <div className="flex items-start gap-2">
-                    <SpeakButton text={m.content} lang={ttsLang} rate={1.0} />
-                    <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-white border border-slate-200 text-sm whitespace-pre-wrap">
-                      {m.content}
-                    </div>
-                  </div>
-                  {m.analysis?.reply_translation_in_indonesian && (
-                    <p className="text-[11px] text-slate-400 italic pl-10">{m.analysis.reply_translation_in_indonesian}</p>
-                  )}
+                <ScenarioGrid onPick={startChat} />
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
+          {messages.map((m) =>
+            m.role === "user" ? (
+              <div key={m.id} className="flex justify-end">
+                <div className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
+                  {m.content}
                 </div>
               </div>
+            ) : (
+              <div key={m.id} className="space-y-3">
+                {m.analysis && (
+                  <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-900/50 dark:bg-amber-900/20 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-900/50 bg-amber-100/50 dark:bg-amber-900/30 flex items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" /> Tutor Feedback
+                      </span>
+                      <Badge variant="outline" className="text-[11px] text-amber-700 dark:text-amber-300 border-amber-300/60">
+                        Grammar: {m.analysis.scores.grammar}/100 · {m.analysis.scores.fluency}
+                      </Badge>
+                    </div>
+                    {m.analysis.detailed_analysis.length > 0 ? (
+                      <div className="px-4 py-3 space-y-2">
+                        {m.analysis.detailed_analysis.map((d, i) => (
+                          <div key={i} className="rounded-xl border border-rose-200 bg-rose-50/50 dark:border-rose-900/50 dark:bg-rose-900/20 p-3">
+                            <p className="text-sm">
+                              <span className="text-rose-600 dark:text-rose-400 line-through">{d.original_segment}</span>
+                              <span className="mx-1.5 text-muted-foreground">→</span>
+                              <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{d.corrected_segment}</span>
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              <span className="font-bold text-amber-700 dark:text-amber-400">{d.rule}</span>: {d.explanation_in_indonesian}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-4 py-3 text-xs text-emerald-600 dark:text-emerald-400 font-semibold">✅ Tidak ada kesalahan — bagus!</div>
+                    )}
+                    {m.analysis.native_rephrasing && (
+                      <div className="px-4 py-3 border-t border-amber-200 dark:border-amber-900/50 space-y-1.5">
+                        <p className="text-xs font-bold text-muted-foreground">Native Rephrasing</p>
+                        <p className="text-xs"><span className="font-bold">Formal:</span> {m.analysis.native_rephrasing.formal}</p>
+                        <p className="text-xs"><span className="font-bold">Casual:</span> {m.analysis.native_rephrasing.casual}</p>
+                      </div>
+                    )}
+                    {m.analysis.vocab_highlight && (
+                      <div className="px-4 py-3 border-t border-amber-200 dark:border-amber-900/50 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-extrabold text-teal-700 dark:text-teal-400 truncate">{m.analysis.vocab_highlight.word_target}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                        </div>
+                        <Button size="sm" variant="secondary" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
+                          <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
+                        </Button>
+                      </div>
+                    )}
+                  </Card>
+                )}
+                <div className="flex justify-start gap-2">
+                  <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
+                    <AvatarFallback className="text-sm">🤖</AvatarFallback>
+                  </Avatar>
+                  <div className="max-w-[85%] space-y-1.5">
+                    <div className="flex items-start gap-2">
+                      <SpeakButton text={m.content} lang={ttsLang} rate={1.0} />
+                      <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
+                        {m.content}
+                      </div>
+                    </div>
+                    {m.analysis?.reply_translation_in_indonesian && (
+                      <p className="text-[11px] text-muted-foreground italic pl-10">{m.analysis.reply_translation_in_indonesian}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+          {sending && (
+            <div className="flex justify-start gap-2">
+              <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
+                <AvatarFallback className="text-sm">🤖</AvatarFallback>
+              </Avatar>
+              <div className="max-w-[85%] space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <p className="text-[11px] text-muted-foreground pt-1">AI Tutor menganalisis...</p>
+              </div>
             </div>
-          )
-        )}
-        {sending && <p className="text-xs text-slate-400 text-center py-3">AI Tutor menganalisis...</p>}
-      </div>
+          )}
+        </div>
 
-      {error && <p className="text-xs text-rose-500 mt-2">{error}</p>}
+        {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
-      <div className="flex gap-2 mt-3">
-        <input value={input} onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-          disabled={sending}
-          placeholder={`Ketik dalam bahasa ${language}...`}
-          className="flex-1 bg-white border border-slate-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/20 disabled:opacity-50" />
-        <button type="button" onClick={send} disabled={!input.trim() || sending}
-          className="px-5 py-2.5 rounded-xl bg-teal-500 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-bold">Kirim</button>
+        <div className="flex gap-2 mt-3">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+            disabled={sending}
+            placeholder={`Ketik dalam bahasa ${language}...`}
+            className="flex-1"
+          />
+          <Button type="button" onClick={send} disabled={!input.trim() || sending}>
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
+            {sending ? "" : "Kirim"}
+          </Button>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }

@@ -1,9 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { sendPolyglotMessageAction, saveFlashcardAction } from "@/lib/actions/chat";
+import { useEffect, useRef, useState } from "react";
+import { Loader2, Mic, PhoneOff, Sparkles } from "lucide-react";
+import { sendPolyglotMessageAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 
 const SCENARIOS = [
   { id: "Daily Standup", title: "Daily Standup Meeting" },
@@ -17,7 +20,6 @@ const SCENARIOS = [
 ];
 
 export default function VoiceChatView({ language, ttsLang }: { language: string; ttsLang: string }) {
-  const router = useRouter();
   const [phase, setPhase] = useState<"picker" | "chat">("picker");
   const [scenario, setScenario] = useState("");
   const [status, setStatus] = useState<"menghubungkan" | "mendengarkan" | "berpikir" | "berbicara">("menghubungkan");
@@ -26,10 +28,16 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
   const [aiTranslation, setAiTranslation] = useState<string | null>(null);
   const [aiScore, setAiScore] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const isMutedRef = useRef(false);
   const mountedRef = useRef(true);
 
   const { supported, transcript, error: sttError, start: startRec, stop: stopRec } = useSpeechRecognition(ttsLang);
+
+  const statusBadge: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+    mendengarkan: { label: "🎙️ Mendengarkan...", variant: "default" },
+    berpikir: { label: "💭 Menganalisis...", variant: "secondary" },
+    berbicara: { label: "🗣️ Berbicara...", variant: "outline" },
+    menghubungkan: { label: "⏳ Menghubungkan...", variant: "secondary" },
+  };
 
   function speak(text: string) {
     if (!("speechSynthesis" in window)) return;
@@ -58,12 +66,13 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
   useEffect(() => {
     if (!transcript?.trim() || status !== "mendengarkan") return;
     const text = transcript.trim();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUserCaption(text);
     setStatus("berpikir");
     sendPolyglotMessageAction(scenario, language, text)
       .then((res) => {
         if (!mountedRef.current) return;
-        if ("error" in res) { setError(res.error); setStatus("mendengarkan"); return; }
+        if ("error" in res) { setError(res.error ?? null); setStatus("mendengarkan"); return; }
         setAiCaption(res.analysis.reply_in_target_language);
         setAiTranslation(res.analysis.reply_translation_in_indonesian ?? null);
         setAiScore(`Grammar: ${res.analysis.scores.grammar}/100 · ${res.analysis.scores.fluency}`);
@@ -81,38 +90,46 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
   if (phase === "picker") {
     return (
       <div className="max-w-md mx-auto px-4 py-8">
-        <h1 className="text-xl font-extrabold mb-4">Voice Practice · {language}</h1>
+        <h1 className="text-xl font-extrabold mb-1">Voice Practice</h1>
+        <p className="text-sm text-muted-foreground mb-4">{language}</p>
         <div className="grid gap-3">
           {SCENARIOS.map((s) => (
-            <button key={s.id} type="button" onClick={() => startChat(s.id)}
-              className="text-left px-4 py-3 rounded-xl border border-slate-200 hover:border-teal-500/50 transition-colors">
+            <Card key={s.id} className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all" onClick={() => startChat(s.id)}>
               <p className="font-bold text-sm">{s.title}</p>
-            </button>
+            </Card>
           ))}
         </div>
-        {!supported && <p className="text-xs text-rose-500 mt-4">Browser tidak mendukung speech recognition.</p>}
+        {!supported && <p className="text-xs text-destructive mt-4">Browser tidak mendukung speech recognition.</p>}
       </div>
     );
   }
 
   return (
-    <div className="max-w-md mx-auto px-4 py-6 flex flex-col items-center gap-6">
-      {(error || sttError) && <p className="text-xs text-rose-500">{error ?? sttError}</p>}
+    <div className="max-w-md mx-auto px-4 py-6 flex flex-col items-center gap-5">
+      {(error || sttError) && <p className="text-xs text-destructive">{error ?? sttError}</p>}
       <div className="text-center">
         <p className="text-lg font-extrabold">{scenario}</p>
-        <p className="text-xs text-slate-400">{language}</p>
+        <p className="text-xs text-muted-foreground">{language}</p>
       </div>
-      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center
-        ${status === "mendengarkan" ? "border-teal-500 animate-pulse" : status === "berpikir" ? "border-indigo-500" : "border-amber-500"}`}>
-        <span className="text-3xl">{status === "mendengarkan" ? "🎙️" : status === "berpikir" ? "💭" : "🗣️"}</span>
+      <div className={`w-28 h-28 rounded-full border-4 flex items-center justify-center bg-card shadow-md transition-colors ${
+        status === "mendengarkan" ? "border-primary animate-pulse" : status === "berpikir" ? "border-amber-400" : "border-slate-300"
+      }`}>
+        {status === "berpikir" ? <Loader2 className="h-8 w-8 text-amber-500 animate-spin" /> : <span className="text-3xl">🎙️</span>}
       </div>
-      <p className="text-xs font-bold text-slate-500">{status}</p>
-      {userCaption && <p className="text-sm text-slate-500">"{userCaption}"</p>}
-      {aiCaption && <p className="text-sm font-semibold text-slate-800">{aiCaption}</p>}
-      {aiScore && <p className="text-[11px] text-amber-600">{aiScore}</p>}
-      {aiTranslation && <p className="text-[11px] text-slate-400 italic">{aiTranslation}</p>}
-      <button onClick={() => { setPhase("picker"); window.speechSynthesis?.cancel(); }}
-        className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold">Hang Up</button>
+      <Badge variant={statusBadge[status]?.variant ?? "secondary"}>{statusBadge[status]?.label ?? status}</Badge>
+      {userCaption && <p className="text-sm text-muted-foreground text-center">&ldquo;{userCaption}&rdquo;</p>}
+      {aiCaption && (
+        <Card className="w-full p-4 space-y-2">
+          <p className="text-sm font-semibold flex items-start gap-1.5">
+            <Sparkles className="h-4 w-4 text-teal-500 shrink-0 mt-0.5" /> {aiCaption}
+          </p>
+          {aiScore && <p className="text-[11px] text-amber-600">{aiScore}</p>}
+          {aiTranslation && <p className="text-[11px] text-muted-foreground italic">{aiTranslation}</p>}
+        </Card>
+      )}
+      <Button variant="destructive" onClick={() => { setPhase("picker"); window.speechSynthesis?.cancel(); }}>
+        <PhoneOff className="h-4 w-4 mr-1.5" /> Hang Up
+      </Button>
     </div>
   );
 }

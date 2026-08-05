@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Pause, Volume2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function SpeakButton({
   text,
@@ -41,13 +44,19 @@ export default function SpeakButton({
   if (!supported) return null;
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label="Putar suara"
-      className="w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 text-sm hover:text-teal-600 dark:hover:text-teal-400 transition-colors"
-    >
-      {speaking ? "⏹" : "🔊"}
-    </button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={toggle}
+          aria-label={speaking ? "Hentikan suara" : "Putar suara"}
+        >
+          {speaking ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent>{speaking ? "Hentikan" : "Dengarkan"}</TooltipContent>
+    </Tooltip>
   );
 }
