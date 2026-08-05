@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
   return new Response(res.body, {
     headers: {
       "Content-Type": "audio/mpeg",
-      "Cache-Control": "public, max-age=86400",
+      "Cache-Control": "public, max-age=86400, s-maxage=604800",
     },
   });
 }
