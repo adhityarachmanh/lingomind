@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SCENARIO_TEMPLATES } from "./templates";
+import { isTemplateUsed, SCENARIO_TEMPLATES } from "./templates";
 
 describe("SCENARIO_TEMPLATES", () => {
   it("menyediakan minimal 40 template", () => {
@@ -18,5 +18,28 @@ describe("SCENARIO_TEMPLATES", () => {
       expect(t.title.trim()).not.toBe("");
       expect(t.description.trim()).not.toBe("");
     }
+  });
+});
+
+describe("isTemplateUsed", () => {
+  const used = [
+    { templateId: "restaurant-order", language: "English" },
+    { templateId: null, language: "English" },
+  ];
+
+  it("true saat templateId dan bahasa sama", () => {
+    expect(isTemplateUsed(used, "restaurant-order", "English")).toBe(true);
+  });
+
+  it("false saat templateId sama tapi bahasa berbeda", () => {
+    expect(isTemplateUsed(used, "restaurant-order", "Japanese")).toBe(false);
+  });
+
+  it("false saat bahasa sama tapi templateId berbeda", () => {
+    expect(isTemplateUsed(used, "hotel-checkin", "English")).toBe(false);
+  });
+
+  it("membandingkan templateId null dengan benar", () => {
+    expect(isTemplateUsed(used, null, "English")).toBe(true);
   });
 });

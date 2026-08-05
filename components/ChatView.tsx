@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, LogOut, Send, Square } from "lucide-react";
+import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, endChatSessionAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
-import { getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
+import { analyzeChatMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
@@ -194,16 +194,17 @@ export default function ChatView() {
     toast.success(`${word} disimpan ke flashcard!`);
   }
 
-  async function endSession() {
+  async function deleteSession() {
     if (!sessionId) { router.push("/chat"); return; }
+    if (!confirm("Hapus percakapan ini?")) return;
     try {
-      const res = await endChatSessionAction(sessionId);
+      const res = await deleteSessionAction(sessionId);
       if ("error" in res) { toast.error(res.error); return; }
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Gagal mengakhiri sesi.");
+      toast.error(e instanceof Error ? e.message : "Gagal menghapus percakapan.");
       return;
     }
-    toast.success("Sesi diakhiri. Percakapan baru dimulai saat memilih skenario.");
+    toast.success("Percakapan dihapus.");
     router.push("/chat");
   }
 
@@ -246,9 +247,9 @@ export default function ChatView() {
               <LanguageBadge language={session?.language ?? ""} />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={endSession} disabled={streaming || analyzing}>
-            <LogOut className="h-3.5 w-3.5 mr-1.5" />
-            Akhiri Sesi
+          <Button variant="outline" size="sm" onClick={deleteSession} disabled={streaming || analyzing} className="text-destructive hover:text-destructive">
+            <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+            Hapus Percakapan
           </Button>
         </div>
 

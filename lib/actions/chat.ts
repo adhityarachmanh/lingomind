@@ -36,9 +36,15 @@ async function getOrCreateSession(
   scenarioId: string
 ): Promise<string | null> {
   const existing = await db.session.findFirst({
-    where: { userId, scenarioId, endedAt: null },
+    where: { userId, scenarioId },
+    orderBy: { createdAt: "desc" },
   });
-  if (existing) return existing.id;
+  if (existing) {
+    if (existing.endedAt !== null) {
+      await db.session.update({ where: { id: existing.id }, data: { endedAt: null } });
+    }
+    return existing.id;
+  }
   const level = "A1";
   const created = await db.session.create({
     data: { userId, language, level, scenarioId },
@@ -129,18 +135,6 @@ export async function getFlashcardsAction(
     orderBy: { createdAt: "desc" },
   });
   return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
-}
-
-export async function endChatSessionAction(sessionId: string): Promise<ActionResult> {
-  const session = await getSession();
-  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
-  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
-  if (!user) return { error: "Pengguna tidak ditemukan." };
-  await db.session.update({
-    where: { id: sessionId, userId: user.id },
-    data: { endedAt: new Date() },
-  });
-  return { message: "ok" };
 }
 
 export interface OpenSessionResult {

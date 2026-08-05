@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LANGUAGES } from "@/lib/languages";
-import { SCENARIO_TEMPLATES } from "@/lib/templates";
-import { createScenarioAction } from "@/lib/actions/scenario";
+import { isTemplateUsed, SCENARIO_TEMPLATES, type UsedScenarioTemplate } from "@/lib/templates";
+import { createScenarioAction, getScenarioTemplatesUsedAction } from "@/lib/actions/scenario";
 
 export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: {
   open: boolean;
@@ -22,10 +22,21 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [used, setUsed] = useState<UsedScenarioTemplate[]>([]);
 
   const categories = [...new Set(SCENARIO_TEMPLATES.map((t) => t.category))];
 
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const res = await getScenarioTemplatesUsedAction();
+      if ("error" in res) { toast.error(res.error); return; }
+      setUsed(res.used);
+    })();
+  }, [open]);
+
   function pickTemplate(id: string) {
+    if (isTemplateUsed(used, id, language)) return;
     const t = SCENARIO_TEMPLATES.find((x) => x.id === id);
     setTemplateId(id);
     if (t) {
@@ -63,7 +74,17 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
         <div className="space-y-4">
           <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Bahasa Target</Label>
-            <Select value={language} onValueChange={setLanguage}>
+            <Select
+              value={language}
+              onValueChange={(next) => {
+                setLanguage(next);
+                if (templateId && isTemplateUsed(used, templateId, next)) {
+                  setTemplateId(null);
+                  setTitle("");
+                  setDescription("");
+                }
+              }}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
@@ -81,19 +102,30 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
                 <div key={cat}>
                   <p className="text-[11px] font-bold text-muted-foreground mb-1.5">{cat}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {SCENARIO_TEMPLATES.filter((t) => t.category === cat).map((t) => (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => pickTemplate(t.id)}
-                        className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
-                          templateId === t.id ? "border-teal-500 bg-teal-500/10" : "border-border hover:border-teal-500/60"
-                        }`}
-                      >
-                        <span className="text-xs font-semibold block">{t.title}</span>
-                        <span className="text-[10px] text-muted-foreground line-clamp-1">{t.description}</span>
-                      </button>
-                    ))}
+                    {SCENARIO_TEMPLATES.filter((t) => t.category === cat).map((t) => {
+                      const usedTemplate = isTemplateUsed(used, t.id, language);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          disabled={usedTemplate}
+                          onClick={() => pickTemplate(t.id)}
+                          className={`text-left rounded-lg border px-2.5 py-2 transition-colors ${
+                            usedTemplate
+                              ? "border-border opacity-40 cursor-not-allowed"
+                              : templateId === t.id
+                                ? "border-teal-500 bg-teal-500/10"
+                                : "border-border hover:border-teal-500/60"
+                          }`}
+                        >
+                          <span className="text-xs font-semibold block">
+                            {t.title}
+                            {usedTemplate && <span className="ml-1.5 text-[9px] font-bold uppercase tracking-wide text-muted-foreground">Sudah ada</span>}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground line-clamp-1">{t.description}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

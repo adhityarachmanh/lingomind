@@ -5,6 +5,19 @@ export interface ScenarioTemplate {
   description: string;
 }
 
+export interface UsedScenarioTemplate {
+  templateId: string | null;
+  language: string;
+}
+
+export function isTemplateUsed(
+  used: UsedScenarioTemplate[],
+  templateId: string | null,
+  language: string
+): boolean {
+  return used.some((u) => u.templateId === templateId && u.language === language);
+}
+
 export const SCENARIO_TEMPLATES: ScenarioTemplate[] = [
   { id: "daily-standup", category: "Pekerjaan & Bisnis", title: "Daily Standup Meeting", description: "Rapat standup harian tim tech" },
   { id: "job-interview", category: "Pekerjaan & Bisnis", title: "Job Interview", description: "Wawancara kerja dengan HR" },

@@ -42,6 +42,12 @@ export async function createScenarioAction(input: {
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const template = SCENARIO_TEMPLATES.find((t) => t.id === input.templateId);
+  if (template) {
+    const existing = await db.scenario.findFirst({
+      where: { userId: user.id, templateId: template.id, language },
+    });
+    if (existing) return { error: "Skenario dengan template dan bahasa ini sudah ada." };
+  }
   const scenario = await db.scenario.create({
     data: {
       userId: user.id,
@@ -52,6 +58,20 @@ export async function createScenarioAction(input: {
     },
   });
   return { scenarioId: scenario.id };
+}
+
+export async function getScenarioTemplatesUsedAction(): Promise<
+  { used: { templateId: string | null; language: string }[] } | { error: string }
+> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const scenarios = await db.scenario.findMany({
+    where: { userId: user.id },
+    select: { templateId: true, language: true },
+  });
+  return { used: scenarios.map((s) => ({ templateId: s.templateId, language: s.language })) };
 }
 
 export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[]; history: SessionSummary[] } | { error: string }> {
