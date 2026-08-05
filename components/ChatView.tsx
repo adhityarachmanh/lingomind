@@ -296,6 +296,9 @@ export default function ChatView() {
                                   <span className="mx-1.5 text-muted-foreground">→</span>
                                   <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
                                 </p>
+                                {d.corrected_romanization && (
+                                  <p className="text-[11px] text-muted-foreground italic mt-0.5">({d.corrected_romanization})</p>
+                                )}
                                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                                   <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
                                 </p>
@@ -313,11 +316,17 @@ export default function ChatView() {
                               {m.analysis.native_rephrasing.formal_meaning_in_indonesian && (
                                 <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.formal_meaning_in_indonesian}</p>
                               )}
+                              {m.analysis.native_rephrasing.formal_romanization && (
+                                <p className="text-[11px] text-muted-foreground">({m.analysis.native_rephrasing.formal_romanization})</p>
+                              )}
                             </div>
                             <div>
                               <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
                               {m.analysis.native_rephrasing.casual_meaning_in_indonesian && (
                                 <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.casual_meaning_in_indonesian}</p>
+                              )}
+                              {m.analysis.native_rephrasing.casual_romanization && (
+                                <p className="text-[11px] text-muted-foreground">({m.analysis.native_rephrasing.casual_romanization})</p>
                               )}
                             </div>
                           </div>
@@ -326,6 +335,9 @@ export default function ChatView() {
                           <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
                             <div className="min-w-0">
                               <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
+                              {m.analysis.vocab_highlight.romanization && (
+                                <p className="text-[10px] text-muted-foreground">{m.analysis.vocab_highlight.romanization}</p>
+                              )}
                               <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
                             </div>
                             <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">

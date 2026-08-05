@@ -22,6 +22,15 @@ describe("buildPolyglotSystemPrompt", () => {
     expect(prompt).toContain("formal_meaning_in_indonesian");
     expect(prompt).toContain("casual_meaning_in_indonesian");
   });
+
+  it("mencantumkan romanisasi untuk bahasa non-Latin", () => {
+    const prompt = buildPolyglotSystemPrompt("Korean", "A1", "Restaurant");
+    expect(prompt).toContain("corrected_romanization");
+    expect(prompt).toContain("formal_romanization");
+    expect(prompt).toContain("casual_romanization");
+    expect(prompt).toContain("romanization");
+    expect(prompt).toContain("huruf Latin");
+  });
 });
 
 describe("buildPolyglotUserMessage", () => {

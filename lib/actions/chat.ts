@@ -14,16 +14,23 @@ export interface PolyglotAnalysis {
   detailed_analysis: {
     original_segment: string;
     corrected_segment: string;
+    corrected_romanization?: string;
     rule: string;
     explanation_in_indonesian: string;
   }[];
   native_rephrasing: {
     formal: string;
     formal_meaning_in_indonesian: string;
+    formal_romanization?: string;
     casual: string;
     casual_meaning_in_indonesian: string;
+    casual_romanization?: string;
   };
-  vocab_highlight: { word_target: string; meaning_in_indonesian: string };
+  vocab_highlight: {
+    word_target: string;
+    meaning_in_indonesian: string;
+    romanization?: string;
+  };
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;
   suggested_replies?: string[];
