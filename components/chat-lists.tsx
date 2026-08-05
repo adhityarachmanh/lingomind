@@ -30,7 +30,7 @@ export function ScenarioCard({ scenario, onOpen }: { scenario: ScenarioSummary; 
         {scenario.type === "general" && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground">Umum</Badge>}
       </div>
       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{scenario.description}</p>
-      <div className="mt-2"><LanguageBadge language={scenario.language} /></div>
+      {scenario.type !== "general" && <div className="mt-2"><LanguageBadge language={scenario.language} /></div>}
     </Card>
   );
 }

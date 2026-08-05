@@ -529,7 +529,7 @@ export default function ChatView() {
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
             disabled={streaming || analyzing}
             dir="auto"
-            placeholder={`Ketik dalam bahasa ${session?.language ?? "..."}...`}
+            placeholder={isGeneral ? "Ketik pesan..." : `Ketik dalam bahasa ${session?.language ?? "..."}...`}
             className="flex-1 min-w-0"
           />
           {streaming ? (

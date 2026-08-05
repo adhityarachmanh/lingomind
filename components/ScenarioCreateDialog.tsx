@@ -75,14 +75,14 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
       <DialogContent className="max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Buat Skenario</DialogTitle>
-          <DialogDescription>Pilih bahasa, lalu pilih template atau buat sendiri.</DialogDescription>
+          <DialogDescription>{mode === "general" ? "Pilih template atau buat skenario sendiri." : "Pilih bahasa, lalu pilih template atau buat sendiri."}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-1.5">
-            <Button type="button" variant={mode === "language" ? "default" : "outline"} size="sm" onClick={() => { setMode("language"); setTemplateId(null); setTitle(""); setDescription(""); }}>
+            <Button type="button" variant={mode === "language" ? "default" : "outline"} size="sm" onClick={() => { setMode("language"); setLanguage("English"); setTemplateId(null); setTitle(""); setDescription(""); }}>
               Belajar Bahasa
             </Button>
-            <Button type="button" variant={mode === "general" ? "default" : "outline"} size="sm" onClick={() => { setMode("general"); setTemplateId(null); setTitle(""); setDescription(""); }}>
+            <Button type="button" variant={mode === "general" ? "default" : "outline"} size="sm" onClick={() => { setMode("general"); setLanguage("English"); setTemplateId(null); setTitle(""); setDescription(""); }}>
               Umum
             </Button>
           </div>
