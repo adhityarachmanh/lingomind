@@ -6,6 +6,7 @@ import { getSession } from "../auth";
 import { db } from "../db";
 import { buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
+import { mapHistoryToAiMessages } from "../chat-helpers";
 import type { ActionResult } from "./types";
 
 export interface PolyglotAnalysis {
@@ -66,12 +67,7 @@ export async function sendPolyglotMessageAction(
     orderBy: { createdAt: "asc" },
     take: 20,
   });
-  const aiMessages = history
-    .map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.role === "ai" ? (m.analysisJson ? (m.analysisJson as unknown as { reply_in_target_language?: string }).reply_in_target_language : m.content) ?? "" : m.content ?? "",
-    }))
-    .filter((m) => m.content.trim() !== "");
+  const aiMessages = mapHistoryToAiMessages(history);
 
   aiMessages.push({ role: "user", content: userMessage.trim() });
 
@@ -240,12 +236,7 @@ export async function analyzeChatMessageAction(
     orderBy: { createdAt: "asc" },
     take: 20,
   });
-  const aiMessages = history
-    .map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.role === "ai" ? (m.analysisJson ? (m.analysisJson as unknown as { reply_in_target_language?: string }).reply_in_target_language : m.content) ?? "" : m.content ?? "",
-    }))
-    .filter((m) => m.content.trim() !== "");
+  const aiMessages = mapHistoryToAiMessages(history);
   if (aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === "user") {
     aiMessages.pop();
   }

@@ -4,6 +4,7 @@ import { model } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { buildPolyglotStreamPrompt } from "@/lib/ai-content/chat";
+import { mapHistoryToAiMessages } from "@/lib/chat-helpers";
 
 export const maxDuration = 60;
 
@@ -49,12 +50,7 @@ export async function POST(req: NextRequest) {
     orderBy: { createdAt: "asc" },
     take: 20,
   });
-  const aiMessages = history
-    .map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.role === "ai" ? (m.analysisJson ? (m.analysisJson as unknown as { reply_in_target_language?: string }).reply_in_target_language : m.content) ?? "" : m.content ?? "",
-    }))
-    .filter((m) => m.content.trim() !== "");
+  const aiMessages = mapHistoryToAiMessages(history);
 
   const { instructions, messages } = buildPolyglotStreamPrompt(userMessage, language, "A1", scenario, aiMessages);
 
