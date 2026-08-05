@@ -163,7 +163,7 @@ export async function openSessionAction(
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
-  const scenario = await db.scenario.findUnique({ where: { id: scenarioId }, select: { title: true } });
+  const scenario = await db.scenario.findFirst({ where: { id: scenarioId, userId: user.id }, select: { title: true } });
   if (!scenario) return { error: "Akses ditolak." };
 
   const sessionId = await getOrCreateSession(user.id, language, scenarioId);
