@@ -509,7 +509,7 @@ export default function ChatView() {
                   </Avatar>
                   <div className="max-w-[85%] space-y-1.5">
                     <div className="flex items-start gap-2">
-                      <SpeakButton text={m.content} lang={ttsLang} rate={1.0} />
+                      <SpeakButton text={m.content} lang={ttsLang} />
                       <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
                         {isGeneral ? <MarkdownContent content={m.content} /> : m.content}
                       </div>

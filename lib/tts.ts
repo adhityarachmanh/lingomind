@@ -1,3 +1,8 @@
+export const AI_GATEWAY_ENDPOINT = "https://ai-gateway.vercel.sh/v4/ai/speech-model";
+export const AI_GATEWAY_MODEL = "openai/tts-1";
+export const AI_GATEWAY_VOICE = "alloy";
+export const AI_GATEWAY_MAX_TEXT = 4000;
+
 export const GOOGLE_TTS_TL: Record<string, string> = {
   English: "en",
   Japanese: "ja",
@@ -15,3 +20,6 @@ export const GOOGLE_TTS_TL: Record<string, string> = {
   Turkish: "tr",
   Indonesian: "id",
 };
+
+export const GOOGLE_TTS_MAX_TEXT = 180;
+

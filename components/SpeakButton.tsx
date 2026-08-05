@@ -9,14 +9,11 @@ import { speak, cancelSpeech } from "./voice-tts";
 export default function SpeakButton({
   text,
   lang,
-  rate = 0.95,
 }: {
   text: string;
   lang: string;
-  rate?: number;
 }) {
   const [speaking, setSpeaking] = useState(false);
-  const supported = typeof window !== "undefined" && "speechSynthesis" in window;
 
   useEffect(() => {
     return () => {
@@ -25,17 +22,14 @@ export default function SpeakButton({
   }, []);
 
   function toggle() {
-    if (!supported) return;
     if (speaking) {
       cancelSpeech();
       setSpeaking(false);
       return;
     }
     setSpeaking(true);
-    speak(text, lang, rate, () => setSpeaking(false));
+    speak(text, lang, () => setSpeaking(false));
   }
-
-  if (!supported) return null;
 
   return (
     <Tooltip>
