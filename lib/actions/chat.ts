@@ -6,7 +6,6 @@ import { getSession } from "../auth";
 import { db } from "../db";
 import { buildGeneralOpeningPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
-import type { ScenarioType } from "../templates";
 import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
 
@@ -77,9 +76,10 @@ export async function sendPolyglotMessageAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const dbSession = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true } } },
+    include: { scenario: { select: { title: true, language: true, type: true } } },
   });
   if (!dbSession) return { error: "Percakapan tidak ditemukan." };
+  if (dbSession.scenario?.type === "general") return { error: "Mode skenario tidak didukung." };
   const language = dbSession.scenario?.language ?? dbSession.language;
   const scenario = dbSession.scenario?.title ?? "Percakapan";
   const history = await db.message.findMany({
@@ -285,9 +285,10 @@ export async function analyzeChatMessageAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const dbSession = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true } } },
+    include: { scenario: { select: { title: true, language: true, type: true } } },
   });
   if (!dbSession) return { error: "Akses ditolak." };
+  if (dbSession.scenario?.type === "general") return { error: "Mode skenario tidak didukung." };
 
   const language = dbSession.scenario?.language ?? dbSession.language;
   const scenario = dbSession.scenario?.title ?? "Percakapan";
