@@ -45,7 +45,7 @@ export default function LoginForm() {
               variant="ghost"
               size="sm"
               onClick={() => setShow((v) => !v)}
-              className="absolute top-8 right-0 h-9 w-9 px-0 text-muted-foreground hover:text-primary"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 px-0 text-muted-foreground hover:text-primary"
               aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
             >
               {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
