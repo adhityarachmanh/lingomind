@@ -1,4 +1,3 @@
-export const AI_GATEWAY_ENDPOINT = "https://ai-gateway.vercel.sh/v4/ai/speech-model";
 export const AI_GATEWAY_MODEL = "openai/tts-1";
 export const AI_GATEWAY_VOICE = "alloy";
 export const AI_GATEWAY_MAX_TEXT = 4000;

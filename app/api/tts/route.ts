@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server";
+import { generateSpeech } from "ai";
+import { gateway } from "@ai-sdk/gateway";
 import { getSession } from "@/lib/auth";
 import {
-  AI_GATEWAY_ENDPOINT,
   AI_GATEWAY_MAX_TEXT,
   AI_GATEWAY_MODEL,
   AI_GATEWAY_VOICE,
@@ -39,35 +40,20 @@ export async function GET(req: NextRequest) {
 
   const apiKey = process.env.AI_GATEWAY_API_KEY;
   if (apiKey && text.length <= AI_GATEWAY_MAX_TEXT) {
-    let res: Response;
     try {
-      res = await fetch(AI_GATEWAY_ENDPOINT, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "ai-model-id": AI_GATEWAY_MODEL,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          text,
-          voice: AI_GATEWAY_VOICE,
-          outputFormat: "mp3",
-          language: GOOGLE_TTS_TL[language] ?? "en",
-        }),
-        cache: "no-store",
+      const result = await generateSpeech({
+        model: gateway.speechModel(AI_GATEWAY_MODEL),
+        text,
+        voice: AI_GATEWAY_VOICE,
+        outputFormat: "mp3",
+        language: GOOGLE_TTS_TL[language] ?? "en",
       });
-    } catch {
-      res = new Response(null, { status: 502 });
-    }
-    if (res.ok) {
-      try {
-        const data = (await res.json()) as { audio?: string };
-        if (typeof data.audio === "string" && data.audio.length > 0) {
-          return new Response(Buffer.from(data.audio, "base64"), { headers: AI_GATEWAY_HEADERS });
-        }
-      } catch {
-        // lanjut ke fallback Google
+      const audio = result.audio.uint8Array;
+      if (audio.length > 0) {
+        return new Response(Buffer.from(audio), { headers: AI_GATEWAY_HEADERS });
       }
+    } catch {
+      // lanjut ke fallback Google
     }
   }
 
