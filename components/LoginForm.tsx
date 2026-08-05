@@ -29,27 +29,29 @@ export default function LoginForm() {
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Email</Label>
             <Input type="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={pending} placeholder="email@lingomind.com" />
           </div>
-          <div className="relative">
+          <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Password</Label>
-            <Input
-              type={show ? "text" : "password"}
-              name="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={pending}
-              placeholder="••••••••"
-              className="pr-12"
-            />
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setShow((v) => !v)}
-              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 px-0 text-muted-foreground hover:text-primary"
-              aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
-            >
-              {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </Button>
+            <div className="relative">
+              <Input
+                type={show ? "text" : "password"}
+                name="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={pending}
+                placeholder="••••••••"
+                className="pr-12"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShow((v) => !v)}
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 px-0 text-muted-foreground hover:text-primary"
+                aria-label={show ? "Sembunyikan password" : "Tampilkan password"}
+              >
+                {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
           </div>
           <Button type="submit" disabled={pending} className="w-full">
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Masuk"}
