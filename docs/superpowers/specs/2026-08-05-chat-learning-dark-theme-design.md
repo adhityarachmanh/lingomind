@@ -1,16 +1,17 @@
 # Design: Chat Learning Helpers + Dark Theme Lengkap
 
 Tanggal: 2026-08-05
-Status: Disetujui user (3 bagian)
+Status: Disetujui user (revisi 1 — tambah pembuka percakapan AI)
 
 ## Ringkasan
 
-Empat permintaan user untuk aplikasi Polyglot AI Chat & Voice Tutor:
+Lima permintaan user untuk aplikasi Polyglot AI Chat & Voice Tutor:
 
 1. Semua fitur bertema dark (menuntaskan sisa titik terang).
 2. Tombol "Akhiri Sesi" di chat — keluar percakapan + reset memori AI.
 3. Saran jawaban dari AI — chip saran tiap balasan AI.
 4. Tombol "Lihat Penjelasan" — kartu analisis bahasa dibuat terlipat default.
+5. AI membuka percakapan dulu saat skenario dipilih (pembuka konteks + pertanyaan).
 
 ## 1. Dark theme lengkap
 
@@ -97,18 +98,54 @@ Murni UI client-side, tanpa perubahan AI/DB:
 - Saat terbuka: kartu analisis seperti sekarang.
 - State per pesan: `Record<string, boolean>` di ChatView (key = message id), atau field pada object Message. Dipilih: field `expanded` pada interface Message (lebih sederhana, tidak perlu Map).
 
+## 5. Pembuka percakapan AI (saat skenario dipilih)
+
+### Action baru (`lib/actions/chat.ts`)
+
+`openSessionAction(scenario: string, language: string)`:
+
+1. `getSession()` guard — "Sesi berakhir. Silakan login kembali."
+2. `getOrCreateSession(email, language, scenario)` (fungsi sama dengan send, filter `endedAt: null`).
+3. Cek `db.message.count({ where: { sessionId } })` — jika sesi sudah punya pesan → return `{ alreadyStarted: true }` (tidak generate ulang; ChatView masuk chat kosong seperti perilaku sekarang).
+4. Generate pembuka: `generateText` dengan prompt baru `buildPolyglotOpeningPrompt(language, level, scenario)` di `lib/ai-content/chat.ts`, output JSON diparse `parseAiJson`:
+   ```json
+   {
+     "reply_in_target_language": "string (2-4 kalimat bahasa target, dalam karakter skenario, akhiri dengan pertanyaan)",
+     "reply_translation_in_indonesian": "string",
+     "suggested_replies": ["string 1", "string 2", "string 3"]
+   }
+   ```
+   (sama-sama memakai `generateText` + `parseAiJson`, tanpa kartu analisis — tidak ada teks user untuk dikoreksi).
+5. Simpan `db.message.create({ sessionId, role: "ai", content: reply })` (tanpa `analysisJson`).
+6. Return `{ sessionId, messageId, reply, translation, suggestedReplies }`.
+
+### UI (`components/ChatView.tsx`)
+
+- `startChat` menjadi async: set phase chat + state `opening` (skeleton pembuka — reuse pola skeleton `sending` baris 268-279), panggil `openSessionAction`:
+  - Sukses → append pesan AI biasa (tanpa analisis) + `setSuggestions(suggestedReplies)` → chip saran langsung tampil untuk menjawab pembuka.
+  - `alreadyStarted` → masuk chat kosong, tanpa pemanggilan AI.
+  - Error → toast error, chat tetap terbuka kosong (user tetap bisa mengetik).
+- `sessionId` di-set dari hasil `openSessionAction` (atau dari send jika `alreadyStarted` dan belum ada — dipakai tombol "Akhiri Sesi").
+- Bubble pembuka dirender seperti pesan AI tanpa kartu analisis: avatar Bot + teks + `SpeakButton` + terjemahan italic. Tombol "Lihat Penjelasan" tidak tampil (tidak ada analisis).
+
+### Catatan
+
+- "Ganti Skenario" → `startChat` lagi → pembuka baru untuk skenario tersebut (sesi per skenario berbeda via key `getOrCreateSession`).
+- Biaya: 1 panggilan AI ekstra per sesi baru (hanya saat sesi belum punya pesan) — layak untuk kesan pertama.
+
 ## Error handling & batasan
 
 - String error lama dipertahankan (Indonesia): "Sesi berakhir. Silakan login kembali.", "Pesan tidak boleh kosong.", "AI mengembalikan respons tidak valid. Silakan coba lagi."
 - `endChatSessionAction` error → toast, tidak force keluar dari chat.
 - `suggested_replies` invalid/terpotong → chip tidak dirender, pesan tetap tampil normal.
+- `openSessionAction` gagal generate → toast error, chat tetap terbuka kosong (bukan blocker).
 
 ## Testing & verifikasi
 
-- `npm test` (vitest): test existing `lib/ai-content/parse.test.ts` tetap hijau; tambah test pure untuk `buildPolyglotSystemPrompt` — assert teks berisi `suggested_replies` (contoh skema JSON).
+- `npm test` (vitest): test existing `lib/ai-content/parse.test.ts` tetap hijau; tambah test pure untuk `buildPolyglotSystemPrompt` & `buildPolyglotOpeningPrompt` — assert teks berisi `suggested_replies` (contoh skema JSON).
 - `npx tsc --noEmit`, `npm run lint`, `npm run build`.
 - `npm run db:generate` (migration tidak perlu diterapkan lokal jika DB terblokir — file SQL diverifikasi manual; deploy via Vercel menjalankan `migrate deploy`).
-- Manual: pilih skenario → kirim pesan → chip saran muncul → klik chip → chip berubah; Akhiri Sesi → kembali ke picker → masuk lagi skenario sama → AI tidak ingat percakapan lama; halaman auth/404/error tampil dark.
+- Manual: pilih skenario → AI menyapa duluan + chip saran → klik chip → balasan + chip baru; Akhiri Sesi → kembali ke picker → masuk lagi skenario sama → AI tidak ingat percakapan lama; pilih skenario lain → pembuka baru; halaman auth/404/error tampil dark.
 
 ## File yang berubah
 
@@ -118,7 +155,7 @@ Murni UI client-side, tanpa perubahan AI/DB:
 - `app/(app)/error.tsx` (dark)
 - `prisma/schema.prisma` (+ `endedAt` pada Session)
 - `prisma/migrations/<timestamp>_add_session_ended_at/migration.sql` (baru)
-- `lib/actions/chat.ts` (+ `endedAt` filter, `endChatSessionAction`, `suggested_replies` di interface)
-- `lib/ai-content/chat.ts` (+ instruksi `suggested_replies` di prompt)
+- `lib/actions/chat.ts` (+ `endedAt` filter, `endChatSessionAction`, `openSessionAction`, `suggested_replies` di interface)
+- `lib/ai-content/chat.ts` (+ instruksi `suggested_replies` di prompt; + `buildPolyglotOpeningPrompt` baru)
 - `lib/ai-content/chat.test.ts` (baru, assertion prompt)
-- `components/ChatView.tsx` (Akhiri Sesi, chip saran, Lihat Penjelasan)
+- `components/ChatView.tsx` (Akhiri Sesi, chip saran, Lihat Penjelasan, pembuka AI)
