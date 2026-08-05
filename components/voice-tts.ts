@@ -38,12 +38,14 @@ function playChunk(
   rest?: string[],
   onProvider?: (p: TtsProvider) => void
 ) {
-  fetch(`/api/tts?text=${encodeURIComponent(chunk)}&lang=${encodeURIComponent(lang)}`)
+  fetch(`/api/tts?v=2&text=${encodeURIComponent(chunk)}&lang=${encodeURIComponent(lang)}`)
     .then((res) => {
       if (token !== speechToken) return null;
       const provider = res.headers.get("X-TTS-Provider");
       if (provider === "ai-gateway" || provider === "google") {
         onProvider?.(provider);
+      } else {
+        console.info("TTS provider: unknown (respons cache lama?)");
       }
       if (!res.ok) throw new Error("tts-api");
       return res.blob();
