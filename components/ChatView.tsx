@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
+import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { analyzeChatMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { LanguageBadge } from "./chat-lists";
 import ChatSidebar from "./ChatSidebar";
@@ -339,7 +339,7 @@ export default function ChatView() {
                 )}
                 <div className="flex justify-start gap-2.5">
                   <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
-                    <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+                    <AvatarImage src="/logo.png" alt="LingoMind" />
                   </Avatar>
                   <div className="max-w-[85%] space-y-1.5">
                     <div className="flex items-start gap-2">
@@ -359,7 +359,7 @@ export default function ChatView() {
           {(streaming || analyzing) && (
             <div className="flex justify-start gap-2.5">
               <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
-                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+                <AvatarImage src="/logo.png" alt="LingoMind" />
               </Avatar>
               <div className="max-w-[85%] space-y-1.5">
                 <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
