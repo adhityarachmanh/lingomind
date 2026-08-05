@@ -346,26 +346,22 @@ export default function ChatView() {
               </div>
             )
           )}
-          {streaming && (
+          {(streaming || analyzing) && (
             <div className="flex justify-start gap-2.5">
               <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
                 <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
               </Avatar>
-              <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
-                {streamingText}
-                <span className="animate-pulse">▌</span>
-              </div>
-            </div>
-          )}
-          {analyzing && (
-            <div className="flex justify-start gap-2">
-              <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
-                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
-              </Avatar>
-              <div className="max-w-[85%] space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-32" />
-                <p className="text-[11px] text-muted-foreground pt-1">AI Tutor menganalisis...</p>
+              <div className="max-w-[85%] space-y-1.5">
+                <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
+                  {streamingText}
+                  {streaming && <span className="animate-pulse">▌</span>}
+                </div>
+                {analyzing && (
+                  <div className="pl-10 space-y-1">
+                    <Skeleton className="h-3 w-44" />
+                    <p className="text-[11px] text-muted-foreground">Menerjemahkan & menganalisis...</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
