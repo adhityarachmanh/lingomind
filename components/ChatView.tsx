@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { sendPolyglotMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
 
 interface Message {
@@ -43,7 +44,7 @@ export default function ChatView() {
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [flashMsg, setFlashMsg] = useState<string | null>(null);
+  
 
   const ttsMap: Record<string, string> = {
     English: "en-US", Japanese: "ja-JP", Korean: "ko-KR", Mandarin: "zh-CN",
@@ -65,7 +66,7 @@ export default function ChatView() {
     setInput("");
     setSending(true);
     setError(null);
-    setFlashMsg(null);
+    
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
     try {
       const res = await sendPolyglotMessageAction(scenarioId, language, text);
@@ -79,10 +80,9 @@ export default function ChatView() {
   }
 
   async function saveVocab(word: string, meaning: string) {
-    setFlashMsg(null);
     const res = await saveFlashcardAction(word, meaning, language);
     if ("error" in res) { setError(res.error ?? null); return; }
-    setFlashMsg(`${word} disimpan ke flashcard!`);
+    toast.success(`${word} disimpan ke flashcard!`);
   }
 
   if (phase === "picker") {
@@ -201,7 +201,6 @@ export default function ChatView() {
       </div>
 
       {error && <p className="text-xs text-rose-500 mt-2">{error}</p>}
-      {flashMsg && <p className="text-xs text-teal-600 mt-2">{flashMsg}</p>}
 
       <div className="flex gap-2 mt-3">
         <input value={input} onChange={(e) => setInput(e.target.value)}
