@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendGeneralMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import MarkdownContent from "./MarkdownContent";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
@@ -196,10 +196,24 @@ export default function ChatView() {
     if (isGeneral) {
       if (!replyText) {
         if (!mountedRef.current) return;
-        setError("Balasan kosong.");
-        setStreaming(false);
-        setStreamingText("");
-        abortRef.current = null;
+        setAnalyzing(true);
+        try {
+          const res = await sendGeneralMessageAction(sessionId, text);
+          if (!mountedRef.current) return;
+          if ("error" in res) {
+            setError(res.error);
+            return;
+          }
+          setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.reply, expanded: false }]);
+        } catch (e) {
+          if (!mountedRef.current) return;
+          setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+        } finally {
+          setAnalyzing(false);
+          setStreamingText("");
+          setStreamingRomanization("");
+          abortRef.current = null;
+        }
         return;
       }
       if (!mountedRef.current) return;

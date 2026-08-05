@@ -4,7 +4,7 @@ import { generateText } from "ai";
 import { model } from "../ai";
 import { getSession } from "../auth";
 import { db } from "../db";
-import { buildGeneralOpeningPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
+import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
 import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
@@ -351,3 +351,64 @@ export async function saveStreamedMessageAction(
   });
   return { messageId: aiMsg.id };
 }
+
+export async function sendGeneralMessageAction(
+  sessionId: string,
+  userMessage: string
+): Promise<{ messageId: string; reply: string } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  if (!userMessage.trim()) return { error: "Pesan tidak boleh kosong." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({
+    where: { id: sessionId, userId: user.id },
+    include: { scenario: { select: { title: true, description: true, type: true } } },
+  });
+  if (!dbSession) return { error: "Akses ditolak." };
+  if (dbSession.scenario?.type !== "general") {
+    return { error: "Mode skenario tidak didukung." };
+  }
+
+  const role = dbSession.scenario?.title ?? "Asisten";
+  const context = dbSession.scenario?.description
+    ? `${dbSession.scenario.title} — ${dbSession.scenario.description}`
+    : dbSession.scenario?.title ?? "Percakapan";
+
+  const history = await db.message.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
+    take: 20,
+  });
+  const aiMessages = mapHistoryToAiMessages(history);
+  const trailingUserPopped =
+    aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === "user";
+  if (trailingUserPopped) {
+    aiMessages.pop();
+  }
+
+  const { instructions, messages } = buildGeneralStreamPrompt(role, context, userMessage.trim(), aiMessages);
+
+  let text: string;
+  try {
+    const result = await generateText({ model, instructions, messages, maxOutputTokens: 2048, temperature: 0.7 });
+    text = result.text.trim();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
+  }
+  if (!text) {
+    return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
+  }
+
+  if (!trailingUserPopped) {
+    await db.message.create({
+      data: { sessionId, role: "user", content: userMessage.trim() },
+    });
+  }
+  const aiMsg = await db.message.create({
+    data: { sessionId, role: "ai", content: text },
+  });
+
+  return { messageId: aiMsg.id, reply: text };
+}
+
