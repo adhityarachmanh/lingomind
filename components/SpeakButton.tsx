@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Pause, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { speak } from "./voice-tts";
+import { speak, cancelSpeech } from "./voice-tts";
 
 export default function SpeakButton({
   text,
@@ -20,14 +20,14 @@ export default function SpeakButton({
 
   useEffect(() => {
     return () => {
-      window.speechSynthesis?.cancel();
+      cancelSpeech();
     };
   }, []);
 
   function toggle() {
     if (!supported) return;
     if (speaking) {
-      window.speechSynthesis.cancel();
+      cancelSpeech();
       setSpeaking(false);
       return;
     }
