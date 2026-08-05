@@ -40,8 +40,7 @@ export default function SpeakButton({
     );
   }
 
-  const providerLabel =
-    provider === "elevenlabs" ? " (ElevenLabs)" : provider === "ai-gateway" ? " (OpenAI)" : provider === "google" ? " (Google)" : "";
+  const providerLabel = provider === "google" ? " (Google)" : "";
 
   return (
     <Tooltip>

@@ -28,7 +28,7 @@ export function cancelSpeech() {
   }
 }
 
-export type TtsProvider = "elevenlabs" | "ai-gateway" | "google";
+export type TtsProvider = "google";
 
 function playChunk(
   chunk: string,
@@ -42,7 +42,7 @@ function playChunk(
     .then((res) => {
       if (token !== speechToken) return null;
       const provider = res.headers.get("X-TTS-Provider");
-      if (provider === "elevenlabs" || provider === "ai-gateway" || provider === "google") {
+      if (provider === "google") {
         onProvider?.(provider);
       } else {
         console.info("TTS provider: unknown (respons cache lama?)");
