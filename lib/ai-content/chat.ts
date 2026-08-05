@@ -43,13 +43,10 @@ export function buildPolyglotUserMessage(
   level: string,
   scenario: string,
   history: { role: "user" | "assistant"; content: string }[]
-): { messages: { role: "user" | "assistant" | "system"; content: string }[] } {
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
   return {
-    messages: [
-      { role: "system", content: buildPolyglotSystemPrompt(language, level, scenario) },
-      ...history,
-      { role: "user", content: userMessage },
-    ],
+    instructions: buildPolyglotSystemPrompt(language, level, scenario),
+    messages: [...history, { role: "user", content: userMessage }],
   };
 }
 
@@ -57,31 +54,27 @@ export function buildPolyglotOpeningPrompt(
   language: string,
   level: string,
   scenario: string
-): { messages: { role: "system"; content: string }[] } {
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
   return {
-    messages: [
-      {
-        role: "system",
-        content: [
-          `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
-          `Anda sedang bermain peran dalam skenario '${scenario}' sebagai penutur asli yang ramah.`,
-          "",
-          "Tugas Anda: MULAI percakapan. Belum ada pesan dari user sama sekali.",
-          "Anda WAJIB membalas dengan HANYA JSON valid dengan struktur berikut:",
-          "{",
-          '  "reply_in_target_language": "string (pembuka percakapan natural dalam bahasa target — 2-4 kalimat, dalam karakter skenario, AKHIRI dengan satu pertanyaan ke user)",',
-          '  "reply_translation_in_indonesian": "string (terjemahan Bahasa Indonesia dari reply_in_target_language)",',
-          '  "suggested_replies": ["string 1", "string 2", "string 3"]',
-          "}",
-          "",
-          "Aturan:",
-          `- reply_in_target_language WAJIB dalam bahasa ${language} sepenuhnya — jangan gunakan bahasa lain.`,
-          "- Pembuka harus natural, hidup, dan menetapkan konteks skenario.",
-          "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai jawaban atas pertanyaan pembuka — bervariasi (mis. 1 pertanyaan balasan + 1 pernyataan/persetujuan).",
-          "- Pastikan semua string dalam JSON valid (escape tanda kutip, newline dengan \\n).",
-          "- JANGAN tambahkan teks apa pun di luar JSON.",
-        ].join("\n"),
-      },
-    ],
+    instructions: [
+      `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
+      `Anda sedang bermain peran dalam skenario '${scenario}' sebagai penutur asli yang ramah.`,
+      "",
+      "Tugas Anda: MULAI percakapan. User baru masuk ke skenario ini — belum ada percakapan sebelumnya.",
+      "Anda WAJIB membalas dengan HANYA JSON valid dengan struktur berikut:",
+      "{",
+      '  "reply_in_target_language": "string (pembuka percakapan natural dalam bahasa target — 2-4 kalimat, dalam karakter skenario, AKHIRI dengan satu pertanyaan ke user)",',
+      '  "reply_translation_in_indonesian": "string (terjemahan Bahasa Indonesia dari reply_in_target_language)",',
+      '  "suggested_replies": ["string 1", "string 2", "string 3"]',
+      "}",
+      "",
+      "Aturan:",
+      `- reply_in_target_language WAJIB dalam bahasa ${language} sepenuhnya — jangan gunakan bahasa lain.`,
+      "- Pembuka harus natural, hidup, dan menetapkan konteks skenario.",
+      "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai jawaban atas pertanyaan pembuka — bervariasi (mis. 1 pertanyaan balasan + 1 pernyataan/persetujuan).",
+      "- Pastikan semua string dalam JSON valid (escape tanda kutip, newline dengan \\n).",
+      "- JANGAN tambahkan teks apa pun di luar JSON.",
+    ].join("\n"),
+    messages: [{ role: "user", content: "Mulai percakapan!" }],
   };
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPolyglotOpeningPrompt, buildPolyglotSystemPrompt } from "./chat";
+import { buildPolyglotOpeningPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
 
 describe("buildPolyglotSystemPrompt", () => {
   it("mencantumkan suggested_replies di skema JSON", () => {
@@ -18,11 +18,24 @@ describe("buildPolyglotSystemPrompt", () => {
   });
 });
 
+describe("buildPolyglotUserMessage", () => {
+  it("memisahkan instructions dari messages (tanpa role system)", () => {
+    const history = [{ role: "assistant" as const, content: "Hi there!" }];
+    const { instructions, messages } = buildPolyglotUserMessage("Hello", "English", "A1", "Restaurant", history);
+    expect(instructions).toContain("Restaurant");
+    expect(instructions).toContain("suggested_replies");
+    expect(messages).toEqual([
+      { role: "assistant", content: "Hi there!" },
+      { role: "user", content: "Hello" },
+    ]);
+  });
+});
+
 describe("buildPolyglotOpeningPrompt", () => {
-  it("menghasilkan system prompt pembuka yang memuat skenario dan suggested_replies", () => {
-    const { messages } = buildPolyglotOpeningPrompt("English", "A1", "Restaurant");
-    expect(messages[0].role).toBe("system");
-    expect(messages[0].content).toContain("Restaurant");
-    expect(messages[0].content).toContain("suggested_replies");
+  it("menghasilkan instructions pembuka yang memuat skenario dan suggested_replies, dengan pesan starter user", () => {
+    const { instructions, messages } = buildPolyglotOpeningPrompt("English", "A1", "Restaurant");
+    expect(instructions).toContain("Restaurant");
+    expect(instructions).toContain("suggested_replies");
+    expect(messages).toEqual([{ role: "user", content: "Mulai percakapan!" }]);
   });
 });

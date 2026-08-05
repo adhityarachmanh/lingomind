@@ -33,14 +33,16 @@ async function getOrCreateSession(
   email: string,
   language: string,
   scenario: string
-): Promise<string> {
+): Promise<string | null> {
+  const user = await db.user.findUnique({ where: { email }, select: { id: true } });
+  if (!user) return null;
   const existing = await db.session.findFirst({
-    where: { userId: email, language, scenario, endedAt: null },
+    where: { userId: user.id, language, scenario, endedAt: null },
   });
   if (existing) return existing.id;
   const level = "A1";
   const created = await db.session.create({
-    data: { userId: email, language, level, scenario },
+    data: { userId: user.id, language, level, scenario },
   });
   return created.id;
 }
@@ -56,6 +58,7 @@ export async function sendPolyglotMessageAction(
 
   const email = session.email;
   const sessionId = await getOrCreateSession(email, language, scenario);
+  if (!sessionId) return { error: "Pengguna tidak ditemukan." };
 
   const history = await db.message.findMany({
     where: { sessionId },
@@ -72,11 +75,11 @@ export async function sendPolyglotMessageAction(
   aiMessages.push({ role: "user", content: userMessage.trim() });
 
   const level = "A1";
-  const { messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
+  const { instructions, messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
 
   let text: string;
   try {
-    const result = await generateText({ model, messages, maxOutputTokens: 4096, temperature: 0.7 });
+    const result = await generateText({ model, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
@@ -109,8 +112,10 @@ export async function saveFlashcardAction(
 ): Promise<ActionResult> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
   await db.flashcard.create({
-    data: { userId: session.email, frontText, backText, language },
+    data: { userId: user.id, frontText, backText, language },
   });
   return { message: "ok" };
 }
@@ -120,8 +125,10 @@ export async function getFlashcardsAction(
 ): Promise<{ cards: { id: string; frontText: string; backText: string }[] } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
   const cards = await db.flashcard.findMany({
-    where: { userId: session.email, language },
+    where: { userId: user.id, language },
     orderBy: { createdAt: "desc" },
   });
   return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
@@ -130,8 +137,10 @@ export async function getFlashcardsAction(
 export async function endChatSessionAction(sessionId: string): Promise<ActionResult> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
   await db.session.update({
-    where: { id: sessionId, userId: session.email },
+    where: { id: sessionId, userId: user.id },
     data: { endedAt: new Date() },
   });
   return { message: "ok" };
@@ -154,16 +163,17 @@ export async function openSessionAction(
 
   const email = session.email;
   const sessionId = await getOrCreateSession(email, language, scenario);
+  if (!sessionId) return { error: "Pengguna tidak ditemukan." };
 
   const count = await db.message.count({ where: { sessionId } });
   if (count > 0) return { alreadyStarted: true, sessionId };
 
   const level = "A1";
-  const { messages } = buildPolyglotOpeningPrompt(language, level, scenario);
+  const { instructions, messages } = buildPolyglotOpeningPrompt(language, level, scenario);
 
   let text: string;
   try {
-    const result = await generateText({ model, messages, maxOutputTokens: 2048, temperature: 0.8 });
+    const result = await generateText({ model, instructions, messages, maxOutputTokens: 2048, temperature: 0.8 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan pembuka percakapan." };
