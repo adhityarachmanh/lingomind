@@ -7,10 +7,10 @@ export default function NotFound() {
       <p className="text-2xl font-black">Halaman Tidak Ditemukan</p>
       <p className="text-sm text-muted-foreground">Halaman yang kamu cari tidak ada atau sudah dipindah.</p>
       <Link
-        href="/dashboard"
+        href="/chat"
         className="mt-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-white text-sm font-bold"
       >
-        Kembali ke Dashboard
+        Kembali ke Chat
       </Link>
     </div>
   );
