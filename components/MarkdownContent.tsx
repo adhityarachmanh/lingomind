@@ -14,7 +14,7 @@ export default function MarkdownContent({ content }: { content: string }) {
         components={{
           a: ({ node, ...props }) => <a {...props} className="text-primary underline underline-offset-2" />,
           pre: ({ node, ...props }) => (
-            <pre {...props} className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 my-2 text-xs" />
+            <pre {...props} className="overflow-x-auto rounded-lg border border-border bg-muted/40 p-3 my-2 text-xs [&>code]:bg-transparent [&>code]:p-0 [&>code]:rounded-none" />
           ),
           code: ({ node, className, ...props }) =>
             className ? (
