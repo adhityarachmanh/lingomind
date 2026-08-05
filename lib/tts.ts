@@ -1,6 +1,6 @@
-export const AI_GATEWAY_MODEL = "openai/tts-1";
-export const AI_GATEWAY_VOICE = "alloy";
-export const AI_GATEWAY_MAX_TEXT = 4000;
+export const ELEVENLABS_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
+export const ELEVENLABS_MODEL = "eleven_multilingual_v2";
+export const ELEVENLABS_MAX_TEXT = 5000;
 
 export const GOOGLE_TTS_TL: Record<string, string> = {
   English: "en",
@@ -21,4 +21,3 @@ export const GOOGLE_TTS_TL: Record<string, string> = {
 };
 
 export const GOOGLE_TTS_MAX_TEXT = 180;
-

@@ -1,11 +1,9 @@
 import { NextRequest } from "next/server";
-import { generateSpeech } from "ai";
-import { gateway } from "@ai-sdk/gateway";
 import { getSession } from "@/lib/auth";
 import {
-  AI_GATEWAY_MAX_TEXT,
-  AI_GATEWAY_MODEL,
-  AI_GATEWAY_VOICE,
+  ELEVENLABS_MAX_TEXT,
+  ELEVENLABS_MODEL,
+  ELEVENLABS_VOICE_ID,
   GOOGLE_TTS_MAX_TEXT,
   GOOGLE_TTS_TL,
 } from "@/lib/tts";
@@ -17,9 +15,9 @@ const AUDIO_HEADERS = {
   "Cache-Control": "public, max-age=86400, s-maxage=604800",
 };
 
-const AI_GATEWAY_HEADERS = {
+const ELEVENLABS_HEADERS = {
   ...AUDIO_HEADERS,
-  "X-TTS-Provider": "ai-gateway",
+  "X-TTS-Provider": "elevenlabs",
 };
 
 const GOOGLE_HEADERS = {
@@ -38,19 +36,26 @@ export async function GET(req: NextRequest) {
     return new Response("Teks kosong.", { status: 400 });
   }
 
-  const apiKey = process.env.AI_GATEWAY_API_KEY;
-  if (apiKey && text.length <= AI_GATEWAY_MAX_TEXT) {
+  const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
+  if (elevenlabsKey && text.length <= ELEVENLABS_MAX_TEXT) {
     try {
-      const result = await generateSpeech({
-        model: gateway.speechModel(AI_GATEWAY_MODEL),
-        text,
-        voice: AI_GATEWAY_VOICE,
-        outputFormat: "mp3",
-        language: GOOGLE_TTS_TL[language] ?? "en",
-      });
-      const audio = result.audio.uint8Array;
-      if (audio.length > 0) {
-        return new Response(Buffer.from(audio), { headers: AI_GATEWAY_HEADERS });
+      const res = await fetch(
+        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=mp3_44100_128`,
+        {
+          method: "POST",
+          headers: {
+            "xi-api-key": elevenlabsKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ text, model_id: ELEVENLABS_MODEL }),
+          cache: "no-store",
+        }
+      );
+      if (res.ok) {
+        const buf = Buffer.from(await res.arrayBuffer());
+        if (buf.length > 0) {
+          return new Response(buf, { headers: ELEVENLABS_HEADERS });
+        }
       }
     } catch {
       // lanjut ke fallback Google
