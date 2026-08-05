@@ -412,10 +412,20 @@ export default function ChatView() {
                       </div>
                     </div>
                     {(m.romanization ?? m.analysis?.reply_romanization) && (
-                      <p className="text-[11px] text-muted-foreground pl-10">{m.romanization ?? m.analysis?.reply_romanization}</p>
+                      <p className="pl-10 flex items-start gap-1.5">
+                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary">
+                          Baca
+                        </span>
+                        <span dir="auto" className="text-[11px] text-foreground/80">{m.romanization ?? m.analysis?.reply_romanization}</span>
+                      </p>
                     )}
                     {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
-                      <p className="text-[11px] text-muted-foreground italic pl-10">{m.translation ?? m.analysis?.reply_translation_in_indonesian}</p>
+                      <p className="pl-10 flex items-start gap-1.5">
+                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-muted px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-muted-foreground">
+                          Arti
+                        </span>
+                        <span dir="auto" className="text-[11px] text-muted-foreground italic">{m.translation ?? m.analysis?.reply_translation_in_indonesian}</span>
+                      </p>
                     )}
                   </div>
                 </div>
@@ -434,7 +444,14 @@ export default function ChatView() {
                 </div>
                 {analyzing && (
                   <div className="pl-10 space-y-1">
-                    {streamingRomanization && <p className="text-[11px] text-muted-foreground">{streamingRomanization}</p>}
+                    {streamingRomanization && (
+                      <p className="flex items-start gap-1.5">
+                        <span className="mt-px inline-flex items-center shrink-0 rounded bg-primary/15 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-primary">
+                          Baca
+                        </span>
+                        <span dir="auto" className="text-[11px] text-foreground/80">{streamingRomanization}</span>
+                      </p>
+                    )}
                     <Skeleton className="h-3 w-44" />
                     <p className="text-[11px] text-muted-foreground">Menerjemahkan & menganalisis...</p>
                   </div>
