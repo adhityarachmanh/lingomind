@@ -40,11 +40,12 @@ export async function createScenarioAction(input: {
   const title = input.title.trim();
   if (!title) return { error: "Judul skenario wajib diisi." };
   const language = input.language.trim();
-  if (!LANGUAGES.some((l) => l.id === language)) return { error: "Pilih bahasa target." };
+  const type = input.type === "general" ? "general" : "language";
+  if (type !== "general" && !LANGUAGES.some((l) => l.id === language)) return { error: "Pilih bahasa target." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
-  const type = input.type === "general" ? "general" : "language";
   const template = SCENARIO_TEMPLATES.find((t) => t.id === input.templateId);
+  if (template && template.type !== type) return { error: "Template tidak cocok dengan jenis skenario." };
   if (template) {
     const existing = type === "general"
       ? await db.scenario.findFirst({ where: { userId: user.id, templateId: template.id, type: "general" } })
