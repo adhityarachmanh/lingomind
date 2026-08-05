@@ -1,8 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Bot, FileCheck2, Loader2, PencilLine, Send } from "lucide-react";
-import { sendPolyglotMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Loader2, LogOut, PencilLine, Send } from "lucide-react";
+import {
+  endChatSessionAction,
+  openSessionAction,
+  saveFlashcardAction,
+  sendPolyglotMessageAction,
+  type PolyglotAnalysis,
+} from "@/lib/actions/chat";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
 import { Button } from "@/components/ui/button";
@@ -33,6 +39,7 @@ interface Message {
   role: "user" | "ai";
   content: string;
   analysis?: PolyglotAnalysis;
+  expanded?: boolean;
 }
 
 const LANGUAGES = [
@@ -85,32 +92,71 @@ export default function ChatView() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [switchOpen, setSwitchOpen] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [opening, setOpening] = useState(false);
 
   const ttsMap: Record<string, string> = {
     English: "en-US", Japanese: "ja-JP", Korean: "ko-KR", Mandarin: "zh-CN",
     Spanish: "es-ES", French: "fr-FR", German: "de-DE", Indonesian: "id-ID",
   };
 
-  function startChat(sId: string, sTitle: string) {
+  async function startChat(sId: string, sTitle: string) {
     setScenarioId(sId);
     setScenarioTitle(sTitle);
     setTtsLang(ttsMap[language] ?? "en-US");
     setMessages([]);
+    setSuggestions([]);
+    setSessionId(null);
     setPhase("chat");
     setError(null);
     setSwitchOpen(false);
+    setOpening(true);
+    try {
+      const res = await openSessionAction(sId, language);
+      if ("error" in res) { toast.error(res.error); return; }
+      setSessionId(res.sessionId);
+      if ("alreadyStarted" in res) return;
+      setMessages([{ id: res.messageId, role: "ai", content: res.reply }]);
+      setSuggestions(res.suggestedReplies);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal memulai percakapan.");
+    } finally {
+      setOpening(false);
+    }
   }
 
-  async function send() {
-    const text = input.trim();
+  async function endSession() {
+    if (sessionId) {
+      const res = await endChatSessionAction(sessionId);
+      if ("error" in res) { toast.error(res.error); return; }
+    }
+    toast.success("Sesi diakhiri. Percakapan baru dimulai saat memilih skenario.");
+    setPhase("picker");
+    setMessages([]);
+    setSuggestions([]);
+    setSessionId(null);
+    setScenarioId("");
+    setScenarioTitle("");
+  }
+
+  function toggleExpanded(id: string) {
+    setMessages((msgs) => msgs.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
+  }
+
+  async function send(textOverride?: string) {
+    const text = (textOverride ?? input).trim();
     if (!text || sending) return;
     setInput("");
+    setSuggestions([]);
     setSending(true);
     setError(null);
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
     try {
       const res = await sendPolyglotMessageAction(scenarioId, language, text);
       if ("error" in res) { setError(res.error ?? null); return; }
+      setSessionId(res.sessionId);
+      setSuggestions(res.analysis.suggested_replies ?? []);
       setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.analysis.reply_in_target_language, analysis: res.analysis }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
@@ -186,6 +232,10 @@ export default function ChatView() {
               </div>
             </DialogContent>
           </Dialog>
+          <Button variant="outline" size="sm" onClick={endSession} disabled={opening || sending}>
+            <LogOut className="h-3.5 w-3.5 mr-1.5" />
+            Akhiri Sesi
+          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
@@ -199,52 +249,65 @@ export default function ChatView() {
             ) : (
               <div key={m.id} className="space-y-3">
                 {m.analysis && (
-                  <Card className="border-border bg-card overflow-hidden shadow-none">
-                    <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
-                      <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                        <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
-                      </span>
-                      <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                        Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
-                      </Badge>
-                    </div>
-                    {m.analysis.detailed_analysis.length > 0 ? (
-                      <div className="px-4 py-3 space-y-2">
-                        {m.analysis.detailed_analysis.map((d, i) => (
-                          <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
-                            <p className="text-sm">
-                              <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
-                              <span className="mx-1.5 text-muted-foreground">→</span>
-                              <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                              <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
-                            </p>
-                          </div>
-                        ))}
+                  <div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs text-muted-foreground -ml-2"
+                      onClick={() => toggleExpanded(m.id)}
+                    >
+                      {m.expanded ? <ChevronUp className="h-3.5 w-3.5 mr-1" /> : <ChevronDown className="h-3.5 w-3.5 mr-1" />}
+                      {m.expanded ? "Tutup Penjelasan" : "Lihat Penjelasan"}
+                    </Button>
+                    {m.expanded && (
+                    <Card className="border-border bg-card overflow-hidden shadow-none">
+                      <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
+                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                          <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
+                        </span>
+                        <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                          Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
+                        </Badge>
                       </div>
-                    ) : (
-                      <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
-                    )}
-                    {m.analysis.native_rephrasing && (
-                      <div className="px-4 py-3 border-t border-border space-y-1.5">
-                        <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
-                        <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
-                        <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
-                      </div>
-                    )}
-                    {m.analysis.vocab_highlight && (
-                      <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
-                        <div className="min-w-0">
-                          <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                      {m.analysis.detailed_analysis.length > 0 ? (
+                        <div className="px-4 py-3 space-y-2">
+                          {m.analysis.detailed_analysis.map((d, i) => (
+                            <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
+                              <p className="text-sm">
+                                <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
+                                <span className="mx-1.5 text-muted-foreground">→</span>
+                                <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
+                              </p>
+                            </div>
+                          ))}
                         </div>
-                        <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
-                          <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
-                        </Button>
-                      </div>
+                      ) : (
+                        <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
+                      )}
+                      {m.analysis.native_rephrasing && (
+                        <div className="px-4 py-3 border-t border-border space-y-1.5">
+                          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
+                          <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
+                          <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
+                        </div>
+                      )}
+                      {m.analysis.vocab_highlight && (
+                        <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
+                            <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                          </div>
+                          <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
+                            <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
+                          </Button>
+                        </div>
+                      )}
+                    </Card>
                     )}
-                  </Card>
+                  </div>
                 )}
                 <div className="flex justify-start gap-2.5">
                   <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
@@ -265,6 +328,18 @@ export default function ChatView() {
               </div>
             )
           )}
+          {opening && (
+            <div className="flex justify-start gap-2">
+              <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
+                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+              </Avatar>
+              <div className="max-w-[85%] space-y-2">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-4 w-32" />
+                <p className="text-[11px] text-muted-foreground pt-1">AI Tutor membuka percakapan...</p>
+              </div>
+            </div>
+          )}
           {sending && (
             <div className="flex justify-start gap-2">
               <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
@@ -281,6 +356,17 @@ export default function ChatView() {
 
         {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
+        {suggestions.length > 0 && !sending && !opening && (
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
+            {suggestions.map((s, i) => (
+              <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s)}>
+                {s}
+              </Button>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-2 mt-3">
           <Input
             value={input}
@@ -290,7 +376,7 @@ export default function ChatView() {
             placeholder={`Ketik dalam bahasa ${language}...`}
             className="flex-1"
           />
-          <Button type="button" onClick={send} disabled={!input.trim() || sending}>
+          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
             {sending ? "" : "Kirim"}
           </Button>
