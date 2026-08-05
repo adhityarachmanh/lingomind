@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, saveFlashcardAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import MarkdownContent from "./MarkdownContent";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
 import { TTS_LANG_MAP } from "@/lib/languages";
@@ -70,6 +71,7 @@ export default function ChatView() {
   const mountedRef = useRef(true);
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
+  const isGeneral = session?.type === "general";
 
   useEffect(() => {
     if (!sessionId) {
@@ -190,6 +192,39 @@ export default function ChatView() {
     const replyText = (parts[0] ?? "").trim();
     const romanization = (parts[1] ?? "").trim();
     setStreamingRomanization(romanization);
+
+    if (isGeneral) {
+      if (!replyText) {
+        if (!mountedRef.current) return;
+        setError("Balasan kosong.");
+        setStreaming(false);
+        setStreamingText("");
+        abortRef.current = null;
+        return;
+      }
+      if (!mountedRef.current) return;
+      setAnalyzing(true);
+      try {
+        const res = await saveStreamedMessageAction(sessionId, replyText);
+        if (!mountedRef.current) return;
+        if ("error" in res) {
+          toast.error(res.error);
+          setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText }]);
+          return;
+        }
+        setMessages((m) => [...m, { id: res.messageId, role: "ai", content: replyText, expanded: false }]);
+      } catch (e) {
+        if (!mountedRef.current) return;
+        toast.error(e instanceof Error ? e.message : "Gagal menyimpan balasan.");
+        setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText }]);
+      } finally {
+        setAnalyzing(false);
+        setStreamingText("");
+        setStreamingRomanization("");
+        abortRef.current = null;
+      }
+      return;
+    }
 
     if (!replyText) {
       if (!mountedRef.current) return;
@@ -345,7 +380,7 @@ export default function ChatView() {
               </div>
             ) : (
               <div key={m.id} className="space-y-3">
-                {m.analysis && m.analysis.scores && (
+                {m.analysis && m.analysis.scores && !isGeneral && (
                   <div>
                     <Button
                       variant="ghost"
@@ -436,14 +471,14 @@ export default function ChatView() {
                     <div className="flex items-start gap-2">
                       <SpeakButton text={m.content} lang={ttsLang} rate={1.0} />
                       <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
-                        {m.content}
+                        {isGeneral ? <MarkdownContent content={m.content} /> : m.content}
                       </div>
                     </div>
                     <div className="pl-10 space-y-1">
-                      {(m.romanization ?? m.analysis?.reply_romanization) && (
+                      {!isGeneral && (m.romanization ?? m.analysis?.reply_romanization) && (
                         <RomanizationLine text={m.romanization ?? m.analysis?.reply_romanization ?? ""} />
                       )}
-                      {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
+                      {!isGeneral && (m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
                         <TranslationLine text={m.translation ?? m.analysis?.reply_translation_in_indonesian ?? ""} />
                       )}
                     </div>
@@ -459,14 +494,14 @@ export default function ChatView() {
               </Avatar>
               <div className="max-w-[85%] space-y-1.5">
                 <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
-                  {streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText}
+                  {isGeneral ? <MarkdownContent content={streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText} /> : streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText}
                   {streaming && <span className="animate-pulse">▌</span>}
                 </div>
                 {analyzing && (
                   <div className="pl-10 space-y-1">
-                    {streamingRomanization && <RomanizationLine text={streamingRomanization} />}
+                    {!isGeneral && streamingRomanization && <RomanizationLine text={streamingRomanization} />}
                     <Skeleton className="h-3 w-44" />
-                    <p className="text-[11px] text-muted-foreground">Menerjemahkan & menganalisis...</p>
+                    <p className="text-[11px] text-muted-foreground">{isGeneral ? "Menyimpan balasan..." : "Menerjemahkan & menganalisis..."}</p>
                   </div>
                 )}
               </div>
@@ -476,7 +511,7 @@ export default function ChatView() {
 
         {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
-        {suggestions.length > 0 && !streaming && !analyzing && (
+        {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
             {suggestions.map((s, i) => (
