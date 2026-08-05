@@ -210,3 +210,70 @@ export async function openSessionAction(
     suggestedReplies: Array.isArray(parsed.suggested_replies) ? parsed.suggested_replies.slice(0, 3) : [],
   };
 }
+
+export interface AnalyzeResult {
+  messageId: string;
+  analysis: PolyglotAnalysis;
+}
+
+export async function analyzeChatMessageAction(
+  sessionId: string,
+  userMessage: string,
+  streamedReply: string
+): Promise<AnalyzeResult | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  if (!streamedReply.trim()) return { error: "Balasan kosong." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({
+    where: { id: sessionId, userId: user.id },
+    include: { scenario: { select: { title: true, language: true } } },
+  });
+  if (!dbSession) return { error: "Akses ditolak." };
+
+  const language = dbSession.scenario?.language ?? dbSession.language;
+  const scenario = dbSession.scenario?.title ?? "Percakapan";
+
+  const history = await db.message.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
+    take: 20,
+  });
+  const aiMessages = history
+    .map((m) => ({
+      role: m.role as "user" | "assistant",
+      content: m.role === "ai" ? (m.analysisJson ? (m.analysisJson as unknown as { reply_in_target_language?: string }).reply_in_target_language : m.content) ?? "" : m.content ?? "",
+    }))
+    .filter((m) => m.content.trim() !== "");
+  if (aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === "user") {
+    aiMessages.pop();
+  }
+
+  const level = "A1";
+  const { instructions, messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
+
+  let text: string;
+  try {
+    const result = await generateText({ model, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
+    text = result.text.trim();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
+  }
+
+  const analysis = parseAiJson<PolyglotAnalysis>(text);
+  if (!analysis || !analysis.reply_in_target_language) {
+    return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
+  }
+
+  const aiMsg = await db.message.create({
+    data: {
+      sessionId,
+      role: "ai",
+      content: streamedReply.trim(),
+      analysisJson: analysis as never,
+    },
+  });
+
+  return { messageId: aiMsg.id, analysis };
+}
