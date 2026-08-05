@@ -42,6 +42,7 @@ export default function ChatView() {
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
 
@@ -121,6 +122,7 @@ export default function ChatView() {
           if (data.error) msg = data.error;
         } catch {}
         setError(msg);
+        if (msg === "Sesi berakhir. Silakan login kembali.") router.replace("/login");
         setStreaming(false);
         return;
       }
@@ -135,9 +137,7 @@ export default function ChatView() {
         }
       }
     } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") {
-        // teks parsial tetap diproses
-      } else {
+      if (!(e instanceof DOMException && e.name === "AbortError")) {
         setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
         setStreaming(false);
         setStreamingText("");
@@ -147,9 +147,19 @@ export default function ChatView() {
       setStreaming(false);
     }
 
+    if (!acc.trim()) {
+      toast.error("Balasan kosong.");
+      setAnalyzing(false);
+      setStreamingText("");
+      abortRef.current = null;
+      return;
+    }
+
+    if (!mountedRef.current) return;
     setAnalyzing(true);
     try {
       const res = await analyzeChatMessageAction(sessionId, text, acc);
+      if (!mountedRef.current) return;
       if ("error" in res) {
         toast.error(res.error);
         setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
@@ -168,6 +178,7 @@ export default function ChatView() {
         },
       ]);
     } catch (e) {
+      if (!mountedRef.current) return;
       toast.error(e instanceof Error ? e.message : "Gagal menganalisis.");
       setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
     } finally {
@@ -201,7 +212,9 @@ export default function ChatView() {
   }
 
   useEffect(() => {
+    mountedRef.current = true;
     return () => {
+      mountedRef.current = false;
       abortRef.current?.abort();
     };
   }, []);

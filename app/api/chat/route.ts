@@ -25,6 +25,7 @@ export async function POST(req: NextRequest) {
   if (!userMessage) {
     return NextResponse.json({ error: "Pesan tidak boleh kosong." }, { status: 400 });
   }
+  if (userMessage.length > 2000) return NextResponse.json({ error: "Pesan terlalu panjang." }, { status: 400 });
   if (!body.sessionId) {
     return NextResponse.json({ error: "Percakapan tidak ditemukan." }, { status: 400 });
   }
