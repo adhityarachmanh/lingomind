@@ -87,6 +87,11 @@ export async function sendPolyglotMessageAction(
     take: 20,
   });
   const aiMessages = mapHistoryToAiMessages(history);
+  const trailingUserPopped =
+    aiMessages.length > 0 && aiMessages[aiMessages.length - 1].role === "user";
+  if (trailingUserPopped) {
+    aiMessages.pop();
+  }
 
   aiMessages.push({ role: "user", content: userMessage.trim() });
 
@@ -106,9 +111,11 @@ export async function sendPolyglotMessageAction(
     return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
   }
 
-  await db.message.create({
-    data: { sessionId, role: "user", content: userMessage.trim() },
-  });
+  if (!trailingUserPopped) {
+    await db.message.create({
+      data: { sessionId, role: "user", content: userMessage.trim() },
+    });
+  }
   const aiMsg = await db.message.create({
     data: {
       sessionId,

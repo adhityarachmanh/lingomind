@@ -31,6 +31,16 @@ describe("buildPolyglotSystemPrompt", () => {
     expect(prompt).toContain("romanization");
     expect(prompt).toContain("huruf Latin");
   });
+
+  it("mencantumkan reply_romanization untuk bahasa non-Latin", () => {
+    const prompt = buildPolyglotSystemPrompt("Korean", "A1", "Restaurant");
+    expect(prompt).toContain("reply_romanization");
+  });
+
+  it("tidak mencantumkan reply_romanization untuk bahasa Latin", () => {
+    const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
+    expect(prompt).not.toContain("reply_romanization");
+  });
 });
 
 describe("buildPolyglotUserMessage", () => {
@@ -52,6 +62,16 @@ describe("buildPolyglotOpeningPrompt", () => {
     expect(instructions).toContain("Restaurant");
     expect(instructions).toContain("suggested_replies");
     expect(messages).toEqual([{ role: "user", content: "Mulai percakapan!" }]);
+  });
+
+  it("menyertakan reply_romanization untuk pembuka non-Latin", () => {
+    const { instructions } = buildPolyglotOpeningPrompt("Korean", "A1", "Restaurant");
+    expect(instructions).toContain("reply_romanization");
+  });
+
+  it("tidak menyertakan reply_romanization untuk pembuka Latin", () => {
+    const { instructions } = buildPolyglotOpeningPrompt("English", "A1", "Restaurant");
+    expect(instructions).not.toContain("reply_romanization");
   });
 });
 

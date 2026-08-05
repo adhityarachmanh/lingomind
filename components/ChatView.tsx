@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, saveFlashcardAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
@@ -105,57 +105,63 @@ export default function ChatView() {
     setError(null);
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
 
-    const controller = new AbortController();
-    abortRef.current = controller;
-    setStreaming(true);
-    setStreamingText("");
-    let acc = "";
-
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sessionId, text }),
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        let msg = "Gagal mengirim pesan.";
-        try {
-          const data = (await res.json()) as { error?: string };
-          if (data.error) msg = data.error;
-        } catch {}
-        setError(msg);
-        if (msg === "Sesi berakhir. Silakan login kembali.") router.replace("/login");
-        setStreaming(false);
-        return;
-      }
-      const reader = res.body?.getReader();
-      const decoder = new TextDecoder();
-      if (reader) {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          acc += decoder.decode(value, { stream: true });
-          setStreamingText(acc);
+    async function fetchStream(): Promise<string> {
+      const controller = new AbortController();
+      abortRef.current = controller;
+      let acc = "";
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionId, text }),
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          let msg = "Gagal mengirim pesan.";
+          try {
+            const data = (await res.json()) as { error?: string };
+            if (data.error) msg = data.error;
+          } catch {}
+          if (msg === "Sesi berakhir. Silakan login kembali.") {
+            router.replace("/login");
+            return "";
+          }
+          throw new Error(msg);
         }
+        const reader = res.body?.getReader();
+        const decoder = new TextDecoder();
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            acc += decoder.decode(value, { stream: true });
+            setStreamingText(acc);
+          }
+        }
+        return acc;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return acc;
+        throw e;
       }
-    } catch (e) {
-      if (!(e instanceof DOMException && e.name === "AbortError")) {
-        setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
-        setStreaming(false);
-        setStreamingText("");
-        return;
-      }
-    } finally {
-      setStreaming(false);
     }
 
-    if (!acc.trim()) {
-      toast.error("Balasan kosong.");
-      setAnalyzing(false);
+    let acc = "";
+    setStreaming(true);
+    setStreamingText("");
+    try {
+      acc = await fetchStream();
+      if (!acc.trim()) {
+        acc = await fetchStream();
+      }
+    } catch (e) {
+      if (!mountedRef.current) return;
+      setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+      setStreaming(false);
       setStreamingText("");
       abortRef.current = null;
       return;
+    } finally {
+      setStreaming(false);
     }
 
     const parts = acc.split("||ROM||");
@@ -164,10 +170,37 @@ export default function ChatView() {
     setStreamingRomanization(romanization);
 
     if (!replyText) {
-      toast.error("Balasan kosong.");
-      setAnalyzing(false);
-      setStreamingText("");
-      abortRef.current = null;
+      if (!mountedRef.current) return;
+      setAnalyzing(true);
+      try {
+        const res = await sendPolyglotMessageAction(sessionId, text);
+        if (!mountedRef.current) return;
+        if ("error" in res) {
+          setError(res.error);
+          return;
+        }
+        setSuggestions(res.analysis.suggested_replies ?? []);
+        setMessages((m) => [
+          ...m,
+          {
+            id: res.messageId,
+            role: "ai",
+            content: res.analysis.reply_in_target_language,
+            analysis: res.analysis,
+            romanization: res.analysis.reply_romanization,
+            translation: res.analysis.reply_translation_in_indonesian,
+            expanded: false,
+          },
+        ]);
+      } catch (e) {
+        if (!mountedRef.current) return;
+        setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+      } finally {
+        setAnalyzing(false);
+        setStreamingText("");
+        setStreamingRomanization("");
+        abortRef.current = null;
+      }
       return;
     }
 

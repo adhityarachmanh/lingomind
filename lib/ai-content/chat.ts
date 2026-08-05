@@ -2,6 +2,7 @@
 // scores, detailed_analysis, native_rephrasing, vocab_highlight, reply + translation.
 import { NON_LATIN_LANGUAGES } from "../languages";
 export function buildPolyglotSystemPrompt(language: string, level: string, scenario: string): string {
+  const isNonLatin = NON_LATIN_LANGUAGES.has(language);
   return [
     `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
     `Anda sedang bermain peran dalam skenario '${scenario}' sebagai penutur asli yang ramah.`,
@@ -22,6 +23,9 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
     '  "vocab_highlight": { "word_target": "string (satu kata berguna dari konteks)", "meaning_in_indonesian": "string", "romanization": "string (cara baca word_target — non-Latin saja; Latin isi string kosong)" },',
     `  "reply_in_target_language": "string (balasan percakapan natural dalam bahasa ${language} — 2-4 kalimat, tetap dalam karakter skenario)",`,
     '  "reply_translation_in_indonesian": "string (terjemahan Bahasa Indonesia dari reply_in_target_language)",',
+    ...(isNonLatin
+      ? ['  "reply_romanization": "string (cara baca reply_in_target_language dengan huruf Latin)",']
+      : []),
     '  "suggested_replies": ["string 1", "string 2", "string 3"]',
     "}",
     "",
@@ -31,7 +35,11 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
     "- Jika tidak ada kesalahan, beri scores.grammar antara 85-100 dan fluency 'Good' atau 'Excellent'.",
     "- Jangan mengarang kesalahan yang tidak ada.",
     "- native_rephrasing: berikan 2 versi alternatif dalam bahasa target (formal & casual) BESERTA artinya masing-masing dalam Bahasa Indonesia (formal_meaning_in_indonesian & casual_meaning_in_indonesian), walau tidak ada kesalahan.",
-    "- Romanisasi: jika bahasa target TIDAK memakai huruf Latin (mis. Korea, Jepang, Cina, Arab, Rusia, Hindi), isi semua field *_romanization / romanization dengan cara baca memakai huruf Latin. Jika bahasa target memakai huruf Latin (English, Spanish, dll.), isi string kosong \"\".",
+    ...(isNonLatin
+      ? [
+          "- Romanisasi: karena bahasa target TIDAK memakai huruf Latin, isi semua field *_romanization / romanization (termasuk reply_romanization) dengan cara baca memakai huruf Latin.",
+        ]
+      : []),
     "- vocab_highlight: pilih 1 kata berguna dari konteks percakapan, beri arti dalam Bahasa Indonesia.",
     "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai lanjutan percakapan — bervariasi (mis. 1 pertanyaan + 1 pernyataan/persetujuan). Selalu isi 2-3; jika benar-benar tidak mungkin, isi array kosong [].",
     "- Balasan roleplay (reply_in_target_language) harus natural, hidup, dan mendorong percakapan berlanjut — ajukan pertanyaan di akhir.",
@@ -58,6 +66,7 @@ export function buildPolyglotOpeningPrompt(
   level: string,
   scenario: string
 ): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  const isNonLatin = NON_LATIN_LANGUAGES.has(language);
   return {
     instructions: [
       `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
@@ -68,12 +77,18 @@ export function buildPolyglotOpeningPrompt(
       "{",
       '  "reply_in_target_language": "string (pembuka percakapan natural dalam bahasa target — 2-4 kalimat, dalam karakter skenario, AKHIRI dengan satu pertanyaan ke user)",',
       '  "reply_translation_in_indonesian": "string (terjemahan Bahasa Indonesia dari reply_in_target_language)",',
+      ...(isNonLatin
+        ? ['  "reply_romanization": "string (cara baca reply_in_target_language dengan huruf Latin)",']
+        : []),
       '  "suggested_replies": ["string 1", "string 2", "string 3"]',
       "}",
       "",
       "Aturan:",
       `- reply_in_target_language WAJIB dalam bahasa ${language} sepenuhnya — jangan gunakan bahasa lain.`,
       "- Pembuka harus natural, hidup, dan menetapkan konteks skenario.",
+      ...(isNonLatin
+        ? ["- Romanisasi: isi reply_romanization dengan cara baca reply_in_target_language memakai huruf Latin."]
+        : []),
       "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai jawaban atas pertanyaan pembuka — bervariasi (mis. 1 pertanyaan balasan + 1 pernyataan/persetujuan).",
       "- Pastikan semua string dalam JSON valid (escape tanda kutip, newline dengan \\n).",
       "- JANGAN tambahkan teks apa pun di luar JSON.",
