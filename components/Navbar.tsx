@@ -10,7 +10,7 @@ interface Props { full_name: string; }
 
 export default function Navbar({ full_name }: Props) {
   return (
-    <header className="fixed top-0 inset-x-0 z-40 h-14 border-b border-border bg-background/95 backdrop-blur shadow-sm flex items-center">
+    <header className="fixed top-0 inset-x-0 z-40 border-b border-border bg-background/95 backdrop-blur shadow-sm flex items-center h-[calc(3.5rem_+_env(safe-area-inset-top))] pt-[env(safe-area-inset-top)]">
       <div className="max-w-4xl mx-auto w-full px-4 flex items-center justify-between">
         <Link href="/chat" className="flex items-center gap-2">
           <img src="/logo.png" alt="LingoMind Logo" className="w-7 h-7 rounded-lg object-cover border border-border" />

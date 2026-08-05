@@ -232,28 +232,31 @@ export default function ChatView() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-[calc(100dvh-3.5rem)]">
+      <div className="flex h-[calc(100dvh_-_3.5rem_-_env(safe-area-inset-top))]">
       <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
         <ChatSidebar activeSessionId={sessionId} />
       </div>
       <div className="flex-1 min-w-0 flex flex-col max-w-3xl mx-auto w-full px-4 py-4">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <Button variant="ghost" size="icon" onClick={() => router.push("/chat")} aria-label="Kembali">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Button variant="ghost" size="icon" className="shrink-0 -ml-1.5" onClick={() => router.push("/chat")} aria-label="Kembali">
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="min-w-0">
-              <h1 className="text-base font-extrabold truncate">{session?.scenarioTitle}</h1>
+              <h1 className="text-sm sm:text-base font-extrabold truncate">{session?.scenarioTitle}</h1>
               <LanguageBadge language={session?.language ?? ""} />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={deleteSession} disabled={streaming || analyzing} className="text-destructive hover:text-destructive">
+          <Button variant="outline" size="sm" onClick={deleteSession} disabled={streaming || analyzing} className="hidden sm:inline-flex text-destructive hover:text-destructive shrink-0">
             <Trash2 className="h-3.5 w-3.5 mr-1.5" />
             Hapus Percakapan
           </Button>
+          <Button variant="ghost" size="icon" onClick={deleteSession} disabled={streaming || analyzing} className="sm:hidden text-destructive hover:text-destructive shrink-0" aria-label="Hapus percakapan">
+            <Trash2 className="h-4 w-4" />
+          </Button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-[env(safe-area-inset-bottom)]">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-4">
           {messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="flex justify-end">
@@ -381,14 +384,14 @@ export default function ChatView() {
           </div>
         )}
 
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-2 mt-3 pb-[env(safe-area-inset-bottom)]">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
             disabled={streaming || analyzing}
             placeholder={`Ketik dalam bahasa ${session?.language ?? "..."}...`}
-            className="flex-1"
+            className="flex-1 min-w-0"
           />
           {streaming ? (
             <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>

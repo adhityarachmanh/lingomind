@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Navbar full_name={session.full_name} />
-      <main className="pt-14">{children}</main>
+      <main className="pt-[calc(3.5rem_+_env(safe-area-inset-top))]">{children}</main>
     </div>
   );
 }
