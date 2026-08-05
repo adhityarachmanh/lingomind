@@ -27,6 +27,7 @@ export function ScenarioCard({ scenario, onOpen }: { scenario: ScenarioSummary; 
       <div className="flex items-start justify-between gap-2">
         <p className="font-bold text-sm truncate">{scenario.title}</p>
         {scenario.hasActiveSession && <Badge variant="secondary" className="shrink-0 text-[10px]">Aktif</Badge>}
+        {scenario.type === "general" && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground">Umum</Badge>}
       </div>
       <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{scenario.description}</p>
       <div className="mt-2"><LanguageBadge language={scenario.language} /></div>

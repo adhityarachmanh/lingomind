@@ -66,7 +66,7 @@ export default function VoiceChatView() {
       (async () => {
         const res = await getChatHomeAction();
         if ("error" in res) { toast.error(res.error); return; }
-        setScenarios(res.scenarios);
+        setScenarios(res.scenarios.filter((s) => s.type !== "general"));
       })();
     }
   }, [sessionId, router]);

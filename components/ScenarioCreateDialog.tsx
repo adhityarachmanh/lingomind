@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LANGUAGES } from "@/lib/languages";
-import { isTemplateUsed, SCENARIO_TEMPLATES, type UsedScenarioTemplate } from "@/lib/templates";
+import { isTemplateUsed, SCENARIO_TEMPLATES, type ScenarioType, type UsedScenarioTemplate } from "@/lib/templates";
 import { createScenarioAction, getScenarioTemplatesUsedAction } from "@/lib/actions/scenario";
 
 export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: {
@@ -17,6 +17,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 }) {
+  const [mode, setMode] = useState<ScenarioType>("language");
   const [language, setLanguage] = useState("English");
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -24,7 +25,12 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   const [saving, setSaving] = useState(false);
   const [used, setUsed] = useState<UsedScenarioTemplate[]>([]);
 
-  const categories = [...new Set(SCENARIO_TEMPLATES.map((t) => t.category))];
+  const modeTemplates = SCENARIO_TEMPLATES.filter((t) => t.type === mode);
+  const categories = [...new Set(modeTemplates.map((t) => t.category))];
+
+  function isUsedTemplate(id: string) {
+    return mode === "general" ? used.some((u) => u.templateId === id) : isTemplateUsed(used, id, language);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -36,7 +42,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   }, [open]);
 
   function pickTemplate(id: string) {
-    if (isTemplateUsed(used, id, language)) return;
+    if (isUsedTemplate(id)) return;
     const t = SCENARIO_TEMPLATES.find((x) => x.id === id);
     setTemplateId(id);
     if (t) {
@@ -49,7 +55,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
     if (saving) return;
     setSaving(true);
     try {
-      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language, type: "language" });
+      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language: mode === "general" ? "Indonesian" : language, type: mode });
       if ("error" in res) { toast.error(res.error); return; }
       toast.success("Skenario berhasil dibuat!");
       setTemplateId(null);
@@ -72,6 +78,15 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
           <DialogDescription>Pilih bahasa, lalu pilih template atau buat sendiri.</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-1.5">
+            <Button type="button" variant={mode === "language" ? "default" : "outline"} size="sm" onClick={() => { setMode("language"); setTemplateId(null); setTitle(""); setDescription(""); }}>
+              Belajar Bahasa
+            </Button>
+            <Button type="button" variant={mode === "general" ? "default" : "outline"} size="sm" onClick={() => { setMode("general"); setTemplateId(null); setTitle(""); setDescription(""); }}>
+              Umum
+            </Button>
+          </div>
+          {mode === "language" && (
           <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Bahasa Target</Label>
             <Select
@@ -95,6 +110,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
               </SelectContent>
             </Select>
           </div>
+          )}
           <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Pilih Template</Label>
             <div className="space-y-3">
@@ -102,8 +118,8 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
                 <div key={cat}>
                   <p className="text-[11px] font-bold text-muted-foreground mb-1.5">{cat}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-                    {SCENARIO_TEMPLATES.filter((t) => t.category === cat).map((t) => {
-                      const usedTemplate = isTemplateUsed(used, t.id, language);
+                    {modeTemplates.filter((t) => t.category === cat).map((t) => {
+                      const usedTemplate = isUsedTemplate(t.id);
                       return (
                         <button
                           key={t.id}
