@@ -13,4 +13,5 @@ export const GOOGLE_TTS_TL: Record<string, string> = {
   Italian: "it",
   Dutch: "nl",
   Turkish: "tr",
+  Indonesian: "id",
 };

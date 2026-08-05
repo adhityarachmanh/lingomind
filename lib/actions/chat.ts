@@ -311,7 +311,7 @@ export async function analyzeChatMessageAction(
     return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
   }
 
-  if (streamedRomanization && !analysis.reply_romanization) {
+  if (streamedRomanization) {
     analysis.reply_romanization = streamedRomanization;
   }
 

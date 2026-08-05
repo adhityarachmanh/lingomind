@@ -36,6 +36,7 @@ export const TTS_LANG_MAP: Record<string, string> = {
   Italian: "it-IT",
   Dutch: "nl-NL",
   Turkish: "tr-TR",
+  Indonesian: "id-ID",
 };
 
 export const NON_LATIN_LANGUAGES = new Set([
