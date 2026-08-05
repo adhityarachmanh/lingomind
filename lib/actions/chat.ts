@@ -198,6 +198,7 @@ export async function openSessionAction(
       sessionId,
       role: "ai",
       content: parsed.reply_in_target_language,
+      analysisJson: parsed as never,
     },
   });
 

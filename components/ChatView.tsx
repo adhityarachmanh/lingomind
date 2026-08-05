@@ -163,7 +163,7 @@ export default function ChatView() {
               </div>
             ) : (
               <div key={m.id} className="space-y-3">
-                {m.analysis && (
+                {m.analysis && m.analysis.scores && (
                   <div>
                     <Button
                       variant="ghost"
