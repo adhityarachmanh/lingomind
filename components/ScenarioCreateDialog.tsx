@@ -49,7 +49,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
     if (saving) return;
     setSaving(true);
     try {
-      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language });
+      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language, type: "language" });
       if ("error" in res) { toast.error(res.error); return; }
       toast.success("Skenario berhasil dibuat!");
       setTemplateId(null);

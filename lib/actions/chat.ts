@@ -4,8 +4,9 @@ import { generateText } from "ai";
 import { model } from "../ai";
 import { getSession } from "../auth";
 import { db } from "../db";
-import { buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
+import { buildGeneralOpeningPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
+import type { ScenarioType } from "../templates";
 import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
 
@@ -212,8 +213,12 @@ export async function openSessionAction(
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
-  const scenario = await db.scenario.findFirst({ where: { id: scenarioId, userId: user.id }, select: { title: true } });
+  const scenario = await db.scenario.findFirst({
+    where: { id: scenarioId, userId: user.id },
+    select: { title: true, description: true, type: true },
+  });
   if (!scenario) return { error: "Akses ditolak." };
+  const isGeneral = scenario.type === "general";
 
   const sessionId = await getOrCreateSession(user.id, language, scenarioId);
   if (!sessionId) return { error: "Pengguna tidak ditemukan." };
@@ -222,7 +227,11 @@ export async function openSessionAction(
   if (count > 0) return { alreadyStarted: true, sessionId };
 
   const level = "A1";
-  const { instructions, messages } = buildPolyglotOpeningPrompt(language, level, scenario.title);
+  const role = scenario.title;
+  const context = scenario.description ? `${scenario.title} — ${scenario.description}` : scenario.title;
+  const { instructions, messages } = isGeneral
+    ? buildGeneralOpeningPrompt(role, context)
+    : buildPolyglotOpeningPrompt(language, level, scenario.title);
 
   let text: string;
   try {
@@ -232,11 +241,9 @@ export async function openSessionAction(
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan pembuka percakapan." };
   }
 
-  const parsed = parseAiJson<{
-    reply_in_target_language?: string;
-    reply_translation_in_indonesian?: string;
-    suggested_replies?: unknown;
-  }>(text);
+  const parsed = isGeneral
+    ? { reply_in_target_language: text }
+    : parseAiJson<{ reply_in_target_language?: string; reply_translation_in_indonesian?: string; suggested_replies?: unknown }>(text);
 
   if (!parsed || !parsed.reply_in_target_language) {
     return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
@@ -247,7 +254,7 @@ export async function openSessionAction(
       sessionId,
       role: "ai",
       content: parsed.reply_in_target_language,
-      analysisJson: parsed as never,
+      analysisJson: isGeneral ? undefined : (parsed as never),
     },
   });
 
@@ -255,8 +262,8 @@ export async function openSessionAction(
     sessionId,
     messageId: aiMsg.id,
     reply: parsed.reply_in_target_language,
-    translation: parsed.reply_translation_in_indonesian ?? "",
-    suggestedReplies: normalizeSuggestedReplies(parsed.suggested_replies).slice(0, 3),
+    translation: isGeneral ? "" : (parsed.reply_translation_in_indonesian ?? ""),
+    suggestedReplies: isGeneral ? [] : normalizeSuggestedReplies(parsed.suggested_replies).slice(0, 3),
   };
 }
 
@@ -325,4 +332,21 @@ export async function analyzeChatMessageAction(
   });
 
   return { messageId: aiMsg.id, analysis };
+}
+
+export async function saveStreamedMessageAction(
+  sessionId: string,
+  content: string
+): Promise<{ messageId: string } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  if (!content.trim()) return { error: "Balasan kosong." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({ where: { id: sessionId, userId: user.id } });
+  if (!dbSession) return { error: "Akses ditolak." };
+  const aiMsg = await db.message.create({
+    data: { sessionId, role: "ai", content: content.trim() },
+  });
+  return { messageId: aiMsg.id };
 }

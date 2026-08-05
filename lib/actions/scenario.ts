@@ -3,7 +3,7 @@
 import { getSession } from "../auth";
 import { db } from "../db";
 import { trimPreview } from "../chat-utils";
-import { SCENARIO_TEMPLATES } from "../templates";
+import { SCENARIO_TEMPLATES, type ScenarioType } from "../templates";
 import { LANGUAGES } from "../languages";
 import type { ActionResult } from "./types";
 
@@ -12,6 +12,7 @@ export interface ScenarioSummary {
   title: string;
   description: string;
   language: string;
+  type: ScenarioType;
   createdAt: Date;
   lastActivityAt: Date | null;
   hasActiveSession: boolean;
@@ -32,6 +33,7 @@ export async function createScenarioAction(input: {
   title: string;
   description: string;
   language: string;
+  type: ScenarioType;
 }): Promise<{ scenarioId: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -41,12 +43,15 @@ export async function createScenarioAction(input: {
   if (!LANGUAGES.some((l) => l.id === language)) return { error: "Pilih bahasa target." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
+  const type = input.type === "general" ? "general" : "language";
   const template = SCENARIO_TEMPLATES.find((t) => t.id === input.templateId);
   if (template) {
-    const existing = await db.scenario.findFirst({
-      where: { userId: user.id, templateId: template.id, language },
-    });
-    if (existing) return { error: "Skenario dengan template dan bahasa ini sudah ada." };
+    const existing = type === "general"
+      ? await db.scenario.findFirst({ where: { userId: user.id, templateId: template.id, type: "general" } })
+      : await db.scenario.findFirst({ where: { userId: user.id, templateId: template.id, language } });
+    if (existing) {
+      return { error: type === "general" ? "Skenario dengan template ini sudah ada." : "Skenario dengan template dan bahasa ini sudah ada." };
+    }
   }
   const scenario = await db.scenario.create({
     data: {
@@ -55,6 +60,7 @@ export async function createScenarioAction(input: {
       description: input.description.trim(),
       language,
       templateId: template?.id ?? null,
+      type,
     },
   });
   return { scenarioId: scenario.id };
@@ -89,7 +95,7 @@ export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[
     where: { userId: user.id, scenarioId: { not: null } },
     orderBy: { createdAt: "desc" },
     include: {
-      scenario: { select: { title: true, language: true } },
+      scenario: { select: { title: true, language: true, type: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1, select: { content: true, createdAt: true } },
       _count: { select: { messages: true } },
     },
@@ -115,6 +121,7 @@ export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[
       title: sc.title,
       description: sc.description,
       language: sc.language,
+      type: sc.type as ScenarioType,
       createdAt: sc.createdAt,
       lastActivityAt: last ? (last.messages[0]?.createdAt ?? last.createdAt) : null,
       hasActiveSession: scSessions.some((s) => s.endedAt === null),
@@ -136,6 +143,7 @@ export interface SessionDto {
   id: string;
   scenarioTitle: string;
   language: string;
+  type: ScenarioType;
   active: boolean;
 }
 
@@ -146,7 +154,7 @@ export async function getSessionMessagesAction(sessionId: string): Promise<{ ses
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const s = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true } } },
+    include: { scenario: { select: { title: true, language: true, type: true } } },
   });
   if (!s) return { error: "Percakapan tidak ditemukan." };
   const messages = await db.message.findMany({
@@ -158,6 +166,7 @@ export async function getSessionMessagesAction(sessionId: string): Promise<{ ses
       id: s.id,
       scenarioTitle: s.scenario?.title ?? "Percakapan",
       language: s.scenario?.language ?? s.language,
+      type: (s.scenario?.type as ScenarioType | undefined) ?? "language",
       active: s.endedAt === null,
     },
     messages: messages.map((m) => ({
