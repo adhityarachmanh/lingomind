@@ -11,6 +11,11 @@ describe("buildPolyglotSystemPrompt", () => {
     const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
     expect(prompt).toContain("2-3 kalimat singkat");
   });
+
+  it("menempatkan suggested_replies sebagai field terakhir skema", () => {
+    const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
+    expect(prompt.indexOf("suggested_replies")).toBeGreaterThan(prompt.indexOf("reply_translation_in_indonesian"));
+  });
 });
 
 describe("buildPolyglotOpeningPrompt", () => {

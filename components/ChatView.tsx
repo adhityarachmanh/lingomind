@@ -38,6 +38,7 @@ interface Message {
   id: string;
   role: "user" | "ai";
   content: string;
+  translation?: string;
   analysis?: PolyglotAnalysis;
   expanded?: boolean;
 }
@@ -117,7 +118,7 @@ export default function ChatView() {
       if ("error" in res) { toast.error(res.error); return; }
       setSessionId(res.sessionId);
       if ("alreadyStarted" in res) return;
-      setMessages([{ id: res.messageId, role: "ai", content: res.reply }]);
+      setMessages([{ id: res.messageId, role: "ai", content: res.reply, translation: res.translation }]);
       setSuggestions(res.suggestedReplies);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Gagal memulai percakapan.");
@@ -128,8 +129,13 @@ export default function ChatView() {
 
   async function endSession() {
     if (sessionId) {
-      const res = await endChatSessionAction(sessionId);
-      if ("error" in res) { toast.error(res.error); return; }
+      try {
+        const res = await endChatSessionAction(sessionId);
+        if ("error" in res) { toast.error(res.error); return; }
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Gagal mengakhiri sesi.");
+        return;
+      }
     }
     toast.success("Sesi diakhiri. Percakapan baru dimulai saat memilih skenario.");
     setPhase("picker");
@@ -146,7 +152,7 @@ export default function ChatView() {
 
   async function send(textOverride?: string) {
     const text = (textOverride ?? input).trim();
-    if (!text || sending) return;
+    if (!text || sending || opening) return;
     setInput("");
     setSuggestions([]);
     setSending(true);
@@ -320,8 +326,10 @@ export default function ChatView() {
                         {m.content}
                       </div>
                     </div>
-                    {m.analysis?.reply_translation_in_indonesian && (
-                      <p className="text-[11px] text-muted-foreground italic pl-10">{m.analysis.reply_translation_in_indonesian}</p>
+                    {(m.analysis?.reply_translation_in_indonesian ?? m.translation) && (
+                      <p className="text-[11px] text-muted-foreground italic pl-10">
+                        {m.analysis?.reply_translation_in_indonesian ?? m.translation}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -372,11 +380,11 @@ export default function ChatView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-            disabled={sending}
+            disabled={sending || opening}
             placeholder={`Ketik dalam bahasa ${language}...`}
             className="flex-1"
           />
-          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending}>
+          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending || opening}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
             {sending ? "" : "Kirim"}
           </Button>
