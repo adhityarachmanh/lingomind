@@ -21,4 +21,4 @@ CREATE INDEX "scenarios_userId_idx" ON "scenarios"("userId");
 ALTER TABLE "scenarios" ADD CONSTRAINT "scenarios_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_scenario_fkey" FOREIGN KEY ("scenario_id") REFERENCES "scenarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "chat_sessions" ADD CONSTRAINT "chat_sessions_scenario_id_fkey" FOREIGN KEY ("scenario_id") REFERENCES "scenarios"("id") ON DELETE SET NULL ON UPDATE CASCADE;

@@ -80,6 +80,7 @@ model Scenario {
   createdAt   DateTime  @default(now())
   sessions    Session[]
 
+  @@index([userId])
   @@map("scenarios")
 }
 
