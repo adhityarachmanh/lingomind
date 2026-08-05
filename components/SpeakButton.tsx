@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pause, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { speak } from "./voice-tts";
 
 export default function SpeakButton({
   text,
@@ -16,11 +17,10 @@ export default function SpeakButton({
 }) {
   const [speaking, setSpeaking] = useState(false);
   const supported = typeof window !== "undefined" && "speechSynthesis" in window;
-  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
     return () => {
-      if (utteranceRef.current) window.speechSynthesis?.cancel();
+      window.speechSynthesis?.cancel();
     };
   }, []);
 
@@ -31,14 +31,8 @@ export default function SpeakButton({
       setSpeaking(false);
       return;
     }
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang;
-    u.rate = rate;
-    u.onend = () => setSpeaking(false);
-    u.onerror = () => setSpeaking(false);
-    utteranceRef.current = u;
     setSpeaking(true);
-    window.speechSynthesis.speak(u);
+    speak(text, lang, rate, () => setSpeaking(false));
   }
 
   if (!supported) return null;
