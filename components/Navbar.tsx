@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut } from "lucide-react";
+import { BookMarked, LogOut } from "lucide-react";
 import { logoutAction } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 interface Props { full_name: string; }
 
@@ -16,7 +17,21 @@ export default function Navbar({ full_name }: Props) {
           <img src="/logo.png" alt="LingoMind Logo" className="w-7 h-7 rounded-lg object-cover border border-border" />
           <span className="text-lg font-black tracking-wider bg-gradient-to-r from-teal-600 to-teal-500 bg-clip-text text-transparent">LingoMind</span>
         </Link>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <TooltipProvider delayDuration={200}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  href="/flashcards"
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  aria-label="Flashcard"
+                >
+                  <BookMarked className="h-4.5 w-4.5" />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>Flashcard</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <span className="text-xs font-semibold text-muted-foreground hidden sm:inline">{full_name}</span>
           <Avatar className="h-7 w-7 border border-border bg-muted">
             <AvatarFallback className="text-[10px] font-bold">{full_name.charAt(0).toUpperCase()}</AvatarFallback>

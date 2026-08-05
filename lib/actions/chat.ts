@@ -157,6 +157,45 @@ export async function getFlashcardsAction(
   return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
 }
 
+export interface FlashcardDto {
+  id: string;
+  frontText: string;
+  backText: string;
+  language: string;
+  createdAt: Date;
+}
+
+export async function getAllFlashcardsAction(): Promise<{ cards: FlashcardDto[] } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const cards = await db.flashcard.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: "desc" },
+  });
+  return {
+    cards: cards.map((c) => ({
+      id: c.id,
+      frontText: c.frontText,
+      backText: c.backText,
+      language: c.language,
+      createdAt: c.createdAt,
+    })),
+  };
+}
+
+export async function deleteFlashcardAction(id: string): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const existing = await db.flashcard.findFirst({ where: { id, userId: user.id } });
+  if (!existing) return { error: "Akses ditolak." };
+  await db.flashcard.delete({ where: { id: existing.id } });
+  return { message: "ok" };
+}
+
 export interface OpenSessionResult {
   sessionId: string;
   messageId: string;
