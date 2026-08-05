@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Loader2, LogOut, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, LogOut, Send, Square } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { endChatSessionAction, saveFlashcardAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, endChatSessionAction, saveFlashcardAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import { getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
@@ -36,9 +36,12 @@ export default function ChatView() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
-  const [sending, setSending] = useState(false);
+  const [streaming, setStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
 
@@ -86,7 +89,7 @@ export default function ChatView() {
   }, [sessionId, router]);
 
   async function send(textOverride?: string) {
-    if (!sessionId || sending) return;
+    if (!sessionId || streaming || analyzing) return;
     const text = (textOverride ?? input).trim();
     if (!text) return;
     if (typeof navigator !== "undefined" && !navigator.onLine) {
@@ -95,18 +98,82 @@ export default function ChatView() {
     }
     setInput("");
     setSuggestions([]);
-    setSending(true);
     setError(null);
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
+
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setStreaming(true);
+    setStreamingText("");
+    let acc = "";
+
     try {
-      const res = await sendPolyglotMessageAction(sessionId, text);
-      if ("error" in res) { setError(res.error ?? null); return; }
-      setSuggestions(res.analysis.suggested_replies ?? []);
-      setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.analysis.reply_in_target_language, analysis: res.analysis, translation: res.analysis.reply_translation_in_indonesian, expanded: false }]);
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sessionId, text }),
+        signal: controller.signal,
+      });
+      if (!res.ok) {
+        let msg = "Gagal mengirim pesan.";
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data.error) msg = data.error;
+        } catch {}
+        setError(msg);
+        setStreaming(false);
+        return;
+      }
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          acc += decoder.decode(value, { stream: true });
+          setStreamingText(acc);
+        }
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        // teks parsial tetap diproses
+      } else {
+        setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+        setStreaming(false);
+        setStreamingText("");
+        return;
+      }
     } finally {
-      setSending(false);
+      setStreaming(false);
+    }
+
+    setAnalyzing(true);
+    try {
+      const res = await analyzeChatMessageAction(sessionId, text, acc);
+      if ("error" in res) {
+        toast.error(res.error);
+        setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
+        return;
+      }
+      setSuggestions(res.analysis.suggested_replies ?? []);
+      setMessages((m) => [
+        ...m,
+        {
+          id: res.messageId,
+          role: "ai",
+          content: acc,
+          analysis: res.analysis,
+          translation: res.analysis.reply_translation_in_indonesian,
+          expanded: false,
+        },
+      ]);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menganalisis.");
+      setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: acc }]);
+    } finally {
+      setAnalyzing(false);
+      setStreamingText("");
+      abortRef.current = null;
     }
   }
 
@@ -132,6 +199,12 @@ export default function ChatView() {
   function toggleExpanded(id: string) {
     setMessages((msgs) => msgs.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
   }
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.abort();
+    };
+  }, []);
 
   if (loading) {
     return (
@@ -160,7 +233,7 @@ export default function ChatView() {
               <LanguageBadge language={session?.language ?? ""} />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={endSession} disabled={sending}>
+          <Button variant="outline" size="sm" onClick={endSession} disabled={streaming || analyzing}>
             <LogOut className="h-3.5 w-3.5 mr-1.5" />
             Akhiri Sesi
           </Button>
@@ -256,7 +329,18 @@ export default function ChatView() {
               </div>
             )
           )}
-          {sending && (
+          {streaming && (
+            <div className="flex justify-start gap-2.5">
+              <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
+                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
+              </Avatar>
+              <div className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
+                {streamingText}
+                <span className="animate-pulse">▌</span>
+              </div>
+            </div>
+          )}
+          {analyzing && (
             <div className="flex justify-start gap-2">
               <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
                 <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
@@ -272,7 +356,7 @@ export default function ChatView() {
 
         {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
-        {suggestions.length > 0 && !sending && (
+        {suggestions.length > 0 && !streaming && !analyzing && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
             {suggestions.map((s, i) => (
@@ -288,14 +372,20 @@ export default function ChatView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-            disabled={sending}
+            disabled={streaming || analyzing}
             placeholder={`Ketik dalam bahasa ${session?.language ?? "..."}...`}
             className="flex-1"
           />
-          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending}>
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
-            {sending ? "" : "Kirim"}
-          </Button>
+          {streaming ? (
+            <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>
+              <Square className="h-4 w-4 mr-1" /> Stop
+            </Button>
+          ) : (
+            <Button type="button" onClick={() => send()} disabled={!input.trim() || analyzing}>
+              <Send className="h-4 w-4 mr-1" />
+              Kirim
+            </Button>
+          )}
         </div>
       </div>
       </div>
