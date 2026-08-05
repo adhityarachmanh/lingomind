@@ -3,7 +3,7 @@ import { streamText } from "ai";
 import { model } from "@/lib/ai";
 import { getSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { buildPolyglotStreamPrompt } from "@/lib/ai-content/chat";
+import { buildGeneralStreamPrompt, buildPolyglotStreamPrompt } from "@/lib/ai-content/chat";
 import { mapHistoryToAiMessages } from "@/lib/chat-helpers";
 
 export const maxDuration = 60;
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const dbSession = await db.session.findFirst({
     where: { id: body.sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true } } },
+    include: { scenario: { select: { title: true, language: true, description: true, type: true } } },
   });
   if (!dbSession) {
     return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
@@ -53,7 +53,13 @@ export async function POST(req: NextRequest) {
   });
   const aiMessages = mapHistoryToAiMessages(history);
 
-  const { instructions, messages } = buildPolyglotStreamPrompt(userMessage, language, "A1", scenario, aiMessages);
+  const isGeneral = dbSession.scenario?.type === "general";
+  const context = dbSession.scenario?.description
+    ? `${dbSession.scenario.title} — ${dbSession.scenario.description}`
+    : dbSession.scenario?.title ?? "Percakapan";
+  const { instructions, messages } = isGeneral
+    ? buildGeneralStreamPrompt(dbSession.scenario?.title ?? "Asisten", context, userMessage, aiMessages)
+    : buildPolyglotStreamPrompt(userMessage, language, "A1", scenario, aiMessages);
 
   await db.message.create({
     data: { sessionId: dbSession.id, role: "user", content: userMessage },
