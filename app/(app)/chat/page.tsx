@@ -1,7 +1,16 @@
-import { getSession } from "@/lib/auth";
+import { Suspense } from "react";
 import ChatView from "@/components/ChatView";
+import ChatHomeView from "@/components/ChatHomeView";
+import { getSessionMessagesAction } from "@/lib/actions/scenario";
 
-export default async function ChatPage() {
-  const session = await getSession();
-  return <ChatView />;
+export default async function ChatPage({ searchParams }: { searchParams: Promise<{ session?: string }> }) {
+  const { session } = await searchParams;
+  if (session) {
+    return (
+      <Suspense fallback={<div className="p-8 text-center text-sm text-muted-foreground">Memuat percakapan...</div>}>
+        <ChatView />
+      </Suspense>
+    );
+  }
+  return <ChatHomeView />;
 }
