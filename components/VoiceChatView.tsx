@@ -44,6 +44,10 @@ export default function VoiceChatView() {
   useEffect(() => {
     if (sessionId) {
       (async () => {
+        setSession(null);
+        setAiReply("");
+        setAiTranslation("");
+        setUserText("");
         const res = await getSessionMessagesAction(sessionId);
         if ("error" in res) {
           toast.error(res.error ?? "Percakapan tidak ditemukan.");
@@ -92,16 +96,26 @@ export default function VoiceChatView() {
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     rec.onresult = async (event) => {
+      if (typeof navigator !== "undefined" && !navigator.onLine) {
+        setStatus("idle");
+        toast.error("Tidak ada koneksi internet. Coba lagi.");
+        return;
+      }
       const text = event.results[0][0].transcript;
       setUserText(text);
       setStatus("processing");
       if (!sessionId) return;
-      const res = await sendPolyglotMessageAction(sessionId, text);
-      setStatus("idle");
-      if ("error" in res) { toast.error(res.error); return; }
-      setAiReply(res.analysis.reply_in_target_language);
-      setAiTranslation(res.analysis.reply_translation_in_indonesian);
-      speak(res.analysis.reply_in_target_language, ttsLang);
+      try {
+        const res = await sendPolyglotMessageAction(sessionId, text);
+        setStatus("idle");
+        if ("error" in res) { toast.error(res.error); return; }
+        setAiReply(res.analysis.reply_in_target_language);
+        setAiTranslation(res.analysis.reply_translation_in_indonesian);
+        speak(res.analysis.reply_in_target_language, ttsLang);
+      } catch (e) {
+        setStatus("idle");
+        toast.error(e instanceof Error ? e.message : "Gagal mengirim pesan.");
+      }
     };
     rec.onerror = () => {
       setStatus("idle");

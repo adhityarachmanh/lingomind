@@ -49,26 +49,37 @@ export default function ChatView() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const res = await getSessionMessagesAction(sessionId);
-      if (cancelled) return;
-      if ("error" in res) {
-        toast.error(res.error ?? "Percakapan tidak ditemukan.");
+      try {
+        const res = await getSessionMessagesAction(sessionId);
+        if (cancelled) return;
+        if ("error" in res) {
+          toast.error(res.error ?? "Percakapan tidak ditemukan.");
+          if (res.error === "Sesi berakhir. Silakan login kembali.") {
+            router.replace("/login");
+          } else {
+            router.replace("/chat");
+          }
+          return;
+        }
+        setSession(res.session);
+        setMessages(res.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          content: m.content,
+          analysis: (m.analysisJson as PolyglotAnalysis | null) ?? undefined,
+          translation: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_translation_in_indonesian ?? undefined) : undefined,
+          expanded: false,
+        })));
+        const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
+        const sugg = (lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies;
+        setSuggestions(Array.isArray(sugg) ? sugg : []);
+      } catch (e) {
+        if (cancelled) return;
+        toast.error(e instanceof Error ? e.message : "Gagal memuat percakapan.");
         router.replace("/chat");
-        return;
+      } finally {
+        setLoading(false);
       }
-      setSession(res.session);
-      setMessages(res.messages.map((m) => ({
-        id: m.id,
-        role: m.role,
-        content: m.content,
-        analysis: (m.analysisJson as PolyglotAnalysis | null) ?? undefined,
-        translation: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_translation_in_indonesian ?? undefined) : undefined,
-        expanded: false,
-      })));
-      const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
-      const sugg = (lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies;
-      setSuggestions(Array.isArray(sugg) ? sugg : []);
-      setLoading(false);
     })();
     return () => { cancelled = true; };
   }, [sessionId, router]);

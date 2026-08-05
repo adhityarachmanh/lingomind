@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { History, Loader2, Plus, Trash2 } from "lucide-react";
+import { History, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,22 +26,24 @@ export default function ChatHomeView() {
   const [createOpen, setCreateOpen] = useState(false);
   const [clearing, setClearing] = useState(false);
 
-  async function load() {
-    const res = await getChatHomeAction();
-    if ("error" in res) { toast.error(res.error); return; }
-    setScenarios(res.scenarios);
-    setHistory(res.history);
-    setLoading(false);
-  }
-
-  useEffect(() => {
-    getChatHomeAction().then((res) => {
-      if ("error" in res) { toast.error(res.error); return; }
+  const load = useCallback(async () => {
+    try {
+      const res = await getChatHomeAction();
+      if ("error" in res) {
+        toast.error(res.error);
+        if (res.error === "Sesi berakhir. Silakan login kembali.") router.replace("/login");
+        return;
+      }
       setScenarios(res.scenarios);
       setHistory(res.history);
+    } finally {
       setLoading(false);
-    });
-  }, []);
+    }
+  }, [router]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   async function openScenario(s: ScenarioSummary) {
     const res = await openSessionAction(s.id, s.language);
