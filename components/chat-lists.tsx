@@ -21,8 +21,11 @@ export function LanguageBadge({ language }: { language: string }) {
 export function ScenarioCard({ scenario, onOpen }: { scenario: ScenarioSummary; onOpen: (s: ScenarioSummary) => void }) {
   return (
     <Card
+      role="button"
+      tabIndex={0}
       className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all"
       onClick={() => onOpen(scenario)}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(scenario); } }}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-bold text-sm truncate">{scenario.title}</p>

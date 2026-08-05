@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LANGUAGES } from "@/lib/languages";
@@ -38,15 +37,20 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   async function save() {
     if (saving) return;
     setSaving(true);
-    const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language });
-    setSaving(false);
-    if ("error" in res) { toast.error(res.error); return; }
-    toast.success("Skenario berhasil dibuat!");
-    setTemplateId(null);
-    setTitle("");
-    setDescription("");
-    onOpenChange(false);
-    onCreated();
+    try {
+      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language });
+      if ("error" in res) { toast.error(res.error); return; }
+      toast.success("Skenario berhasil dibuat!");
+      setTemplateId(null);
+      setTitle("");
+      setDescription("");
+      onOpenChange(false);
+      onCreated();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal menyimpan skenario.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (

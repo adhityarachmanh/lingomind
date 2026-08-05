@@ -23,7 +23,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "LingoMind",
   description: "Belajar bahasa asing dengan AI",
-  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+  icons: { icon: "/icon.svg", apple: "/icons/apple-touch-icon.png" },
   metadataBase: new URL(process.env.APP_URL || "http://localhost:3000"),
   openGraph: {
     title: "LingoMind",

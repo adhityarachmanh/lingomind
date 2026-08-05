@@ -37,8 +37,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(req)
         .then((res) => {
-          const copy = res.clone();
-          caches.open(`shell-${CACHE_VERSION}`).then((cache) => cache.put("/", copy));
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(`shell-${CACHE_VERSION}`).then((cache) => cache.put("/", copy));
+          }
           return res;
         })
         .catch(() =>
@@ -52,10 +54,12 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.open(`shell-${CACHE_VERSION}`).then(async (cache) => {
         const cached = await cache.match(req);
-        const fetchPromise = fetch(req).then((res) => {
-          if (res.ok) cache.put(req, res.clone());
-          return res;
-        });
+        const fetchPromise = fetch(req)
+          .then((res) => {
+            if (res.ok) cache.put(req, res.clone());
+            return res;
+          })
+          .catch(() => undefined);
         return cached || fetchPromise;
       })
     );
@@ -65,8 +69,10 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/icons/") || url.pathname.endsWith(".svg") || url.pathname.endsWith(".png")) {
     event.respondWith(
       caches.match(req).then((cached) => cached || fetch(req).then((res) => {
-        const copy = res.clone();
-        caches.open(`shell-${CACHE_VERSION}`).then((cache) => cache.put(req, copy));
+        if (res.ok) {
+          const copy = res.clone();
+          caches.open(`shell-${CACHE_VERSION}`).then((cache) => cache.put(req, copy));
+        }
         return res;
       }))
     );

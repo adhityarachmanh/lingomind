@@ -4,6 +4,7 @@ import { getSession } from "../auth";
 import { db } from "../db";
 import { trimPreview } from "../chat-utils";
 import { SCENARIO_TEMPLATES } from "../templates";
+import { LANGUAGES } from "../languages";
 import type { ActionResult } from "./types";
 
 export interface ScenarioSummary {
@@ -37,7 +38,7 @@ export async function createScenarioAction(input: {
   const title = input.title.trim();
   if (!title) return { error: "Judul skenario wajib diisi." };
   const language = input.language.trim();
-  if (!language) return { error: "Pilih bahasa target." };
+  if (!LANGUAGES.some((l) => l.id === language)) return { error: "Pilih bahasa target." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const template = SCENARIO_TEMPLATES.find((t) => t.id === input.templateId);
@@ -73,6 +74,8 @@ export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[
       _count: { select: { messages: true } },
     },
   });
+
+  sessionRows.sort((a, b) => (b.messages[0]?.createdAt ?? b.createdAt).getTime() - (a.messages[0]?.createdAt ?? a.createdAt).getTime());
 
   const history: SessionSummary[] = sessionRows.map((s) => ({
     id: s.id,
