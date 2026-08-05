@@ -1,5 +1,5 @@
 export const ELEVENLABS_VOICE_ID = "JBFqnCBsd6RMkjVDRZzb";
-export const ELEVENLABS_MODEL = "eleven_multilingual_v2";
+export const ELEVENLABS_MODEL = "eleven_flash_v2_5";
 export const ELEVENLABS_MAX_TEXT = 5000;
 
 export const GOOGLE_TTS_TL: Record<string, string> = {
