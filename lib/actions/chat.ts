@@ -4,7 +4,7 @@ import { generateText } from "ai";
 import { model } from "../ai";
 import { getSession } from "../auth";
 import { db } from "../db";
-import { buildPolyglotUserMessage } from "../ai-content/chat";
+import { buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
 import type { ActionResult } from "./types";
 
@@ -20,6 +20,7 @@ export interface PolyglotAnalysis {
   vocab_highlight: { word_target: string; meaning_in_indonesian: string };
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;
+  suggested_replies?: string[];
 }
 
 export interface ChatResult {
@@ -34,7 +35,7 @@ async function getOrCreateSession(
   scenario: string
 ): Promise<string> {
   const existing = await db.session.findFirst({
-    where: { userId: email, language, scenario },
+    where: { userId: email, language, scenario, endedAt: null },
   });
   if (existing) return existing.id;
   const level = "A1";
@@ -124,4 +125,73 @@ export async function getFlashcardsAction(
     orderBy: { createdAt: "desc" },
   });
   return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
+}
+
+export async function endChatSessionAction(sessionId: string): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  await db.session.update({
+    where: { id: sessionId },
+    data: { endedAt: new Date() },
+  });
+  return { message: "ok" };
+}
+
+export interface OpenSessionResult {
+  sessionId: string;
+  messageId: string;
+  reply: string;
+  translation: string;
+  suggestedReplies: string[];
+}
+
+export async function openSessionAction(
+  scenario: string,
+  language: string
+): Promise<OpenSessionResult | { alreadyStarted: true; sessionId: string } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+
+  const email = session.email;
+  const sessionId = await getOrCreateSession(email, language, scenario);
+
+  const count = await db.message.count({ where: { sessionId } });
+  if (count > 0) return { alreadyStarted: true, sessionId };
+
+  const level = "A1";
+  const { messages } = buildPolyglotOpeningPrompt(language, level, scenario);
+
+  let text: string;
+  try {
+    const result = await generateText({ model, messages, maxOutputTokens: 2048, temperature: 0.8 });
+    text = result.text.trim();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal menghasilkan pembuka percakapan." };
+  }
+
+  const parsed = parseAiJson<{
+    reply_in_target_language?: string;
+    reply_translation_in_indonesian?: string;
+    suggested_replies?: string[];
+  }>(text);
+
+  if (!parsed || !parsed.reply_in_target_language) {
+    return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
+  }
+
+  const aiMsg = await db.message.create({
+    data: {
+      sessionId,
+      role: "ai",
+      content: parsed.reply_in_target_language,
+    },
+  });
+
+  return {
+    sessionId,
+    messageId: aiMsg.id,
+    reply: parsed.reply_in_target_language,
+    translation: parsed.reply_translation_in_indonesian ?? "",
+    suggestedReplies: Array.isArray(parsed.suggested_replies) ? parsed.suggested_replies.slice(0, 3) : [],
+  };
 }
