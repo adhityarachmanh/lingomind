@@ -47,6 +47,12 @@ describe("buildPolyglotSystemPrompt", () => {
     const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
     expect(prompt).not.toContain("reply_romanization");
   });
+
+  it("mencantumkan arti & romanisasi pesan user (user_message_*)", () => {
+    const prompt = buildPolyglotSystemPrompt("Korean", "A1", "Restaurant");
+    expect(prompt).toContain("user_message_translation_in_indonesian");
+    expect(prompt).toContain("user_message_romanization");
+  });
 });
 
 describe("buildPolyglotUserMessage", () => {

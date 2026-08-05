@@ -69,6 +69,7 @@ export default function ChatView() {
   const [suggestions, setSuggestions] = useState<SuggestedReply[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
+  const tempIdRef = useRef(0);
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
   const isGeneral = session?.type === "general";
@@ -94,15 +95,22 @@ export default function ChatView() {
           return;
         }
         setSession(res.session);
-        setMessages(res.messages.map((m) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          analysis: (m.analysisJson as PolyglotAnalysis | null) ?? undefined,
-          romanization: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_romanization ?? undefined) : undefined,
-          translation: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_translation_in_indonesian ?? undefined) : undefined,
-          expanded: false,
-        })));
+        setMessages(res.messages.map((m) => {
+          const aj = m.analysisJson as (PolyglotAnalysis & { translation_in_indonesian?: string; romanization?: string }) | null;
+          return {
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            analysis: aj ?? undefined,
+            romanization: m.role === "ai"
+              ? (aj?.reply_romanization ?? undefined)
+              : (aj?.romanization ?? undefined),
+            translation: m.role === "ai"
+              ? (aj?.reply_translation_in_indonesian ?? undefined)
+              : (aj?.translation_in_indonesian ?? undefined),
+            expanded: false,
+          };
+        }));
         const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
         setSuggestions(normalizeSuggestedReplies((lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies));
       } catch (e) {
@@ -134,7 +142,8 @@ export default function ChatView() {
     setInput("");
     setSuggestions([]);
     setError(null);
-    setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text, romanization: chipRomanization, translation: chipTranslation }]);
+    const userMsgId = `user-${++tempIdRef.current}`;
+    setMessages((m) => [...m, { id: userMsgId, role: "user", content: text, romanization: chipRomanization, translation: chipTranslation }]);
 
     async function fetchStream(): Promise<string> {
       const controller = new AbortController();
@@ -258,6 +267,11 @@ export default function ChatView() {
           return;
         }
         setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+        setMessages((m) => m.map((msg) =>
+          msg.id === userMsgId
+            ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
+            : msg
+        ));
         setMessages((m) => [
           ...m,
           {
@@ -293,6 +307,11 @@ export default function ChatView() {
         return;
       }
       setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+      setMessages((m) => m.map((msg) =>
+        msg.id === userMsgId
+          ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
+          : msg
+      ));
       setMessages((m) => [
         ...m,
         {

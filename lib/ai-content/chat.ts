@@ -26,6 +26,10 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
     ...(isNonLatin
       ? ['  "reply_romanization": "string (cara baca reply_in_target_language dengan huruf Latin)",']
       : []),
+    '  "user_message_translation_in_indonesian": "string (arti Indonesia dari SELURUH pesan user yang baru dikirim — kalimat utuh)",',
+    ...(isNonLatin
+      ? ['  "user_message_romanization": "string (cara baca pesan user dengan huruf Latin)",']
+      : []),
       '  "suggested_replies": [ { "text": "string (kalimat saran dalam bahasa target)", "romanization": "string (cara baca text — hanya untuk non-Latin; Latin isi string kosong)", "translation_in_indonesian": "string (arti Indonesia dari text)" }, ... 2-3 objek ]',
     "}",
     "",
@@ -37,9 +41,10 @@ export function buildPolyglotSystemPrompt(language: string, level: string, scena
     "- native_rephrasing: berikan 2 versi alternatif dalam bahasa target (formal & casual) BESERTA artinya masing-masing dalam Bahasa Indonesia (formal_meaning_in_indonesian & casual_meaning_in_indonesian), walau tidak ada kesalahan.",
     ...(isNonLatin
       ? [
-          "- Romanisasi: karena bahasa target TIDAK memakai huruf Latin, isi semua field *_romanization / romanization (termasuk reply_romanization) dengan cara baca memakai huruf Latin.",
+          "- Romanisasi: karena bahasa target TIDAK memakai huruf Latin, isi semua field *_romanization / romanization (termasuk reply_romanization dan user_message_romanization) dengan cara baca memakai huruf Latin.",
         ]
       : []),
+    "- user_message_translation_in_indonesian: berikan arti Indonesia dari pesan user terakhir (kalimat utuh, bukan per kata).",
     "- vocab_highlight: pilih 1 kata berguna dari konteks percakapan, beri arti dalam Bahasa Indonesia.",
     "- suggested_replies: 2-3 kalimat singkat (maks ~12 kata) dalam bahasa target yang wajar diucapkan USER sebagai lanjutan percakapan — bervariasi (mis. 1 pertanyaan + 1 pernyataan/persetujuan). Tiap saran berupa objek { text, romanization, translation_in_indonesian }: isi translation_in_indonesian selalu (arti dalam Bahasa Indonesia); romanization hanya untuk bahasa non-Latin, untuk bahasa Latin isi string kosong. Selalu isi 2-3; jika benar-benar tidak mungkin, isi array kosong [].",
     "- Balasan roleplay (reply_in_target_language) harus natural, hidup, dan mendorong percakapan berlanjut — ajukan pertanyaan di akhir.",

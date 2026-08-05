@@ -34,6 +34,8 @@ export interface PolyglotAnalysis {
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;
   reply_romanization?: string;
+  user_message_translation_in_indonesian?: string;
+  user_message_romanization?: string;
   suggested_replies?: SuggestedReply[];
 }
 
@@ -41,6 +43,26 @@ export interface ChatResult {
   analysis: PolyglotAnalysis;
   sessionId: string;
   messageId: string;
+}
+
+async function attachUserMessageAnnotations(sessionId: string, analysis: PolyglotAnalysis): Promise<void> {
+  const translation = analysis.user_message_translation_in_indonesian;
+  const romanization = analysis.user_message_romanization;
+  if (!translation && !romanization) return;
+  const userMsg = await db.message.findFirst({
+    where: { sessionId, role: "user" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!userMsg) return;
+  await db.message.update({
+    where: { id: userMsg.id },
+    data: {
+      analysisJson: {
+        translation_in_indonesian: translation ?? "",
+        romanization: romanization ?? "",
+      },
+    },
+  });
 }
 
 async function getOrCreateSession(
@@ -125,6 +147,7 @@ export async function sendPolyglotMessageAction(
       analysisJson: analysis as never,
     },
   });
+  await attachUserMessageAnnotations(sessionId, analysis);
 
   return { analysis, sessionId, messageId: aiMsg.id };
 }
@@ -331,6 +354,7 @@ export async function analyzeChatMessageAction(
       analysisJson: analysis as never,
     },
   });
+  await attachUserMessageAnnotations(sessionId, analysis);
 
   return { messageId: aiMsg.id, analysis };
 }
