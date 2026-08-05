@@ -37,12 +37,12 @@ async function getOrCreateSession(
   const user = await db.user.findUnique({ where: { email }, select: { id: true } });
   if (!user) return null;
   const existing = await db.session.findFirst({
-    where: { userId: user.id, language, scenario, endedAt: null },
+    where: { userId: user.id, language, endedAt: null },
   });
   if (existing) return existing.id;
   const level = "A1";
   const created = await db.session.create({
-    data: { userId: user.id, language, level, scenario },
+    data: { userId: user.id, language, level },
   });
   return created.id;
 }

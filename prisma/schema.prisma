@@ -17,6 +17,7 @@ model User {
   createdAt      DateTime       @default(now())
   sessions       Session[]
   flashcards     Flashcard[]
+  scenarios      Scenario[]
   engagementStat UserEngagementStat?
 
   @@map("users")
@@ -54,17 +55,32 @@ model PasswordResetToken {
 }
 
 model Session {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  language  String
-  level     String    @default("A1")
-  scenario  String
-  endedAt   DateTime? @map("ended_at")
-  createdAt DateTime  @default(now())
-  messages  Message[]
+  id         String    @id @default(uuid())
+  userId     String
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  language   String
+  level      String    @default("A1")
+  scenarioId String?   @map("scenario_id")
+  scenario   Scenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
+  endedAt    DateTime? @map("ended_at")
+  createdAt  DateTime  @default(now())
+  messages   Message[]
 
   @@map("chat_sessions")
+}
+
+model Scenario {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String    @default("")
+  language    String
+  templateId  String?
+  createdAt   DateTime  @default(now())
+  sessions    Session[]
+
+  @@map("scenarios")
 }
 
 model Message {
