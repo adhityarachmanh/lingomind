@@ -1,169 +1,95 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Loader2, LogOut, PencilLine, Send } from "lucide-react";
-import {
-  endChatSessionAction,
-  openSessionAction,
-  saveFlashcardAction,
-  sendPolyglotMessageAction,
-  type PolyglotAnalysis,
-} from "@/lib/actions/chat";
+import { ArrowLeft, Bookmark, Bot, ChevronDown, ChevronUp, FileCheck2, Loader2, LogOut, Send } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { endChatSessionAction, saveFlashcardAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
+import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { LanguageBadge } from "./chat-lists";
 
 interface Message {
   id: string;
   role: "user" | "ai";
   content: string;
-  translation?: string;
   analysis?: PolyglotAnalysis;
+  translation?: string;
   expanded?: boolean;
 }
 
-const LANGUAGES = [
-  { id: "English", label: "🇬🇧 English" },
-  { id: "Japanese", label: "🇯🇵 日本語" },
-  { id: "Korean", label: "🇰🇷 한국어" },
-  { id: "Mandarin", label: "🇨🇳 中文" },
-  { id: "Spanish", label: "🇪🇸 Español" },
-  { id: "French", label: "🇫🇷 Français" },
-  { id: "German", label: "🇩🇪 Deutsch" },
-  { id: "Indonesian", label: "🇮🇩 Indonesia" },
-];
-
-const SCENARIOS = [
-  { id: "Daily Standup", title: "Daily Standup Meeting", desc: "Tech standup meeting" },
-  { id: "Restaurant", title: "Restaurant Ordering", desc: "Order food & interact with waiter" },
-  { id: "Hotel", title: "Hotel Check-in", desc: "Front desk conversation" },
-  { id: "Shopping", title: "Shopping", desc: "Ask prices, sizes, negotiation" },
-  { id: "Hospital", title: "Hospital Visit", desc: "Describe symptoms, consult doctor" },
-  { id: "Office", title: "Office Meeting", desc: "Discuss project timelines" },
-  { id: "Airport", title: "Airport Immigration", desc: "Answer officer questions" },
-  { id: "Small Talk", title: "Small Talk", desc: "Casual conversation with strangers" },
-];
-
-function ScenarioGrid({ onPick }: { onPick: (id: string, title: string) => void }) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      {SCENARIOS.map((s) => (
-        <Card
-          key={s.id}
-          className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all"
-          onClick={() => onPick(s.id, s.title)}
-        >
-          <p className="font-bold text-sm">{s.title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
-        </Card>
-      ))}
-    </div>
-  );
-}
-
 export default function ChatView() {
-  const [phase, setPhase] = useState<"picker" | "chat">("picker");
-  const [language, setLanguage] = useState("English");
-  const [scenarioId, setScenarioId] = useState("");
-  const [scenarioTitle, setScenarioTitle] = useState("");
-  const [ttsLang, setTtsLang] = useState("en-US");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get("session");
+
+  const [session, setSession] = useState<SessionDto | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [loading, setLoading] = useState(true);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [switchOpen, setSwitchOpen] = useState(false);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [opening, setOpening] = useState(false);
 
-  const ttsMap: Record<string, string> = {
-    English: "en-US", Japanese: "ja-JP", Korean: "ko-KR", Mandarin: "zh-CN",
-    Spanish: "es-ES", French: "fr-FR", German: "de-DE", Indonesian: "id-ID",
-  };
+  const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
 
-  async function startChat(sId: string, sTitle: string) {
-    setScenarioId(sId);
-    setScenarioTitle(sTitle);
-    setTtsLang(ttsMap[language] ?? "en-US");
-    setMessages([]);
-    setSuggestions([]);
-    setSessionId(null);
-    setPhase("chat");
-    setError(null);
-    setSwitchOpen(false);
-    setOpening(true);
-    try {
-      const res = await openSessionAction(sId, language);
-      if ("error" in res) { toast.error(res.error); return; }
-      setSessionId(res.sessionId);
-      if ("alreadyStarted" in res) return;
-      setMessages([{ id: res.messageId, role: "ai", content: res.reply, translation: res.translation }]);
-      setSuggestions(res.suggestedReplies);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Gagal memulai percakapan.");
-    } finally {
-      setOpening(false);
+  useEffect(() => {
+    if (!sessionId) {
+      router.replace("/chat");
+      return;
     }
-  }
-
-  async function endSession() {
-    if (sessionId) {
-      try {
-        const res = await endChatSessionAction(sessionId);
-        if ("error" in res) { toast.error(res.error); return; }
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : "Gagal mengakhiri sesi.");
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const res = await getSessionMessagesAction(sessionId);
+      if (cancelled) return;
+      if ("error" in res) {
+        toast.error(res.error ?? "Percakapan tidak ditemukan.");
+        router.replace("/chat");
         return;
       }
-    }
-    toast.success("Sesi diakhiri. Percakapan baru dimulai saat memilih skenario.");
-    setPhase("picker");
-    setMessages([]);
-    setSuggestions([]);
-    setSessionId(null);
-    setScenarioId("");
-    setScenarioTitle("");
-  }
-
-  function toggleExpanded(id: string) {
-    setMessages((msgs) => msgs.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
-  }
+      setSession(res.session);
+      setMessages(res.messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        analysis: (m.analysisJson as PolyglotAnalysis | null) ?? undefined,
+        translation: m.role === "ai" ? ((m.analysisJson as PolyglotAnalysis | null)?.reply_translation_in_indonesian ?? undefined) : undefined,
+        expanded: false,
+      })));
+      const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
+      const sugg = (lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies;
+      setSuggestions(Array.isArray(sugg) ? sugg : []);
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [sessionId, router]);
 
   async function send(textOverride?: string) {
+    if (!sessionId || sending) return;
     const text = (textOverride ?? input).trim();
-    if (!text || sending || opening) return;
+    if (!text) return;
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      toast.error("Tidak ada koneksi internet. Coba lagi.");
+      return;
+    }
     setInput("");
     setSuggestions([]);
     setSending(true);
     setError(null);
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
     try {
-      const res = await sendPolyglotMessageAction(sessionId ?? "", text);
+      const res = await sendPolyglotMessageAction(sessionId, text);
       if ("error" in res) { setError(res.error ?? null); return; }
-      setSessionId(res.sessionId);
       setSuggestions(res.analysis.suggested_replies ?? []);
-      setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.analysis.reply_in_target_language, analysis: res.analysis }]);
+      setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.analysis.reply_in_target_language, analysis: res.analysis, translation: res.analysis.reply_translation_in_indonesian, expanded: false }]);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
     } finally {
@@ -172,79 +98,59 @@ export default function ChatView() {
   }
 
   async function saveVocab(word: string, meaning: string) {
-    const res = await saveFlashcardAction(word, meaning, language);
+    const res = await saveFlashcardAction(word, meaning, session?.language ?? "English");
     if ("error" in res) { setError(res.error ?? null); return; }
     toast.success(`${word} disimpan ke flashcard!`);
   }
 
-  if (phase === "picker") {
+  async function endSession() {
+    if (!sessionId) { router.push("/chat"); return; }
+    try {
+      const res = await endChatSessionAction(sessionId);
+      if ("error" in res) { toast.error(res.error); return; }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengakhiri sesi.");
+      return;
+    }
+    toast.success("Sesi diakhiri. Percakapan baru dimulai saat memilih skenario.");
+    router.push("/chat");
+  }
+
+  function toggleExpanded(id: string) {
+    setMessages((msgs) => msgs.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
+  }
+
+  if (loading) {
     return (
-      <TooltipProvider delayDuration={200}>
-        <div className="max-w-2xl mx-auto px-4 py-8">
-          <h1 className="text-2xl font-extrabold mb-2">Polyglot Tutor</h1>
-          <p className="text-sm text-muted-foreground mb-6">AI Language Practice with Deep Feedback</p>
-          <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Language</Label>
-          <Select value={language} onValueChange={setLanguage}>
-            <SelectTrigger className="w-full mb-6">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {LANGUAGES.map((l) => (
-                <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Scenario</Label>
-          <ScenarioGrid onPick={startChat} />
-        </div>
-      </TooltipProvider>
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        <Skeleton className="h-6 w-40 mb-6" />
+        <Skeleton className="h-16 w-2/3 mb-3" />
+        <Skeleton className="h-16 w-1/2" />
+      </div>
     );
   }
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="max-w-2xl mx-auto px-4 py-6 flex flex-col h-[calc(100dvh-3.5rem)]">
-        <div className="flex items-center justify-between mb-3">
-          <div className="min-w-0">
-            <h1 className="text-base font-extrabold truncate">{scenarioTitle}</h1>
-            <Badge variant="secondary" className="mt-0.5 text-[11px]">{language}</Badge>
+    <div className="flex h-[calc(100dvh-3.5rem)]">
+      <div className="hidden lg:flex w-80 shrink-0 border-r border-border" />
+      <div className="flex-1 min-w-0 flex flex-col max-w-3xl mx-auto w-full px-4 py-4">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="ghost" size="icon" onClick={() => router.push("/chat")} aria-label="Kembali">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div className="min-w-0">
+              <h1 className="text-base font-extrabold truncate">{session?.scenarioTitle}</h1>
+              <LanguageBadge language={session?.language ?? ""} />
+            </div>
           </div>
-          <Dialog open={switchOpen} onOpenChange={setSwitchOpen}>
-            <DialogTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <PencilLine className="h-3.5 w-3.5 mr-1.5" />
-                Ganti Skenario
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Pilih Skenario Baru</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Target Language</Label>
-                  <Select value={language} onValueChange={setLanguage}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {LANGUAGES.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <ScenarioGrid onPick={startChat} />
-              </div>
-            </DialogContent>
-          </Dialog>
-          <Button variant="outline" size="sm" onClick={endSession} disabled={opening || sending}>
+          <Button variant="outline" size="sm" onClick={endSession} disabled={sending}>
             <LogOut className="h-3.5 w-3.5 mr-1.5" />
             Akhiri Sesi
           </Button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-[env(safe-area-inset-bottom)]">
           {messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="flex justify-end">
@@ -266,52 +172,52 @@ export default function ChatView() {
                       {m.expanded ? "Tutup Penjelasan" : "Lihat Penjelasan"}
                     </Button>
                     {m.expanded && (
-                    <Card className="border-border bg-card overflow-hidden shadow-none">
-                      <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                          <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
-                        </span>
-                        <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                          Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
-                        </Badge>
-                      </div>
-                      {m.analysis.detailed_analysis.length > 0 ? (
-                        <div className="px-4 py-3 space-y-2">
-                          {m.analysis.detailed_analysis.map((d, i) => (
-                            <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
-                              <p className="text-sm">
-                                <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
-                                <span className="mx-1.5 text-muted-foreground">→</span>
-                                <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
-                              </p>
-                            </div>
-                          ))}
+                      <Card className="border-border bg-card overflow-hidden shadow-none">
+                        <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                            <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
+                          </span>
+                          <Badge variant="outline" className="text-[11px] text-muted-foreground">
+                            Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
+                          </Badge>
                         </div>
-                      ) : (
-                        <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
-                      )}
-                      {m.analysis.native_rephrasing && (
-                        <div className="px-4 py-3 border-t border-border space-y-1.5">
-                          <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
-                          <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
-                          <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
-                        </div>
-                      )}
-                      {m.analysis.vocab_highlight && (
-                        <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
-                          <div className="min-w-0">
-                            <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
-                            <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                        {m.analysis.detailed_analysis.length > 0 ? (
+                          <div className="px-4 py-3 space-y-2">
+                            {m.analysis.detailed_analysis.map((d, i) => (
+                              <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
+                                <p className="text-sm">
+                                  <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
+                                  <span className="mx-1.5 text-muted-foreground">→</span>
+                                  <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                                  <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
+                                </p>
+                              </div>
+                            ))}
                           </div>
-                          <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
-                            <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
-                          </Button>
-                        </div>
-                      )}
-                    </Card>
+                        ) : (
+                          <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
+                        )}
+                        {m.analysis.native_rephrasing && (
+                          <div className="px-4 py-3 border-t border-border space-y-1.5">
+                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
+                            <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
+                            <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
+                          </div>
+                        )}
+                        {m.analysis.vocab_highlight && (
+                          <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
+                            <div className="min-w-0">
+                              <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
+                              <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                            </div>
+                            <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
+                              <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
+                            </Button>
+                          </div>
+                        )}
+                      </Card>
                     )}
                   </div>
                 )}
@@ -326,27 +232,13 @@ export default function ChatView() {
                         {m.content}
                       </div>
                     </div>
-                    {(m.analysis?.reply_translation_in_indonesian ?? m.translation) && (
-                      <p className="text-[11px] text-muted-foreground italic pl-10">
-                        {m.analysis?.reply_translation_in_indonesian ?? m.translation}
-                      </p>
+                    {(m.translation ?? m.analysis?.reply_translation_in_indonesian) && (
+                      <p className="text-[11px] text-muted-foreground italic pl-10">{m.translation ?? m.analysis?.reply_translation_in_indonesian}</p>
                     )}
                   </div>
                 </div>
               </div>
             )
-          )}
-          {opening && (
-            <div className="flex justify-start gap-2">
-              <Avatar className="h-8 w-8 shrink-0 border border-border bg-muted">
-                <AvatarFallback><Bot className="h-4 w-4" /></AvatarFallback>
-              </Avatar>
-              <div className="max-w-[85%] space-y-2">
-                <Skeleton className="h-4 w-48" />
-                <Skeleton className="h-4 w-32" />
-                <p className="text-[11px] text-muted-foreground pt-1">AI Tutor membuka percakapan...</p>
-              </div>
-            </div>
           )}
           {sending && (
             <div className="flex justify-start gap-2">
@@ -364,7 +256,7 @@ export default function ChatView() {
 
         {error && <p className="text-xs text-destructive mt-2">{error}</p>}
 
-        {suggestions.length > 0 && !sending && !opening && (
+        {suggestions.length > 0 && !sending && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
             {suggestions.map((s, i) => (
@@ -380,16 +272,16 @@ export default function ChatView() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-            disabled={sending || opening}
-            placeholder={`Ketik dalam bahasa ${language}...`}
+            disabled={sending}
+            placeholder={`Ketik dalam bahasa ${session?.language ?? "..."}...`}
             className="flex-1"
           />
-          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending || opening}>
+          <Button type="button" onClick={() => send()} disabled={!input.trim() || sending}>
             {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4 mr-1" />}
             {sending ? "" : "Kirim"}
           </Button>
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
