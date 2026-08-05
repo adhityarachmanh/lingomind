@@ -61,6 +61,9 @@ export default function LoginForm() {
           Belum punya akun?{" "}
           <Link href="/register" className="text-primary hover:underline font-bold">Daftar Gratis</Link>
         </p>
+        <p className="mt-2 text-xs">
+          <Link href="/forgot-password" className="text-muted-foreground hover:text-primary hover:underline">Lupa password?</Link>
+        </p>
       </div>
     </div>
   );

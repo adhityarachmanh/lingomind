@@ -43,6 +43,16 @@ model EmailVerificationToken {
   @@map("email_verification_tokens")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("password_reset_tokens")
+}
+
 model Session {
   id        String    @id @default(uuid())
   userId    String
