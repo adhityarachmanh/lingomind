@@ -78,3 +78,25 @@ export function buildPolyglotOpeningPrompt(
     messages: [{ role: "user", content: "Mulai percakapan!" }],
   };
 }
+
+export function buildPolyglotStreamPrompt(
+  userMessage: string,
+  language: string,
+  level: string,
+  scenario: string,
+  history: { role: "user" | "assistant"; content: string }[]
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  return {
+    instructions: [
+      `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
+      `Anda sedang bermain peran dalam skenario '${scenario}' sebagai penutur asli yang ramah.`,
+      "",
+      `Balas pesan user dengan percakapan natural dalam bahasa ${language} — 2-4 kalimat, tetap dalam karakter skenario, akhiri dengan satu pertanyaan agar percakapan berlanjut.`,
+      "",
+      "Aturan:",
+      `- Balas TANPA JSON, tanpa markdown, tanpa label — hanya teks polos dalam bahasa ${language}.`,
+      "- JANGAN tambahkan teks apa pun di luar balasan.",
+    ].join("\n"),
+    messages: [...history, { role: "user", content: userMessage }],
+  };
+}

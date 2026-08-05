@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPolyglotOpeningPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
+import { buildPolyglotOpeningPrompt, buildPolyglotStreamPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
 
 describe("buildPolyglotSystemPrompt", () => {
   it("mencantumkan suggested_replies di skema JSON", () => {
@@ -37,5 +37,19 @@ describe("buildPolyglotOpeningPrompt", () => {
     expect(instructions).toContain("Restaurant");
     expect(instructions).toContain("suggested_replies");
     expect(messages).toEqual([{ role: "user", content: "Mulai percakapan!" }]);
+  });
+});
+
+describe("buildPolyglotStreamPrompt", () => {
+  it("menghasilkan instructions teks polos tanpa JSON", () => {
+    const history = [{ role: "assistant" as const, content: "Hi there!" }];
+    const { instructions, messages } = buildPolyglotStreamPrompt("Hello", "English", "A1", "Restaurant", history);
+    expect(instructions).toContain("Restaurant");
+    expect(instructions).toContain("TANPA JSON");
+    expect(instructions).not.toContain("suggested_replies");
+    expect(messages).toEqual([
+      { role: "assistant", content: "Hi there!" },
+      { role: "user", content: "Hello" },
+    ]);
   });
 });
