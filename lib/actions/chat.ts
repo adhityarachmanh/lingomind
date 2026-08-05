@@ -30,36 +30,37 @@ export interface ChatResult {
 }
 
 async function getOrCreateSession(
-  email: string,
+  userId: string,
   language: string,
-  scenario: string
+  scenarioId: string
 ): Promise<string | null> {
-  const user = await db.user.findUnique({ where: { email }, select: { id: true } });
-  if (!user) return null;
   const existing = await db.session.findFirst({
-    where: { userId: user.id, language, endedAt: null },
+    where: { userId, scenarioId, endedAt: null },
   });
   if (existing) return existing.id;
   const level = "A1";
   const created = await db.session.create({
-    data: { userId: user.id, language, level },
+    data: { userId, language, level, scenarioId },
   });
   return created.id;
 }
 
 export async function sendPolyglotMessageAction(
-  scenario: string,
-  language: string,
+  sessionId: string,
   userMessage: string
 ): Promise<ChatResult | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   if (!userMessage.trim()) return { error: "Pesan tidak boleh kosong." };
-
-  const email = session.email;
-  const sessionId = await getOrCreateSession(email, language, scenario);
-  if (!sessionId) return { error: "Pengguna tidak ditemukan." };
-
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({
+    where: { id: sessionId, userId: user.id },
+    include: { scenario: { select: { title: true, language: true } } },
+  });
+  if (!dbSession) return { error: "Percakapan tidak ditemukan." };
+  const language = dbSession.scenario?.language ?? dbSession.language;
+  const scenario = dbSession.scenario?.title ?? "Percakapan";
   const history = await db.message.findMany({
     where: { sessionId },
     orderBy: { createdAt: "asc" },
@@ -155,21 +156,24 @@ export interface OpenSessionResult {
 }
 
 export async function openSessionAction(
-  scenario: string,
+  scenarioId: string,
   language: string
 ): Promise<OpenSessionResult | { alreadyStarted: true; sessionId: string } | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const scenario = await db.scenario.findUnique({ where: { id: scenarioId }, select: { title: true } });
+  if (!scenario) return { error: "Akses ditolak." };
 
-  const email = session.email;
-  const sessionId = await getOrCreateSession(email, language, scenario);
+  const sessionId = await getOrCreateSession(user.id, language, scenarioId);
   if (!sessionId) return { error: "Pengguna tidak ditemukan." };
 
   const count = await db.message.count({ where: { sessionId } });
   if (count > 0) return { alreadyStarted: true, sessionId };
 
   const level = "A1";
-  const { instructions, messages } = buildPolyglotOpeningPrompt(language, level, scenario);
+  const { instructions, messages } = buildPolyglotOpeningPrompt(language, level, scenario.title);
 
   let text: string;
   try {

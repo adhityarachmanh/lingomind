@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AudioLines, Loader2, Mic, PhoneOff } from "lucide-react";
-import { sendPolyglotMessageAction } from "@/lib/actions/chat";
+import { sendPolyglotMessageAction, openSessionAction } from "@/lib/actions/chat";
 import { useSpeechRecognition } from "./useSpeechRecognition";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
   const [aiTranslation, setAiTranslation] = useState<string | null>(null);
   const [aiScore, setAiScore] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const mountedRef = useRef(true);
 
   const { supported, transcript, error: sttError, start: startRec, stop: stopRec } = useSpeechRecognition(ttsLang);
@@ -50,10 +51,18 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
     window.speechSynthesis.speak(u);
   }
 
-  function startChat(s: string) {
-    setScenario(s);
+  function startChat(s: (typeof SCENARIOS)[number]) {
+    setScenario(s.title);
     setPhase("chat");
     setStatus("mendengarkan");
+    setSessionId(null);
+    openSessionAction(s.id, language)
+      .then((res) => {
+        if (!mountedRef.current) return;
+        if ("error" in res) { setError(res.error ?? null); return; }
+        setSessionId(res.sessionId);
+      })
+      .catch(() => { if (mountedRef.current) setError("Gagal memulai percakapan."); });
   }
 
   useEffect(() => {
@@ -69,7 +78,7 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setUserCaption(text);
     setStatus("berpikir");
-    sendPolyglotMessageAction(scenario, language, text)
+    sendPolyglotMessageAction(sessionId ?? "", text)
       .then((res) => {
         if (!mountedRef.current) return;
         if ("error" in res) { setError(res.error ?? null); setStatus("mendengarkan"); return; }
@@ -94,7 +103,7 @@ export default function VoiceChatView({ language, ttsLang }: { language: string;
         <p className="text-sm text-muted-foreground mb-4">{language}</p>
         <div className="grid gap-3">
           {SCENARIOS.map((s) => (
-            <Card key={s.id} className="cursor-pointer p-4 hover:border-primary/60 hover:shadow-md transition-all" onClick={() => startChat(s.id)}>
+            <Card key={s.id} className="cursor-pointer p-4 hover:border-primary/60 hover:shadow-md transition-all" onClick={() => startChat(s)}>
               <p className="font-bold text-sm">{s.title}</p>
             </Card>
           ))}

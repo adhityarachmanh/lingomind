@@ -159,7 +159,7 @@ export default function ChatView() {
     setError(null);
     setMessages((m) => [...m, { id: String(Date.now()), role: "user", content: text }]);
     try {
-      const res = await sendPolyglotMessageAction(scenarioId, language, text);
+      const res = await sendPolyglotMessageAction(sessionId ?? "", text);
       if ("error" in res) { setError(res.error ?? null); return; }
       setSessionId(res.sessionId);
       setSuggestions(res.analysis.suggested_replies ?? []);
