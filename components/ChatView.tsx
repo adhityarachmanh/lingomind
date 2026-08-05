@@ -116,6 +116,13 @@ export default function ChatView() {
     return () => { cancelled = true; };
   }, [sessionId, router]);
 
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, streamingText, analyzing, loading]);
+
   async function send(textOverride?: string, chipRomanization?: string, chipTranslation?: string) {
     if (!sessionId || streaming || analyzing) return;
     const text = (textOverride ?? input).trim();
@@ -378,7 +385,7 @@ export default function ChatView() {
           </Button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-4">
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1 pb-4">
           {messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="flex flex-col items-end gap-1">
