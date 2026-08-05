@@ -1,4 +1,5 @@
 import { NextRequest } from "next/server";
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { getSession } from "@/lib/auth";
 import {
   ELEVENLABS_MAX_TEXT,
@@ -39,23 +40,15 @@ export async function GET(req: NextRequest) {
   const elevenlabsKey = process.env.ELEVENLABS_API_KEY;
   if (elevenlabsKey && text.length <= ELEVENLABS_MAX_TEXT) {
     try {
-      const res = await fetch(
-        `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}?output_format=mp3_44100_128`,
-        {
-          method: "POST",
-          headers: {
-            "xi-api-key": elevenlabsKey,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text, model_id: ELEVENLABS_MODEL }),
-          cache: "no-store",
-        }
-      );
-      if (res.ok) {
-        const buf = Buffer.from(await res.arrayBuffer());
-        if (buf.length > 0) {
-          return new Response(buf, { headers: ELEVENLABS_HEADERS });
-        }
+      const client = new ElevenLabsClient({ apiKey: elevenlabsKey });
+      const audio = await client.textToSpeech.convert(ELEVENLABS_VOICE_ID, {
+        text,
+        modelId: ELEVENLABS_MODEL,
+        outputFormat: "mp3_44100_128",
+      });
+      const buf = Buffer.from(await new Response(audio).arrayBuffer());
+      if (buf.length > 0) {
+        return new Response(buf, { headers: ELEVENLABS_HEADERS });
       }
     } catch {
       // lanjut ke fallback Google
