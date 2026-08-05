@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Pause, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { speak, cancelSpeech } from "./voice-tts";
+import { speak, cancelSpeech, type TtsProvider } from "./voice-tts";
 
 export default function SpeakButton({
   text,
@@ -14,6 +14,7 @@ export default function SpeakButton({
   lang: string;
 }) {
   const [speaking, setSpeaking] = useState(false);
+  const [provider, setProvider] = useState<TtsProvider | null>(null);
 
   useEffect(() => {
     return () => {
@@ -28,8 +29,18 @@ export default function SpeakButton({
       return;
     }
     setSpeaking(true);
-    speak(text, lang, () => setSpeaking(false));
+    speak(
+      text,
+      lang,
+      () => setSpeaking(false),
+      (p) => {
+        setProvider(p);
+        console.info("TTS provider:", p);
+      }
+    );
   }
+
+  const providerLabel = provider === "ai-gateway" ? " (OpenAI)" : provider === "google" ? " (Google)" : "";
 
   return (
     <Tooltip>
@@ -44,7 +55,7 @@ export default function SpeakButton({
           {speaking ? <Pause className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </Button>
       </TooltipTrigger>
-      <TooltipContent>{speaking ? "Hentikan" : "Dengarkan"}</TooltipContent>
+      <TooltipContent>{speaking ? "Hentikan" : `Dengarkan${providerLabel}`}</TooltipContent>
     </Tooltip>
   );
 }

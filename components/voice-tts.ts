@@ -28,16 +28,23 @@ export function cancelSpeech() {
   }
 }
 
+export type TtsProvider = "ai-gateway" | "google";
+
 function playChunk(
   chunk: string,
   lang: string,
   token: number,
   onEnd?: () => void,
-  rest?: string[]
+  rest?: string[],
+  onProvider?: (p: TtsProvider) => void
 ) {
   fetch(`/api/tts?text=${encodeURIComponent(chunk)}&lang=${encodeURIComponent(lang)}`)
     .then((res) => {
       if (token !== speechToken) return null;
+      const provider = res.headers.get("X-TTS-Provider");
+      if (provider === "ai-gateway" || provider === "google") {
+        onProvider?.(provider);
+      }
       if (!res.ok) throw new Error("tts-api");
       return res.blob();
     })
@@ -50,7 +57,7 @@ function playChunk(
         URL.revokeObjectURL(url);
         if (currentAudio === audio) currentAudio = null;
         if (rest && rest.length > 0 && token === speechToken) {
-          playChunk(rest[0], lang, token, onEnd, rest.slice(1));
+          playChunk(rest[0], lang, token, onEnd, rest.slice(1), onProvider);
         } else {
           onEnd?.();
         }
@@ -69,7 +76,7 @@ function playChunk(
     });
 }
 
-export function speak(text: string, lang: string, onEnd?: () => void) {
+export function speak(text: string, lang: string, onEnd?: () => void, onProvider?: (p: TtsProvider) => void) {
   if (typeof window === "undefined") return;
   cancelSpeech();
   const token = speechToken;
@@ -78,5 +85,5 @@ export function speak(text: string, lang: string, onEnd?: () => void) {
     onEnd?.();
     return;
   }
-  playChunk(chunks[0], lang, token, onEnd, chunks.slice(1));
+  playChunk(chunks[0], lang, token, onEnd, chunks.slice(1), onProvider);
 }

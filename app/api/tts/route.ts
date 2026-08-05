@@ -16,6 +16,16 @@ const AUDIO_HEADERS = {
   "Cache-Control": "public, max-age=86400, s-maxage=604800",
 };
 
+const AI_GATEWAY_HEADERS = {
+  ...AUDIO_HEADERS,
+  "X-TTS-Provider": "ai-gateway",
+};
+
+const GOOGLE_HEADERS = {
+  ...AUDIO_HEADERS,
+  "X-TTS-Provider": "google",
+};
+
 export async function GET(req: NextRequest) {
   const session = await getSession();
   if (!session) {
@@ -53,7 +63,7 @@ export async function GET(req: NextRequest) {
       try {
         const data = (await res.json()) as { audio?: string };
         if (typeof data.audio === "string" && data.audio.length > 0) {
-          return new Response(Buffer.from(data.audio, "base64"), { headers: AUDIO_HEADERS });
+          return new Response(Buffer.from(data.audio, "base64"), { headers: AI_GATEWAY_HEADERS });
         }
       } catch {
         // lanjut ke fallback Google
@@ -84,5 +94,5 @@ export async function GET(req: NextRequest) {
     return new Response("TTS tidak tersedia.", { status: 502 });
   }
 
-  return new Response(res.body, { headers: AUDIO_HEADERS });
+  return new Response(res.body, { headers: GOOGLE_HEADERS });
 }
