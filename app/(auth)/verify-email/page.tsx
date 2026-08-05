@@ -12,7 +12,7 @@ export default async function VerifyEmailPage({ searchParams }: { searchParams: 
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="bg-card p-8 rounded-2xl border-border shadow-card max-w-md text-center">
+      <div className="bg-card p-8 rounded-2xl border border-border shadow-card max-w-md text-center">
         <p className="text-2xl font-black text-primary">✅</p>
         <p className="text-lg font-extrabold mt-4">Email Terverifikasi!</p>
         <p className="text-sm text-muted-foreground mt-2">Akun Anda sudah aktif. Silakan login.</p>
