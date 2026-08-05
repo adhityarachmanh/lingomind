@@ -515,7 +515,7 @@ export default function ChatView() {
                   <div className="pl-10 space-y-1">
                     {!isGeneral && streamingRomanization && <RomanizationLine text={streamingRomanization} />}
                     <Skeleton className="h-3 w-44" />
-                    <p className="text-[11px] text-muted-foreground">{isGeneral ? "Menyimpan balasan..." : "Menerjemahkan & menganalisis..."}</p>
+                    <p className="text-[11px] text-muted-foreground">{isGeneral ? "Memproses balasan..." : "Menerjemahkan & menganalisis..."}</p>
                   </div>
                 )}
               </div>
