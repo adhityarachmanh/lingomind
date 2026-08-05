@@ -308,8 +308,18 @@ export default function ChatView() {
                         {m.analysis.native_rephrasing && (
                           <div className="px-4 py-3 border-t border-border space-y-1.5">
                             <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
-                            <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
-                            <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
+                            <div>
+                              <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
+                              {m.analysis.native_rephrasing.formal_meaning_in_indonesian && (
+                                <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.formal_meaning_in_indonesian}</p>
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
+                              {m.analysis.native_rephrasing.casual_meaning_in_indonesian && (
+                                <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.casual_meaning_in_indonesian}</p>
+                              )}
+                            </div>
                           </div>
                         )}
                         {m.analysis.vocab_highlight && (

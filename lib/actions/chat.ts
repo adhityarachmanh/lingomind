@@ -17,7 +17,12 @@ export interface PolyglotAnalysis {
     rule: string;
     explanation_in_indonesian: string;
   }[];
-  native_rephrasing: { formal: string; casual: string };
+  native_rephrasing: {
+    formal: string;
+    formal_meaning_in_indonesian: string;
+    casual: string;
+    casual_meaning_in_indonesian: string;
+  };
   vocab_highlight: { word_target: string; meaning_in_indonesian: string };
   reply_in_target_language: string;
   reply_translation_in_indonesian: string;

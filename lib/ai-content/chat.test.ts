@@ -16,6 +16,12 @@ describe("buildPolyglotSystemPrompt", () => {
     const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
     expect(prompt.indexOf("suggested_replies")).toBeGreaterThan(prompt.indexOf("reply_translation_in_indonesian"));
   });
+
+  it("mencantumkan arti Indonesia pada native_rephrasing", () => {
+    const prompt = buildPolyglotSystemPrompt("English", "A1", "Restaurant");
+    expect(prompt).toContain("formal_meaning_in_indonesian");
+    expect(prompt).toContain("casual_meaning_in_indonesian");
+  });
 });
 
 describe("buildPolyglotUserMessage", () => {
