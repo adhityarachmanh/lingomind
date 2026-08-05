@@ -131,7 +131,7 @@ export async function endChatSessionAction(sessionId: string): Promise<ActionRes
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   await db.session.update({
-    where: { id: sessionId },
+    where: { id: sessionId, userId: session.email },
     data: { endedAt: new Date() },
   });
   return { message: "ok" };
