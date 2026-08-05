@@ -60,6 +60,7 @@ model Session {
   language  String
   level     String    @default("A1")
   scenario  String
+  endedAt   DateTime? @map("ended_at")
   createdAt DateTime  @default(now())
   messages  Message[]
 
