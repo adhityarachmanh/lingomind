@@ -12,5 +12,3 @@ export const provider = createOpenAICompatible({
 });
 
 export const model = provider(process.env.OPENCODE_AI_MODEL || "deepseek-v4-flash");
-
-export const modelPro = provider(process.env.OPENCODE_AI_MODEL_PRO || "deepseek-v4-pro");

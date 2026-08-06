@@ -14,7 +14,7 @@ Aplikasi belajar bahasa. **Migrasi dari Dioxus ke Next.js SELESAI (Fase 6)** —
 - `AUTH_SECRET` — jose JWT (cookie httpOnly `lingomind_session`, 30 hari)
 - `SMTP_USERNAME`/`SMTP_PASSWORD` (Gmail app password) — tanpa password, email dicetak ke console server (mode dev)
 - `APP_URL` (default `http://localhost:3000`)
-- `OPENCODE_AI_API_KEY`/`OPENCODE_AI_ENDPOINT`/`OPENCODE_AI_MODEL` — AI provider opencode.ai (`ai` + `@ai-sdk/openai-compatible`); endpoint default `https://opencode.ai/zen/go/v1/chat/completions` (suffix `/chat/completions` di-strip di `lib/ai.ts`); model default `deepseek-v4-flash`; `OPENCODE_AI_MODEL_PRO` (opsional, default `deepseek-v4-pro`, dipakai action chat non-stream di `lib/actions/chat.ts` — stream `/api/chat` tetap flash)
+- `OPENCODE_AI_API_KEY`/`OPENCODE_AI_ENDPOINT`/`OPENCODE_AI_MODEL` — AI provider opencode.ai (`ai` + `@ai-sdk/openai-compatible`); endpoint default `https://opencode.ai/zen/go/v1/chat/completions` (suffix `/chat/completions` di-strip di `lib/ai.ts`); model default `deepseek-v4-flash`
 - `CRON_SECRET` — melindungi endpoint cron (Bearer `CRON_SECRET`); Vercel Cron otomatis kirim header `x-vercel-cron`
 
 ## Arsitektur

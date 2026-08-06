@@ -384,7 +384,7 @@ export default function ChatView() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-[calc(100vh_-_3.5rem_-_env(safe-area-inset-top))] supports-[height:100dvh]:h-[calc(100dvh_-_3.5rem_-_env(safe-area-inset-top))]">
+      <div className="fixed inset-x-0 bottom-0 top-[calc(3.5rem_+_env(safe-area-inset-top))] flex">
       <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
         <ChatSidebar activeSessionId={sessionId} />
       </div>
@@ -480,60 +480,61 @@ export default function ChatView() {
             </div>
           )}
 
-          <div className="sticky bottom-0 z-10 bg-background pt-3 space-y-3">
-            {error && <p className="text-xs text-destructive">{error}</p>}
-
-            {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 w-6 p-0 text-muted-foreground"
-                    onClick={() => setSuggestionsOpen((v) => !v)}
-                    aria-label={suggestionsOpen ? "Sembunyikan saran" : "Tampilkan saran"}
-                  >
-                    {suggestionsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                  </Button>
-                </div>
-                {suggestionsOpen && (
-                  <div className="flex flex-wrap items-center gap-2">
-                    {suggestions.map((s, i) => (
-                      <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s.text, s.romanization, s.translation_in_indonesian)}>
-                        {s.text}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="flex gap-2 pb-[env(safe-area-inset-bottom)]">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-                disabled={streaming || analyzing}
-                dir="auto"
-                placeholder={isGeneral ? "Ketik pesan..." : `Ketik dalam bahasa ${session?.language ?? "..."}...`}
-                className="flex-1 min-w-0"
-              />
-              {streaming ? (
-                <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>
-                  <Square className="h-4 w-4 mr-1" /> Stop
-                </Button>
-              ) : (
-                <Button type="button" onClick={() => send()} disabled={!input.trim() || analyzing}>
-                  <Send className="h-4 w-4 mr-1" />
-                  Kirim
-                </Button>
-              )}
-            </div>
-          </div>
         </div>
 
-        <Dialog open={analysisTarget !== null} onOpenChange={(open: boolean) => { if (!open) setAnalysisTarget(null); }}>
+        <div className="pt-3 space-y-3">
+          {error && <p className="text-xs text-destructive">{error}</p>}
+
+          {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 text-muted-foreground"
+                  onClick={() => setSuggestionsOpen((v) => !v)}
+                  aria-label={suggestionsOpen ? "Sembunyikan saran" : "Tampilkan saran"}
+                >
+                  {suggestionsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
+              {suggestionsOpen && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {suggestions.map((s, i) => (
+                    <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s.text, s.romanization, s.translation_in_indonesian)}>
+                      {s.text}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-2 pb-[env(safe-area-inset-bottom)]">
+            <Input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+              disabled={streaming || analyzing}
+              dir="auto"
+              placeholder={isGeneral ? "Ketik pesan..." : `Ketik dalam bahasa ${session?.language ?? "..."}...`}
+              className="flex-1 min-w-0"
+            />
+            {streaming ? (
+              <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>
+                <Square className="h-4 w-4 mr-1" /> Stop
+              </Button>
+            ) : (
+              <Button type="button" onClick={() => send()} disabled={!input.trim() || analyzing}>
+                <Send className="h-4 w-4 mr-1" />
+                Kirim
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+      <Dialog open={analysisTarget !== null} onOpenChange={(open: boolean) => { if (!open) setAnalysisTarget(null); }}>
           <DialogContent className="sm:max-w-xl max-h-[80dvh] flex flex-col">
             <DialogHeader className="pr-8">
               <DialogTitle className="flex items-center gap-1.5 text-base">
@@ -615,7 +616,6 @@ export default function ChatView() {
             )}
           </DialogContent>
         </Dialog>
-      </div>
       </div>
     </TooltipProvider>
   );
