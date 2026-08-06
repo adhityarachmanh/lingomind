@@ -1,7 +1,7 @@
 "use server";
 
 import { generateText } from "ai";
-import { model } from "../ai";
+import { modelPro } from "../ai";
 import { getSession } from "../auth";
 import { db } from "../db";
 import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
@@ -123,7 +123,7 @@ export async function sendPolyglotMessageAction(
 
   let text: string;
   try {
-    const result = await generateText({ model, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
+    const result = await generateText({ model: modelPro, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
@@ -258,7 +258,7 @@ export async function openSessionAction(
 
   let text: string;
   try {
-    const result = await generateText({ model, instructions, messages, maxOutputTokens: 2048, temperature: 0.8 });
+    const result = await generateText({ model: modelPro, instructions, messages, maxOutputTokens: 2048, temperature: 0.8 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan pembuka percakapan." };
@@ -331,7 +331,7 @@ export async function analyzeChatMessageAction(
 
   let text: string;
   try {
-    const result = await generateText({ model, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
+    const result = await generateText({ model: modelPro, instructions, messages, maxOutputTokens: 4096, temperature: 0.7 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };
@@ -415,7 +415,7 @@ export async function sendGeneralMessageAction(
 
   let text: string;
   try {
-    const result = await generateText({ model, instructions, messages, maxOutputTokens: 2048, temperature: 0.7 });
+    const result = await generateText({ model: modelPro, instructions, messages, maxOutputTokens: 2048, temperature: 0.7 });
     text = result.text.trim();
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Gagal menghasilkan balasan AI." };

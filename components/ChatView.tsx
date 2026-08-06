@@ -15,10 +15,15 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Card } from "@/components/ui/card";
 import { LanguageBadge } from "./chat-lists";
 import ChatSidebar from "./ChatSidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Message {
   id: string;
@@ -27,7 +32,6 @@ interface Message {
   analysis?: PolyglotAnalysis;
   romanization?: string;
   translation?: string;
-  expanded?: boolean;
 }
 
 function RomanizationLine({ text }: { text: string }) {
@@ -67,12 +71,19 @@ export default function ChatView() {
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestedReply[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(true);
+  const [analysisTarget, setAnalysisTarget] = useState<Message | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const tempIdRef = useRef(0);
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
   const isGeneral = session?.type === "general";
+
+  function applySuggestions(next: SuggestedReply[]) {
+    setSuggestions(next);
+    if (next.length > 0) setSuggestionsOpen(true);
+  }
 
   useEffect(() => {
     if (!sessionId) {
@@ -108,11 +119,10 @@ export default function ChatView() {
             translation: m.role === "ai"
               ? (aj?.reply_translation_in_indonesian ?? undefined)
               : (aj?.translation_in_indonesian ?? undefined),
-            expanded: false,
           };
         }));
         const lastAi = [...res.messages].reverse().find((m) => m.role === "ai");
-        setSuggestions(normalizeSuggestedReplies((lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies));
+        applySuggestions(normalizeSuggestedReplies((lastAi?.analysisJson as PolyglotAnalysis | null)?.suggested_replies));
       } catch (e) {
         if (cancelled) return;
         toast.error(e instanceof Error ? e.message : "Gagal memuat percakapan.");
@@ -220,7 +230,7 @@ export default function ChatView() {
             setError(res.error);
             return;
           }
-          setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.reply, expanded: false }]);
+          setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.reply }]);
         } catch (e) {
           if (!mountedRef.current) return;
           setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
@@ -242,7 +252,7 @@ export default function ChatView() {
           setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText }]);
           return;
         }
-        setMessages((m) => [...m, { id: res.messageId, role: "ai", content: replyText, expanded: false }]);
+        setMessages((m) => [...m, { id: res.messageId, role: "ai", content: replyText }]);
       } catch (e) {
         if (!mountedRef.current) return;
         toast.error(e instanceof Error ? e.message : "Gagal menyimpan balasan.");
@@ -266,7 +276,7 @@ export default function ChatView() {
           setError(res.error);
           return;
         }
-        setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+        applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
         setMessages((m) => m.map((msg) =>
           msg.id === userMsgId
             ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
@@ -281,7 +291,6 @@ export default function ChatView() {
             analysis: res.analysis,
             romanization: res.analysis.reply_romanization,
             translation: res.analysis.reply_translation_in_indonesian,
-            expanded: false,
           },
         ]);
       } catch (e) {
@@ -306,7 +315,7 @@ export default function ChatView() {
         setMessages((m) => [...m, { id: String(Date.now()), role: "ai", content: replyText, romanization: romanization || undefined }]);
         return;
       }
-      setSuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+      applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
           ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
@@ -321,7 +330,6 @@ export default function ChatView() {
           analysis: res.analysis,
           romanization: res.analysis.reply_romanization ?? (romanization || undefined),
           translation: res.analysis.reply_translation_in_indonesian,
-          expanded: false,
         },
       ]);
     } catch (e) {
@@ -356,10 +364,6 @@ export default function ChatView() {
     router.push("/chat");
   }
 
-  function toggleExpanded(id: string) {
-    setMessages((msgs) => msgs.map((m) => (m.id === id ? { ...m, expanded: !m.expanded } : m)));
-  }
-
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -380,7 +384,7 @@ export default function ChatView() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex h-[calc(100dvh_-_3.5rem_-_env(safe-area-inset-top))]">
+      <div className="flex h-[calc(100vh_-_3.5rem_-_env(safe-area-inset-top))] supports-[height:100dvh]:h-[calc(100dvh_-_3.5rem_-_env(safe-area-inset-top))]">
       <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
         <ChatSidebar activeSessionId={sessionId} />
       </div>
@@ -421,87 +425,15 @@ export default function ChatView() {
             ) : (
               <div key={m.id} className="space-y-3">
                 {m.analysis && m.analysis.scores && !isGeneral && (
-                  <div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-muted-foreground -ml-2"
-                      onClick={() => toggleExpanded(m.id)}
-                    >
-                      {m.expanded ? <ChevronUp className="h-3.5 w-3.5 mr-1" /> : <ChevronDown className="h-3.5 w-3.5 mr-1" />}
-                      {m.expanded ? "Tutup Penjelasan" : "Lihat Penjelasan"}
-                    </Button>
-                    {m.expanded && (
-                      <Card className="border-border bg-card overflow-hidden shadow-none">
-                        <div className="px-4 py-3 border-b border-border bg-muted/50 flex items-center justify-between gap-2">
-                          <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
-                            <FileCheck2 className="h-3.5 w-3.5 text-primary" /> Analisis Bahasa
-                          </span>
-                          <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                            Grammar {m.analysis.scores.grammar} · {m.analysis.scores.fluency}
-                          </Badge>
-                        </div>
-                        {m.analysis.detailed_analysis.length > 0 ? (
-                          <div className="px-4 py-3 space-y-2">
-                            {m.analysis.detailed_analysis.map((d, i) => (
-                              <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
-                                <p className="text-sm">
-                                  <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
-                                  <span className="mx-1.5 text-muted-foreground">→</span>
-                                  <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
-                                </p>
-                                {d.corrected_romanization && (
-                                  <p className="text-[11px] text-muted-foreground italic mt-0.5">({d.corrected_romanization})</p>
-                                )}
-                                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                                  <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="px-4 py-3 text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
-                        )}
-                        {m.analysis.native_rephrasing && (
-                          <div className="px-4 py-3 border-t border-border space-y-1.5">
-                            <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
-                            <div>
-                              <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {m.analysis.native_rephrasing.formal}</p>
-                              {m.analysis.native_rephrasing.formal_meaning_in_indonesian && (
-                                <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.formal_meaning_in_indonesian}</p>
-                              )}
-                              {m.analysis.native_rephrasing.formal_romanization && (
-                                <p className="text-[11px] text-muted-foreground">({m.analysis.native_rephrasing.formal_romanization})</p>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {m.analysis.native_rephrasing.casual}</p>
-                              {m.analysis.native_rephrasing.casual_meaning_in_indonesian && (
-                                <p className="text-[11px] text-muted-foreground italic">{m.analysis.native_rephrasing.casual_meaning_in_indonesian}</p>
-                              )}
-                              {m.analysis.native_rephrasing.casual_romanization && (
-                                <p className="text-[11px] text-muted-foreground">({m.analysis.native_rephrasing.casual_romanization})</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {m.analysis.vocab_highlight && (
-                          <div className="px-4 py-3 border-t border-border flex items-center justify-between gap-2 bg-muted/20">
-                            <div className="min-w-0">
-                              <p className="text-xs font-bold text-foreground truncate">{m.analysis.vocab_highlight.word_target}</p>
-                              {m.analysis.vocab_highlight.romanization && (
-                                <p className="text-[10px] text-muted-foreground">{m.analysis.vocab_highlight.romanization}</p>
-                              )}
-                              <p className="text-[11px] text-muted-foreground truncate">{m.analysis.vocab_highlight.meaning_in_indonesian}</p>
-                            </div>
-                            <Button size="sm" variant="outline" onClick={() => saveVocab(m.analysis!.vocab_highlight.word_target, m.analysis!.vocab_highlight.meaning_in_indonesian)} className="shrink-0">
-                              <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
-                            </Button>
-                          </div>
-                        )}
-                      </Card>
-                    )}
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-muted-foreground -ml-2"
+                    onClick={() => setAnalysisTarget(m)}
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 mr-1" />
+                    Lihat Penjelasan
+                  </Button>
                 )}
                 <div className="flex justify-start gap-2.5">
                   <Avatar className="h-8 w-8 shrink-0 border border-border bg-secondary text-primary">
@@ -547,42 +479,142 @@ export default function ChatView() {
               </div>
             </div>
           )}
-        </div>
 
-        {error && <p className="text-xs text-destructive mt-2">{error}</p>}
+          <div className="sticky bottom-0 z-10 bg-background pt-3 space-y-3">
+            {error && <p className="text-xs text-destructive">{error}</p>}
 
-        {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
-            {suggestions.map((s, i) => (
-              <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s.text, s.romanization, s.translation_in_indonesian)}>
-                {s.text}
-              </Button>
-            ))}
+            {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 text-muted-foreground"
+                    onClick={() => setSuggestionsOpen((v) => !v)}
+                    aria-label={suggestionsOpen ? "Sembunyikan saran" : "Tampilkan saran"}
+                  >
+                    {suggestionsOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+                  </Button>
+                </div>
+                {suggestionsOpen && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {suggestions.map((s, i) => (
+                      <Button key={i} variant="outline" size="sm" className="text-xs" onClick={() => send(s.text, s.romanization, s.translation_in_indonesian)}>
+                        {s.text}
+                      </Button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2 pb-[env(safe-area-inset-bottom)]">
+              <Input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+                disabled={streaming || analyzing}
+                dir="auto"
+                placeholder={isGeneral ? "Ketik pesan..." : `Ketik dalam bahasa ${session?.language ?? "..."}...`}
+                className="flex-1 min-w-0"
+              />
+              {streaming ? (
+                <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>
+                  <Square className="h-4 w-4 mr-1" /> Stop
+                </Button>
+              ) : (
+                <Button type="button" onClick={() => send()} disabled={!input.trim() || analyzing}>
+                  <Send className="h-4 w-4 mr-1" />
+                  Kirim
+                </Button>
+              )}
+            </div>
           </div>
-        )}
-
-        <div className="flex gap-2 mt-3 pb-[env(safe-area-inset-bottom)]">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-            disabled={streaming || analyzing}
-            dir="auto"
-            placeholder={isGeneral ? "Ketik pesan..." : `Ketik dalam bahasa ${session?.language ?? "..."}...`}
-            className="flex-1 min-w-0"
-          />
-          {streaming ? (
-            <Button type="button" variant="destructive" onClick={() => abortRef.current?.abort()}>
-              <Square className="h-4 w-4 mr-1" /> Stop
-            </Button>
-          ) : (
-            <Button type="button" onClick={() => send()} disabled={!input.trim() || analyzing}>
-              <Send className="h-4 w-4 mr-1" />
-              Kirim
-            </Button>
-          )}
         </div>
+
+        <Dialog open={analysisTarget !== null} onOpenChange={(open: boolean) => { if (!open) setAnalysisTarget(null); }}>
+          <DialogContent className="sm:max-w-xl max-h-[80dvh] flex flex-col">
+            <DialogHeader className="pr-8">
+              <DialogTitle className="flex items-center gap-1.5 text-base">
+                <FileCheck2 className="h-4 w-4 text-primary" /> Analisis Bahasa
+              </DialogTitle>
+            </DialogHeader>
+            {analysisTarget?.analysis && (
+              <div className="overflow-y-auto pr-1 space-y-2">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs font-bold text-foreground">Skor &amp; Detail</p>
+                  <Badge variant="outline" className="text-[11px] text-muted-foreground shrink-0">
+                    Grammar {analysisTarget.analysis.scores.grammar} · {analysisTarget.analysis.scores.fluency}
+                  </Badge>
+                </div>
+                {analysisTarget.analysis.detailed_analysis.length > 0 ? (
+                  <div className="space-y-2">
+                    {analysisTarget.analysis.detailed_analysis.map((d, i) => (
+                      <div key={i} className="rounded-lg border border-border bg-muted/30 p-3">
+                        <p className="text-sm">
+                          <span className="text-destructive line-through decoration-destructive/60">{d.original_segment}</span>
+                          <span className="mx-1.5 text-muted-foreground">→</span>
+                          <span className="text-emerald-400 font-semibold">{d.corrected_segment}</span>
+                        </p>
+                        {d.corrected_romanization && (
+                          <p className="text-[11px] text-muted-foreground italic mt-0.5">({d.corrected_romanization})</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                          <span className="font-semibold text-foreground">{d.rule}</span> — {d.explanation_in_indonesian}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-emerald-400 font-medium">Tidak ada kesalahan — kalimat Anda sudah tepat.</div>
+                )}
+                {analysisTarget.analysis.native_rephrasing && (
+                  <div className="space-y-1.5 pt-3 border-t border-border">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Ungkapan Alternatif</p>
+                    <div>
+                      <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Formal</span> — {analysisTarget.analysis.native_rephrasing.formal}</p>
+                      {analysisTarget.analysis.native_rephrasing.formal_meaning_in_indonesian && (
+                        <p className="text-[11px] text-muted-foreground italic">{analysisTarget.analysis.native_rephrasing.formal_meaning_in_indonesian}</p>
+                      )}
+                      {analysisTarget.analysis.native_rephrasing.formal_romanization && (
+                        <p className="text-[11px] text-muted-foreground">({analysisTarget.analysis.native_rephrasing.formal_romanization})</p>
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground/90"><span className="text-muted-foreground font-medium">Casual</span> — {analysisTarget.analysis.native_rephrasing.casual}</p>
+                      {analysisTarget.analysis.native_rephrasing.casual_meaning_in_indonesian && (
+                        <p className="text-[11px] text-muted-foreground italic">{analysisTarget.analysis.native_rephrasing.casual_meaning_in_indonesian}</p>
+                      )}
+                      {analysisTarget.analysis.native_rephrasing.casual_romanization && (
+                        <p className="text-[11px] text-muted-foreground">({analysisTarget.analysis.native_rephrasing.casual_romanization})</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {analysisTarget.analysis.vocab_highlight && (
+                  <div className="flex items-center justify-between gap-2 pt-3 border-t border-border bg-muted/20 rounded-lg px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-foreground truncate">{analysisTarget.analysis.vocab_highlight.word_target}</p>
+                      {analysisTarget.analysis.vocab_highlight.romanization && (
+                        <p className="text-[10px] text-muted-foreground">{analysisTarget.analysis.vocab_highlight.romanization}</p>
+                      )}
+                      <p className="text-[11px] text-muted-foreground truncate">{analysisTarget.analysis.vocab_highlight.meaning_in_indonesian}</p>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => saveVocab(analysisTarget!.analysis!.vocab_highlight.word_target, analysisTarget!.analysis!.vocab_highlight.meaning_in_indonesian)}
+                      className="shrink-0"
+                    >
+                      <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
       </div>
     </TooltipProvider>
