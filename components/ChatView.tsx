@@ -366,11 +366,12 @@ export default function ChatView() {
 
   useEffect(() => {
     mountedRef.current = true;
+    router.prefetch("/chat");
     return () => {
       mountedRef.current = false;
       abortRef.current?.abort();
     };
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (

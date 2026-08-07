@@ -128,8 +128,9 @@ export default function VoiceChatView() {
   }, [ttsLang, sessionId]);
 
   useEffect(() => {
+    router.prefetch("/voice-chat");
     return () => stopListening();
-  }, [stopListening]);
+  }, [router, stopListening]);
 
   if (!sessionId) {
     return (
