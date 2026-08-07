@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
 
   const dbSession = await db.session.findFirst({
     where: { id: body.sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true, description: true, type: true } } },
+    include: { scenario: { select: { title: true, language: true, description: true, level: true, type: true } } },
   });
   if (!dbSession) {
     return NextResponse.json({ error: "Akses ditolak." }, { status: 403 });
@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
 
   const language = dbSession.scenario?.language ?? dbSession.language;
   const scenario = dbSession.scenario?.title ?? "Percakapan";
+  const level = dbSession.scenario?.level ?? dbSession.level;
 
   const history = await db.message.findMany({
     where: { sessionId: dbSession.id },
@@ -59,7 +60,7 @@ export async function POST(req: NextRequest) {
     : dbSession.scenario?.title ?? "Percakapan";
   const { instructions, messages } = isGeneral
     ? buildGeneralStreamPrompt(dbSession.scenario?.title ?? "Asisten", context, userMessage, aiMessages)
-    : buildPolyglotStreamPrompt(userMessage, language, "A1", scenario, aiMessages);
+    : buildPolyglotStreamPrompt(userMessage, language, level, scenario, aiMessages);
 
   await db.message.create({
     data: { sessionId: dbSession.id, role: "user", content: userMessage },
