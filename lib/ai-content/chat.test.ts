@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildPolyglotOpeningPrompt, buildPolyglotStreamPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage } from "./chat";
+import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildGeneralSummaryPrompt, buildPolyglotOpeningPrompt, buildPolyglotStreamPrompt, buildPolyglotSystemPrompt, buildPolyglotUserMessage, buildSummaryPrompt } from "./chat";
 
 describe("buildPolyglotSystemPrompt", () => {
   it("mencantumkan suggested_replies di skema JSON", () => {
@@ -134,5 +134,27 @@ describe("buildGeneralOpeningPrompt", () => {
     expect(instructions).toContain("Guru Matematika");
     expect(instructions).toContain("Bahasa Indonesia");
     expect(messages).toEqual([{ role: "user", content: "Mulai percakapan!" }]);
+  });
+});
+
+describe("buildSummaryPrompt", () => {
+  it("menghasilkan instruksi rekap bahasa dengan format teks biasa", () => {
+    const history = [{ role: "assistant" as const, content: "Hi!" }];
+    const { instructions, messages } = buildSummaryPrompt("English", "B1", "Restaurant", history);
+    expect(instructions).toContain("Rekap Pelajaran");
+    expect(instructions).toContain("Bahasa Indonesia");
+    expect(instructions).toContain("tanpa markdown");
+    expect(instructions).toContain("B1");
+    expect(messages).toEqual(history);
+  });
+});
+
+describe("buildGeneralSummaryPrompt", () => {
+  it("menghasilkan instruksi rekap umum dengan markdown", () => {
+    const history = [{ role: "assistant" as const, content: "Rumus: $x^2$" }];
+    const { instructions, messages } = buildGeneralSummaryPrompt("Guru Matematika", "Guru Matematika - Diskusi rumus", history);
+    expect(instructions).toContain("Rekap Pelajaran");
+    expect(instructions).toContain("Markdown");
+    expect(messages).toEqual(history);
   });
 });

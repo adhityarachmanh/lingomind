@@ -19,11 +19,14 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
 }) {
   const [mode, setMode] = useState<ScenarioType>("language");
   const [language, setLanguage] = useState("English");
+  const [level, setLevel] = useState("A1");
   const [templateId, setTemplateId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [used, setUsed] = useState<UsedScenarioTemplate[]>([]);
+
+  const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
   const modeTemplates = SCENARIO_TEMPLATES.filter((t) => t.type === mode);
   const categories = [...new Set(modeTemplates.map((t) => t.category))];
@@ -55,7 +58,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
     if (saving) return;
     setSaving(true);
     try {
-      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language: mode === "general" ? "Indonesian" : language, type: mode });
+      const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language: mode === "general" ? "Indonesian" : language, level, type: mode });
       if ("error" in res) { toast.error(res.error); return; }
       toast.success("Skenario berhasil dibuat!");
       setTemplateId(null);
@@ -109,6 +112,22 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          )}
+          {mode === "language" && (
+          <div>
+            <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Level</Label>
+            <Select value={level} onValueChange={setLevel}>
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {LEVELS.map((l) => (
+                  <SelectItem key={l} value={l}>{l}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[10px] text-muted-foreground mt-1">Semakin tinggi level, semakin kompleks balasan & koreksi AI.</p>
           </div>
           )}
           <div>

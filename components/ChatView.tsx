@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, Bookmark, ChevronDown, ChevronUp, FileCheck2, Send, Square, Trash2 } from "lucide-react";
+import { ArrowLeft, Bookmark, BookmarkCheck, BookmarkPlus, ChevronDown, ChevronUp, Copy, FileCheck2, RotateCcw, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendGeneralMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, generateSummaryAction, removeLastAiMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendGeneralMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import MarkdownContent from "./MarkdownContent";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
@@ -73,9 +73,24 @@ export default function ChatView() {
   const [suggestions, setSuggestions] = useState<SuggestedReply[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(true);
   const [analysisTarget, setAnalysisTarget] = useState<Message | null>(null);
+  const [autoSaveVocab, setAutoSaveVocab] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("lingomind_autosave_vocab") === "1";
+  });
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const tempIdRef = useRef(0);
+  const sentCountRef = useRef(0);
+
+  function toggleAutoSaveVocab() {
+    setAutoSaveVocab((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem("lingomind_autosave_vocab", next ? "1" : "0");
+      } catch {}
+      return next;
+    });
+  }
 
   const ttsLang = TTS_LANG_MAP[session?.language ?? ""] ?? "en-US";
   const isGeneral = session?.type === "general";
@@ -141,7 +156,43 @@ export default function ChatView() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [messages, streamingText, analyzing, loading]);
 
-  async function send(textOverride?: string, chipRomanization?: string, chipTranslation?: string) {
+  async function maybeFireSummary() {
+    if (sentCountRef.current % 5 !== 0) return;
+    if (!sessionId || !mountedRef.current) return;
+    try {
+      const res = await generateSummaryAction(sessionId);
+      if (!mountedRef.current) return;
+      if ("error" in res) return;
+      setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.content }]);
+    } catch {}
+  }
+
+  async function copyMessage(content: string) {
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success("Pesan disalin.");
+    } catch {
+      toast.error("Gagal menyalin pesan.");
+    }
+  }
+
+  async function regenerate() {
+    if (!sessionId || streaming || analyzing) return;
+    const lastAiMsg = [...messages].reverse().find((m) => m.role === "ai");
+    const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+    if (!lastAiMsg || !lastUserMsg) return;
+    try {
+      const res = await removeLastAiMessageAction(sessionId);
+      if ("error" in res) { toast.error(res.error); return; }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Gagal mengulang balasan.");
+      return;
+    }
+    setMessages((m) => m.filter((msg) => msg.id !== lastAiMsg.id));
+    await send(lastUserMsg.content, undefined, undefined, true);
+  }
+
+  async function send(textOverride?: string, chipRomanization?: string, chipTranslation?: string, suppressUserBubble = false) {
     if (!sessionId || streaming || analyzing) return;
     const text = (textOverride ?? input).trim();
     if (!text) return;
@@ -152,8 +203,13 @@ export default function ChatView() {
     setInput("");
     setSuggestions([]);
     setError(null);
-    const userMsgId = `user-${++tempIdRef.current}`;
-    setMessages((m) => [...m, { id: userMsgId, role: "user", content: text, romanization: chipRomanization, translation: chipTranslation }]);
+    let userMsgId = `user-${++tempIdRef.current}`;
+    if (suppressUserBubble) {
+      const lastUser = [...messages].reverse().find((m) => m.role === "user");
+      userMsgId = lastUser?.id ?? userMsgId;
+    } else {
+      setMessages((m) => [...m, { id: userMsgId, role: "user", content: text, romanization: chipRomanization, translation: chipTranslation }]);
+    }
 
     async function fetchStream(): Promise<string> {
       const controller = new AbortController();
@@ -231,6 +287,8 @@ export default function ChatView() {
             return;
           }
           setMessages((m) => [...m, { id: res.messageId, role: "ai", content: res.reply }]);
+          sentCountRef.current += 1;
+          maybeFireSummary();
         } catch (e) {
           if (!mountedRef.current) return;
           setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
@@ -253,6 +311,8 @@ export default function ChatView() {
           return;
         }
         setMessages((m) => [...m, { id: res.messageId, role: "ai", content: replyText }]);
+        sentCountRef.current += 1;
+        maybeFireSummary();
       } catch (e) {
         if (!mountedRef.current) return;
         toast.error(e instanceof Error ? e.message : "Gagal menyimpan balasan.");
@@ -270,7 +330,7 @@ export default function ChatView() {
       if (!mountedRef.current) return;
       setAnalyzing(true);
       try {
-        const res = await sendPolyglotMessageAction(sessionId, text);
+        const res = await sendPolyglotMessageAction(sessionId, text, autoSaveVocab);
         if (!mountedRef.current) return;
         if ("error" in res) {
           setError(res.error);
@@ -293,6 +353,8 @@ export default function ChatView() {
             translation: res.analysis.reply_translation_in_indonesian,
           },
         ]);
+        sentCountRef.current += 1;
+        maybeFireSummary();
       } catch (e) {
         if (!mountedRef.current) return;
         setError(e instanceof Error ? e.message : "Gagal mengirim pesan.");
@@ -308,7 +370,7 @@ export default function ChatView() {
     if (!mountedRef.current) return;
     setAnalyzing(true);
     try {
-      const res = await analyzeChatMessageAction(sessionId, text, replyText, romanization || undefined);
+      const res = await analyzeChatMessageAction(sessionId, text, replyText, romanization || undefined, autoSaveVocab);
       if (!mountedRef.current) return;
       if ("error" in res) {
         toast.error(res.error);
@@ -332,6 +394,8 @@ export default function ChatView() {
           translation: res.analysis.reply_translation_in_indonesian,
         },
       ]);
+      sentCountRef.current += 1;
+      maybeFireSummary();
     } catch (e) {
       if (!mountedRef.current) return;
       toast.error(e instanceof Error ? e.message : "Gagal menganalisis.");
@@ -383,6 +447,8 @@ export default function ChatView() {
     );
   }
 
+  const lastAiId = [...messages].reverse().find((m) => m.role === "ai")?.id;
+
   return (
     <TooltipProvider delayDuration={200}>
       <div className="fixed inset-x-0 bottom-0 top-[calc(3.5rem_+_env(safe-area-inset-top))] flex">
@@ -397,9 +463,26 @@ export default function ChatView() {
             </Button>
             <div className="min-w-0">
               <h1 className="text-sm sm:text-base font-extrabold truncate">{session?.scenarioTitle}</h1>
-              <LanguageBadge language={session?.language ?? ""} />
+              <div className="flex items-center gap-1.5">
+                <LanguageBadge language={session?.language ?? ""} />
+                {session?.level && session.level !== "A1" && (
+                  <span className="text-[10px] font-bold text-muted-foreground border border-border rounded-full px-1.5 py-px">Level {session.level}</span>
+                )}
+              </div>
             </div>
           </div>
+          {!isGeneral && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleAutoSaveVocab}
+              className={autoSaveVocab ? "text-primary" : "text-muted-foreground"}
+              title={autoSaveVocab ? "Auto-simpan kosakata: aktif" : "Auto-simpan kosakata: mati"}
+            >
+              {autoSaveVocab ? <BookmarkCheck className="h-4 w-4 mr-1" /> : <BookmarkPlus className="h-4 w-4 mr-1" />}
+              <span className="hidden sm:inline">{autoSaveVocab ? "Auto-simpan" : "Auto-simpan Kosakata"}</span>
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={deleteSession} disabled={streaming || analyzing} className="hidden sm:inline-flex text-destructive hover:text-destructive shrink-0">
             <Trash2 className="h-3.5 w-3.5 mr-1.5" />
             Hapus Percakapan
@@ -445,6 +528,16 @@ export default function ChatView() {
                       <SpeakButton text={m.content} lang={ttsLang} />
                       <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
                         {isGeneral ? <MarkdownContent content={m.content} /> : m.content}
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={() => copyMessage(m.content)} aria-label="Salin pesan">
+                          <Copy className="h-3.5 w-3.5" />
+                        </Button>
+                        {m.id === lastAiId && (
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={regenerate} disabled={streaming || analyzing} aria-label="Ulangi balasan">
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                     <div className="pl-10 space-y-1">

@@ -156,13 +156,54 @@ export function buildGeneralOpeningPrompt(
   scenario: string
 ): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
   return {
-    instructions: [
-      `Anda adalah ${role}. Konteks: ${scenario}.`,
+    instructions: [      `Anda adalah ${role}. Konteks: ${scenario}.`,
       "Tugas Anda: MULAI percakapan dengan user dalam Bahasa Indonesia.",
       "Perkenalkan diri singkat sebagai role Anda (1-2 kalimat), tawarkan bantuan, dan akhiri dengan satu pertanyaan.",
       "Gunakan Markdown sederhana dan rumus LaTeX bila relevan ($...$).",
       "JANGAN menambahkan teks di luar jawaban — tanpa JSON.",
     ].join("\n"),
     messages: [{ role: "user", content: "Mulai percakapan!" }],
+  };
+}
+
+export function buildSummaryPrompt(
+  language: string,
+  level: string,
+  scenario: string,
+  history: { role: "user" | "assistant"; content: string }[]
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  return {
+    instructions: [
+      `Anda adalah tutor bahasa AI. Target bahasa: ${language}. Level CEFR user: ${level}. Skenario: ${scenario}.`,
+      "Buat REKAP PELAJARAN singkat dalam Bahasa Indonesia berdasarkan percakapan di bawah ini.",
+      "Format TEKS BIASA (tanpa markdown, tanpa judul ##), baris per baris:",
+      "📊 Rekap Pelajaran",
+      "✨ Yang sudah bagus: ...",
+      "⚠️ Kesalahan yang sering muncul: ... (jika tidak ada: 'Tidak ada kesalahan mencolok.')",
+      "📚 Kosakata baru: kata (arti) — tulis 'Tidak ada.' jika tidak ada",
+      "💡 Tips: 1-2 tips singkat",
+      "Sebut user dengan 'Anda', bukan 'user'. Jangan menambahkan teks lain.",
+    ].join("\n"),
+    messages: history,
+  };
+}
+
+export function buildGeneralSummaryPrompt(
+  role: string,
+  scenario: string,
+  history: { role: "user" | "assistant"; content: string }[]
+): { instructions: string; messages: { role: "user" | "assistant"; content: string }[] } {
+  return {
+    instructions: [
+      `Anda adalah ${role}. Konteks: ${scenario}.`,
+      "Buat REKAP PELAJARAN singkat dalam Bahasa Indonesia berdasarkan percakapan di bawah ini.",
+      "Gunakan Markdown sederhana: judul (##), daftar (-).",
+      "## 📊 Rekap Pelajaran",
+      "- Inti pembahasan: ...",
+      "- Poin penting / cara cepat: ...",
+      "- Langkah selanjutnya yang disarankan: ...",
+      "Jangan menambahkan teks di luar rekap.",
+    ].join("\n"),
+    messages: history,
   };
 }

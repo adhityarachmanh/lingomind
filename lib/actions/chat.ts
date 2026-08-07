@@ -4,7 +4,7 @@ import { generateText } from "ai";
 import { model } from "../ai";
 import { getSession } from "../auth";
 import { db } from "../db";
-import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage } from "../ai-content/chat";
+import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildGeneralSummaryPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage, buildSummaryPrompt } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
 import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
@@ -68,7 +68,8 @@ async function attachUserMessageAnnotations(sessionId: string, analysis: Polyglo
 async function getOrCreateSession(
   userId: string,
   language: string,
-  scenarioId: string
+  scenarioId: string,
+  level: string
 ): Promise<string | null> {
   const existing = await db.session.findFirst({
     where: { userId, scenarioId },
@@ -80,7 +81,6 @@ async function getOrCreateSession(
     }
     return existing.id;
   }
-  const level = "A1";
   const created = await db.session.create({
     data: { userId, language, level, scenarioId },
   });
@@ -89,7 +89,8 @@ async function getOrCreateSession(
 
 export async function sendPolyglotMessageAction(
   sessionId: string,
-  userMessage: string
+  userMessage: string,
+  autoSaveVocab?: boolean
 ): Promise<ChatResult | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -98,12 +99,13 @@ export async function sendPolyglotMessageAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const dbSession = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true, type: true } } },
+    include: { scenario: { select: { title: true, language: true, level: true, type: true } } },
   });
   if (!dbSession) return { error: "Percakapan tidak ditemukan." };
   if (dbSession.scenario?.type === "general") return { error: "Mode skenario tidak didukung." };
   const language = dbSession.scenario?.language ?? dbSession.language;
   const scenario = dbSession.scenario?.title ?? "Percakapan";
+  const level = dbSession.scenario?.level ?? dbSession.level;
   const history = await db.message.findMany({
     where: { sessionId },
     orderBy: { createdAt: "asc" },
@@ -118,7 +120,6 @@ export async function sendPolyglotMessageAction(
 
   aiMessages.push({ role: "user", content: userMessage.trim() });
 
-  const level = "A1";
   const { instructions, messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
 
   let text: string;
@@ -148,6 +149,7 @@ export async function sendPolyglotMessageAction(
     },
   });
   await attachUserMessageAnnotations(sessionId, analysis);
+  await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
 
   return { analysis, sessionId, messageId: aiMsg.id };
 }
@@ -238,23 +240,22 @@ export async function openSessionAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const scenario = await db.scenario.findFirst({
     where: { id: scenarioId, userId: user.id },
-    select: { title: true, description: true, type: true },
+    select: { title: true, description: true, language: true, level: true, type: true },
   });
   if (!scenario) return { error: "Akses ditolak." };
   const isGeneral = scenario.type === "general";
 
-  const sessionId = await getOrCreateSession(user.id, language, scenarioId);
+  const sessionId = await getOrCreateSession(user.id, language, scenarioId, scenario.level);
   if (!sessionId) return { error: "Pengguna tidak ditemukan." };
 
   const count = await db.message.count({ where: { sessionId } });
   if (count > 0) return { alreadyStarted: true, sessionId };
 
-  const level = "A1";
   const role = scenario.title;
   const context = scenario.description ? `${scenario.title} — ${scenario.description}` : scenario.title;
   const { instructions, messages } = isGeneral
     ? buildGeneralOpeningPrompt(role, context)
-    : buildPolyglotOpeningPrompt(language, level, scenario.title);
+    : buildPolyglotOpeningPrompt(language, scenario.level, scenario.title);
 
   let text: string;
   try {
@@ -299,7 +300,8 @@ export async function analyzeChatMessageAction(
   sessionId: string,
   userMessage: string,
   streamedReply: string,
-  streamedRomanization?: string
+  streamedRomanization?: string,
+  autoSaveVocab?: boolean
 ): Promise<AnalyzeResult | { error: string }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
@@ -308,13 +310,14 @@ export async function analyzeChatMessageAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const dbSession = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true, type: true } } },
+    include: { scenario: { select: { title: true, language: true, level: true, type: true } } },
   });
   if (!dbSession) return { error: "Akses ditolak." };
   if (dbSession.scenario?.type === "general") return { error: "Mode skenario tidak didukung." };
 
   const language = dbSession.scenario?.language ?? dbSession.language;
   const scenario = dbSession.scenario?.title ?? "Percakapan";
+  const level = dbSession.scenario?.level ?? dbSession.level;
 
   const history = await db.message.findMany({
     where: { sessionId },
@@ -326,7 +329,6 @@ export async function analyzeChatMessageAction(
     aiMessages.pop();
   }
 
-  const level = "A1";
   const { instructions, messages } = buildPolyglotUserMessage(userMessage.trim(), language, level, scenario, aiMessages);
 
   let text: string;
@@ -355,8 +357,28 @@ export async function analyzeChatMessageAction(
     },
   });
   await attachUserMessageAnnotations(sessionId, analysis);
+  await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
 
   return { messageId: aiMsg.id, analysis };
+}
+
+async function maybeAutoSaveVocab(
+  userId: string,
+  analysis: PolyglotAnalysis,
+  language: string,
+  enabled?: boolean
+): Promise<void> {
+  if (!enabled) return;
+  const word = analysis.vocab_highlight?.word_target;
+  const meaning = analysis.vocab_highlight?.meaning_in_indonesian;
+  if (!word || !meaning) return;
+  const existing = await db.flashcard.findFirst({
+    where: { userId, frontText: word },
+  });
+  if (existing) return;
+  await db.flashcard.create({
+    data: { userId, frontText: word, backText: meaning, language },
+  });
 }
 
 export async function saveStreamedMessageAction(
@@ -387,7 +409,7 @@ export async function sendGeneralMessageAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const dbSession = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, description: true, type: true } } },
+    include: { scenario: { select: { title: true, description: true, level: true, type: true } } },
   });
   if (!dbSession) return { error: "Akses ditolak." };
   if (dbSession.scenario?.type !== "general") {
@@ -434,5 +456,74 @@ export async function sendGeneralMessageAction(
   });
 
   return { messageId: aiMsg.id, reply: text };
+}
+
+export async function removeLastAiMessageAction(sessionId: string): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({ where: { id: sessionId, userId: user.id } });
+  if (!dbSession) return { error: "Akses ditolak." };
+  const lastAi = await db.message.findFirst({
+    where: { sessionId, role: "ai" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!lastAi) return { error: "Tidak ada balasan untuk diulang." };
+  await db.message.delete({ where: { id: lastAi.id } });
+  return { message: "ok" };
+}
+
+export async function generateSummaryAction(
+  sessionId: string
+): Promise<{ messageId: string; content: string } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const dbSession = await db.session.findFirst({
+    where: { id: sessionId, userId: user.id },
+    include: { scenario: { select: { title: true, language: true, level: true, description: true, type: true } } },
+  });
+  if (!dbSession) return { error: "Akses ditolak." };
+
+  const history = await db.message.findMany({
+    where: { sessionId },
+    orderBy: { createdAt: "asc" },
+    take: 20,
+  });
+  const aiMessages = mapHistoryToAiMessages(history);
+
+  const isGeneral = dbSession.scenario?.type === "general";
+  const role = dbSession.scenario?.title ?? "Asisten";
+  const context = dbSession.scenario?.description
+    ? `${dbSession.scenario.title} — ${dbSession.scenario.description}`
+    : dbSession.scenario?.title ?? "Percakapan";
+
+  const { instructions, messages } = isGeneral
+    ? buildGeneralSummaryPrompt(role, context, aiMessages)
+    : buildSummaryPrompt(
+        dbSession.scenario?.language ?? dbSession.language,
+        dbSession.scenario?.level ?? dbSession.level,
+        dbSession.scenario?.title ?? "Percakapan",
+        aiMessages
+      );
+
+  let text: string;
+  try {
+    const result = await generateText({ model, instructions, messages, maxOutputTokens: 1024, temperature: 0.6 });
+    text = result.text.trim();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Gagal membuat rekap." };
+  }
+  if (!text) {
+    return { error: "AI mengembalikan respons tidak valid. Silakan coba lagi." };
+  }
+
+  const aiMsg = await db.message.create({
+    data: { sessionId, role: "ai", content: text },
+  });
+
+  return { messageId: aiMsg.id, content: text };
 }
 

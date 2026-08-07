@@ -12,6 +12,7 @@ export interface ScenarioSummary {
   title: string;
   description: string;
   language: string;
+  level: string;
   type: ScenarioType;
   createdAt: Date;
   lastActivityAt: Date | null;
@@ -28,11 +29,14 @@ export interface SessionSummary {
   active: boolean;
 }
 
+const VALID_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
+
 export async function createScenarioAction(input: {
   templateId?: string;
   title: string;
   description: string;
   language: string;
+  level: string;
   type: ScenarioType;
 }): Promise<{ scenarioId: string } | { error: string }> {
   const session = await getSession();
@@ -41,6 +45,7 @@ export async function createScenarioAction(input: {
   if (!title) return { error: "Judul skenario wajib diisi." };
   const language = input.language.trim();
   const type = input.type === "general" ? "general" : "language";
+  const level = VALID_LEVELS.includes(input.level) ? input.level : "A1";
   if (type !== "general" && !LANGUAGES.some((l) => l.id === language)) return { error: "Pilih bahasa target." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
@@ -60,6 +65,7 @@ export async function createScenarioAction(input: {
       title,
       description: input.description.trim(),
       language,
+      level,
       templateId: template?.id ?? null,
       type,
     },
@@ -96,7 +102,7 @@ export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[
     where: { userId: user.id, scenarioId: { not: null } },
     orderBy: { createdAt: "desc" },
     include: {
-      scenario: { select: { title: true, language: true, type: true } },
+      scenario: { select: { title: true, language: true, level: true, type: true } },
       messages: { orderBy: { createdAt: "desc" }, take: 1, select: { content: true, createdAt: true } },
       _count: { select: { messages: true } },
     },
@@ -122,6 +128,7 @@ export async function getChatHomeAction(): Promise<{ scenarios: ScenarioSummary[
       title: sc.title,
       description: sc.description,
       language: sc.language,
+      level: sc.level,
       type: sc.type as ScenarioType,
       createdAt: sc.createdAt,
       lastActivityAt: last ? (last.messages[0]?.createdAt ?? last.createdAt) : null,
@@ -144,6 +151,7 @@ export interface SessionDto {
   id: string;
   scenarioTitle: string;
   language: string;
+  level: string;
   type: ScenarioType;
   active: boolean;
 }
@@ -155,7 +163,7 @@ export async function getSessionMessagesAction(sessionId: string): Promise<{ ses
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const s = await db.session.findFirst({
     where: { id: sessionId, userId: user.id },
-    include: { scenario: { select: { title: true, language: true, type: true } } },
+    include: { scenario: { select: { title: true, language: true, level: true, type: true } } },
   });
   if (!s) return { error: "Percakapan tidak ditemukan." };
   const messages = await db.message.findMany({
@@ -167,6 +175,7 @@ export async function getSessionMessagesAction(sessionId: string): Promise<{ ses
       id: s.id,
       scenarioTitle: s.scenario?.title ?? "Percakapan",
       language: s.scenario?.language ?? s.language,
+      level: s.scenario?.level ?? s.level,
       type: (s.scenario?.type as ScenarioType | undefined) ?? "language",
       active: s.endedAt === null,
     },

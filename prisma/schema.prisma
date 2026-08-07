@@ -76,6 +76,7 @@ model Scenario {
   title       String
   description String    @default("")
   language    String
+  level       String    @default("A1")
   type        String    @default("language")
   templateId  String?
   createdAt   DateTime  @default(now())
