@@ -102,6 +102,10 @@ export default function ChatView() {
     if (next.length > 0) setSuggestionsOpen(true);
   }
 
+  function markVocabSaved(word: string) {
+    setSavedVocabWords((prev) => new Set(prev).add(normalizeVocabWord(word)));
+  }
+
   useEffect(() => {
     if (!sessionId) {
       router.replace("/chat");
@@ -125,7 +129,7 @@ export default function ChatView() {
         setSession(res.session);
         getSavedVocabWordsAction(res.session.language).then((w) => {
           if (cancelled || "error" in w) return;
-          setSavedVocabWords(new Set(w.words));
+          setSavedVocabWords((prev) => (prev.size === 0 ? new Set(w.words) : new Set([...prev, ...w.words])));
         });
         setMessages(res.messages.map((m) => {
           const aj = m.analysisJson as (PolyglotAnalysis & { translation_in_indonesian?: string; romanization?: string }) | null;
@@ -344,7 +348,7 @@ export default function ChatView() {
         }
         applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
         if (res.vocabSaved && res.analysis.vocab_highlight?.word_target) {
-          setSavedVocabWords((prev) => new Set(prev).add(normalizeVocabWord(res.analysis.vocab_highlight!.word_target)));
+          markVocabSaved(res.analysis.vocab_highlight.word_target);
         }
         setMessages((m) => m.map((msg) =>
           msg.id === userMsgId
@@ -388,7 +392,7 @@ export default function ChatView() {
       }
       applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
       if (res.vocabSaved && res.analysis.vocab_highlight?.word_target) {
-        setSavedVocabWords((prev) => new Set(prev).add(normalizeVocabWord(res.analysis.vocab_highlight!.word_target)));
+        markVocabSaved(res.analysis.vocab_highlight.word_target);
       }
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
