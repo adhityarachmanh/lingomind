@@ -6,6 +6,7 @@ import { getSession } from "../auth";
 import { db } from "../db";
 import { buildGeneralOpeningPrompt, buildGeneralStreamPrompt, buildGeneralSummaryPrompt, buildPolyglotOpeningPrompt, buildPolyglotUserMessage, buildSummaryPrompt } from "../ai-content/chat";
 import { parseAiJson } from "../ai-content/parse";
+import { normalizeVocabWord } from "../vocab";
 import { mapHistoryToAiMessages, normalizeSuggestedReplies, type SuggestedReply } from "../chat-helpers";
 import type { ActionResult } from "./types";
 
@@ -43,6 +44,7 @@ export interface ChatResult {
   analysis: PolyglotAnalysis;
   sessionId: string;
   messageId: string;
+  vocabSaved?: boolean;
 }
 
 async function attachUserMessageAnnotations(sessionId: string, analysis: PolyglotAnalysis): Promise<void> {
@@ -149,24 +151,28 @@ export async function sendPolyglotMessageAction(
     },
   });
   await attachUserMessageAnnotations(sessionId, analysis);
-  await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
+  const vocabSaved = await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
 
-  return { analysis, sessionId, messageId: aiMsg.id };
+  return { analysis, sessionId, messageId: aiMsg.id, vocabSaved };
 }
 
 export async function saveFlashcardAction(
   frontText: string,
   backText: string,
   language: string
-): Promise<ActionResult> {
+): Promise<ActionResult & { alreadySaved?: boolean }> {
   const session = await getSession();
   if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
   const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
   if (!user) return { error: "Pengguna tidak ditemukan." };
+  const existing = await db.flashcard.findFirst({
+    where: { userId: user.id, language, frontText: { equals: frontText, mode: "insensitive" } },
+  });
+  if (existing) return { message: "ok", alreadySaved: true };
   await db.flashcard.create({
     data: { userId: user.id, frontText, backText, language },
   });
-  return { message: "ok" };
+  return { message: "ok", alreadySaved: false };
 }
 
 export async function getFlashcardsAction(
@@ -181,6 +187,20 @@ export async function getFlashcardsAction(
     orderBy: { createdAt: "desc" },
   });
   return { cards: cards.map((c) => ({ id: c.id, frontText: c.frontText, backText: c.backText })) };
+}
+
+export async function getSavedVocabWordsAction(
+  language: string
+): Promise<{ words: string[] } | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const cards = await db.flashcard.findMany({
+    where: { userId: user.id, language },
+    select: { frontText: true },
+  });
+  return { words: cards.map((c) => normalizeVocabWord(c.frontText)) };
 }
 
 export interface FlashcardDto {
@@ -294,6 +314,7 @@ export async function openSessionAction(
 export interface AnalyzeResult {
   messageId: string;
   analysis: PolyglotAnalysis;
+  vocabSaved?: boolean;
 }
 
 export async function analyzeChatMessageAction(
@@ -357,9 +378,9 @@ export async function analyzeChatMessageAction(
     },
   });
   await attachUserMessageAnnotations(sessionId, analysis);
-  await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
+  const vocabSaved = await maybeAutoSaveVocab(user.id, analysis, language, autoSaveVocab);
 
-  return { messageId: aiMsg.id, analysis };
+  return { messageId: aiMsg.id, analysis, vocabSaved };
 }
 
 async function maybeAutoSaveVocab(
@@ -367,18 +388,19 @@ async function maybeAutoSaveVocab(
   analysis: PolyglotAnalysis,
   language: string,
   enabled?: boolean
-): Promise<void> {
-  if (!enabled) return;
+): Promise<boolean> {
+  if (!enabled) return false;
   const word = analysis.vocab_highlight?.word_target;
   const meaning = analysis.vocab_highlight?.meaning_in_indonesian;
-  if (!word || !meaning) return;
+  if (!word || !meaning) return false;
   const existing = await db.flashcard.findFirst({
-    where: { userId, frontText: word },
+    where: { userId, language, frontText: { equals: word, mode: "insensitive" } },
   });
-  if (existing) return;
+  if (existing) return true;
   await db.flashcard.create({
     data: { userId, frontText: word, backText: meaning, language },
   });
+  return true;
 }
 
 export async function saveStreamedMessageAction(
