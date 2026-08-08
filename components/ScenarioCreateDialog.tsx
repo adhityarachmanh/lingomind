@@ -10,19 +10,21 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LANGUAGES } from "@/lib/languages";
 import { isTemplateUsed, SCENARIO_TEMPLATES, type ScenarioType, type UsedScenarioTemplate } from "@/lib/templates";
-import { createScenarioAction, getScenarioTemplatesUsedAction } from "@/lib/actions/scenario";
+import { createScenarioAction, getScenarioTemplatesUsedAction, updateScenarioAction, type ScenarioSummary } from "@/lib/actions/scenario";
 
-export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: {
+export default function ScenarioCreateDialog({ open, onOpenChange, onCreated, scenario }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onCreated: () => void;
+  scenario?: ScenarioSummary | null;
 }) {
-  const [mode, setMode] = useState<ScenarioType>("language");
-  const [language, setLanguage] = useState("English");
-  const [level, setLevel] = useState("A1");
+  const isEdit = Boolean(scenario);
+  const [mode, setMode] = useState<ScenarioType>(scenario?.type ?? "language");
+  const [language, setLanguage] = useState(scenario?.language ?? "English");
+  const [level, setLevel] = useState(scenario?.level ?? "A1");
   const [templateId, setTemplateId] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
+  const [title, setTitle] = useState(scenario?.title ?? "");
+  const [description, setDescription] = useState(scenario?.description ?? "");
   const [saving, setSaving] = useState(false);
   const [used, setUsed] = useState<UsedScenarioTemplate[]>([]);
 
@@ -36,13 +38,13 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
   }
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isEdit) return;
     (async () => {
       const res = await getScenarioTemplatesUsedAction();
       if ("error" in res) { toast.error(res.error); return; }
       setUsed(res.used);
     })();
-  }, [open]);
+  }, [open, isEdit]);
 
   function pickTemplate(id: string) {
     if (isUsedTemplate(id)) return;
@@ -58,6 +60,14 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
     if (saving) return;
     setSaving(true);
     try {
+      if (isEdit && scenario) {
+        const res = await updateScenarioAction(scenario.id, { title, description, level });
+        if ("error" in res) { toast.error(res.error); return; }
+        toast.success("Skenario diperbarui!");
+        onOpenChange(false);
+        onCreated();
+        return;
+      }
       const res = await createScenarioAction({ templateId: templateId ?? undefined, title, description, language: mode === "general" ? "Indonesian" : language, level, type: mode });
       if ("error" in res) { toast.error(res.error); return; }
       toast.success("Skenario berhasil dibuat!");
@@ -77,10 +87,11 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[85dvh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Buat Skenario</DialogTitle>
+          <DialogTitle>{isEdit ? "Edit Skenario" : "Buat Skenario"}</DialogTitle>
           <DialogDescription>{mode === "general" ? "Pilih template atau buat skenario sendiri." : "Pilih bahasa, lalu pilih template atau buat sendiri."}</DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
+          {!isEdit && (
           <div className="grid grid-cols-2 gap-1.5">
             <Button type="button" variant={mode === "language" ? "default" : "outline"} size="sm" onClick={() => { setMode("language"); setLanguage("English"); setTemplateId(null); setTitle(""); setDescription(""); }}>
               Belajar Bahasa
@@ -89,7 +100,8 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
               Umum
             </Button>
           </div>
-          {mode === "language" && (
+          )}
+          {mode === "language" && !isEdit && (
           <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Bahasa Target</Label>
             <Select
@@ -130,6 +142,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
             <p className="text-[10px] text-muted-foreground mt-1">Semakin tinggi level, semakin kompleks balasan & koreksi AI.</p>
           </div>
           )}
+          {!isEdit && (
           <div>
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider mb-2">Pilih Template</Label>
             <div className="space-y-3">
@@ -166,6 +179,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
               ))}
             </div>
           </div>
+          )}
           <div className="space-y-2">
             <Label className="block text-xs font-bold text-muted-foreground uppercase tracking-wider">Judul</Label>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Nama skenario..." />
@@ -173,7 +187,7 @@ export default function ScenarioCreateDialog({ open, onOpenChange, onCreated }: 
             <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Deskripsi singkat..." rows={2} />
           </div>
           <Button type="button" className="w-full" onClick={save} disabled={saving || !title.trim()}>
-            {saving ? "Menyimpan..." : "Simpan Skenario"}
+            {saving ? "Menyimpan..." : isEdit ? "Simpan Perubahan" : "Simpan Skenario"}
           </Button>
         </div>
       </DialogContent>

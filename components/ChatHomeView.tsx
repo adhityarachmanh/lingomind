@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { History, Plus, Trash2 } from "lucide-react";
+import { History, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,6 +24,7 @@ export default function ChatHomeView() {
   const [history, setHistory] = useState<SessionSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
+  const [editTarget, setEditTarget] = useState<ScenarioSummary | null>(null);
   const [clearing, setClearing] = useState(false);
 
   const load = useCallback(async () => {
@@ -108,7 +109,18 @@ export default function ChatHomeView() {
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
           {scenarios.map((s) => (
-            <ScenarioCard key={s.id} scenario={s} onOpen={openScenario} />
+            <div key={s.id} className="relative">
+              <ScenarioCard scenario={s} onOpen={openScenario} />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-1.5 right-1.5 h-6 w-6 text-muted-foreground"
+                onClick={() => setEditTarget(s)}
+                aria-label={`Edit ${s.title}`}
+              >
+                <Pencil className="h-3 w-3" />
+              </Button>
+            </div>
           ))}
         </div>
       )}
@@ -134,7 +146,14 @@ export default function ChatHomeView() {
         </div>
       )}
 
-      <ScenarioCreateDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={load} />
+      <ScenarioCreateDialog key="create" open={createOpen} onOpenChange={setCreateOpen} onCreated={load} />
+      <ScenarioCreateDialog
+        key={editTarget?.id ?? "no-edit"}
+        open={editTarget !== null}
+        onOpenChange={(open: boolean) => { if (!open) setEditTarget(null); }}
+        onCreated={load}
+        scenario={editTarget}
+      />
     </div>
   );
 }

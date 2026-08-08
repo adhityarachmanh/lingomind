@@ -73,6 +73,29 @@ export async function createScenarioAction(input: {
   return { scenarioId: scenario.id };
 }
 
+export async function updateScenarioAction(
+  id: string,
+  input: { title: string; description: string; level: string }
+): Promise<ActionResult> {
+  const session = await getSession();
+  if (!session) return { error: "Sesi berakhir. Silakan login kembali." };
+  const user = await db.user.findUnique({ where: { email: session.email }, select: { id: true } });
+  if (!user) return { error: "Pengguna tidak ditemukan." };
+  const scenario = await db.scenario.findFirst({ where: { id, userId: user.id } });
+  if (!scenario) return { error: "Akses ditolak." };
+  const title = input.title.trim();
+  if (!title) return { error: "Judul skenario wajib diisi." };
+  await db.scenario.update({
+    where: { id: scenario.id },
+    data: {
+      title,
+      description: input.description.trim(),
+      level: scenario.type === "general" ? scenario.level : VALID_LEVELS.includes(input.level) ? input.level : scenario.level,
+    },
+  });
+  return { message: "ok" };
+}
+
 export async function getScenarioTemplatesUsedAction(): Promise<
   { used: { templateId: string | null; language: string }[] } | { error: string }
 > {
