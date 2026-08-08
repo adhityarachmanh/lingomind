@@ -69,6 +69,7 @@ export default function ChatView() {
   const [streaming, setStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [streamingRomanization, setStreamingRomanization] = useState("");
+  const [streamingReplyTranslation, setStreamingReplyTranslation] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<SuggestedReply[]>([]);
@@ -285,6 +286,7 @@ export default function ChatView() {
     const replyText = parsed.replyText;
     const romanization = parsed.replyRomanization ?? "";
     setStreamingRomanization(romanization);
+    setStreamingReplyTranslation(parsed.replyTranslation ?? "");
     if (parsed.userRomanization || parsed.userTranslation) {
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
@@ -418,8 +420,8 @@ export default function ChatView() {
           role: "ai",
           content: replyText,
           analysis: res.analysis,
-          romanization: res.analysis.reply_romanization ?? (romanization || undefined),
-          translation: res.analysis.reply_translation_in_indonesian,
+          romanization: romanization || res.analysis.reply_romanization,
+          translation: streamingReplyTranslation || res.analysis.reply_translation_in_indonesian,
         },
       ]);
       sentCountRef.current += 1;
@@ -432,6 +434,7 @@ export default function ChatView() {
       setAnalyzing(false);
       setStreamingText("");
       setStreamingRomanization("");
+      setStreamingReplyTranslation("");
       abortRef.current = null;
     }
   }
@@ -603,6 +606,7 @@ export default function ChatView() {
                 {analyzing && (
                   <div className="pl-10 space-y-1">
                     {!isGeneral && streamingRomanization && <RomanizationLine text={streamingRomanization} />}
+                    {!isGeneral && streamingReplyTranslation && <TranslationLine text={streamingReplyTranslation} />}
                     <Skeleton className="h-3 w-44" />
                     <p className="text-[11px] text-muted-foreground">{isGeneral ? "Memproses balasan..." : "Menerjemahkan & menganalisis..."}</p>
                   </div>
