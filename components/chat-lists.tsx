@@ -20,17 +20,19 @@ export function ScenarioCard({ scenario, onOpen }: { scenario: ScenarioSummary; 
     <Card
       role="button"
       tabIndex={0}
-      className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all"
+      className="cursor-pointer p-4 hover:border-teal-500/60 hover:shadow-md transition-all h-full flex flex-col"
       onClick={() => onOpen(scenario)}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(scenario); } }}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-bold text-sm truncate">{scenario.title}</p>
-        {scenario.hasActiveSession && <Badge variant="secondary" className="shrink-0 text-[10px]">Aktif</Badge>}
-        {scenario.type === "general" && <Badge variant="outline" className="shrink-0 text-[10px] text-muted-foreground">Umum</Badge>}
+        <div className="flex items-center gap-1.5 shrink-0">
+          {scenario.hasActiveSession && <Badge variant="secondary" className="text-[10px]">Aktif</Badge>}
+          {scenario.type === "general" && <Badge variant="outline" className="text-[10px] text-muted-foreground">Umum</Badge>}
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{scenario.description}</p>
-      {scenario.type !== "general" && <div className="mt-2"><LanguageBadge language={scenario.language} /></div>}
+      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 flex-1">{scenario.description}</p>
+      {scenario.type !== "general" && <div className="mt-auto pt-2"><LanguageBadge language={scenario.language} /></div>}
     </Card>
   );
 }
