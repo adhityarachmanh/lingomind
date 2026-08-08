@@ -108,4 +108,54 @@ describe("parseStreamedSections", () => {
     const result = parseStreamedSections("");
     expect(result).toEqual({ replyText: "" });
   });
+
+  it("memisahkan replyTranslation dari ||RTRANS|| (format lengkap 4 marker)", () => {
+    const result = parseStreamedSections(
+      "||UROM||annyeonghaseyo\n||UTRANS||Halo\n안녕하세요!\n||RTRANS||Halo!\n||ROM||\nannyeonghaseyo!"
+    );
+    expect(result).toEqual({
+      userRomanization: "annyeonghaseyo",
+      userTranslation: "Halo",
+      replyText: "안녕하세요!",
+      replyTranslation: "Halo!",
+      replyRomanization: "annyeonghaseyo!",
+    });
+  });
+
+  it("bahasa Latin: ||UTRANS|| + ||RTRANS|| tanpa UROM/ROM", () => {
+    const result = parseStreamedSections("||UTRANS||Halo\nHi there!\n||RTRANS||Halo juga!");
+    expect(result).toEqual({
+      userTranslation: "Halo",
+      replyText: "Hi there!",
+      replyTranslation: "Halo juga!",
+    });
+    expect(result.userRomanization).toBeUndefined();
+    expect(result.replyRomanization).toBeUndefined();
+  });
+
+  it("||RTRANS|| tetap dikenali walau muncul SETELAH ||ROM|| (urutan dibalik AI)", () => {
+    const result = parseStreamedSections("안녕!\n||ROM||\nannyeong!\n||RTRANS||Halo!");
+    expect(result).toEqual({
+      replyText: "안녕!",
+      replyRomanization: "annyeong!",
+      replyTranslation: "Halo!",
+    });
+  });
+
+  it("||RTRANS|| dengan isi kosong → ambil baris berikutnya", () => {
+    const result = parseStreamedSections("Hi!\n||RTRANS||\nHalo!");
+    expect(result).toEqual({
+      replyText: "Hi!",
+      replyTranslation: "Halo!",
+    });
+  });
+
+  it("format lama tetap bekerja: balasan lalu ||ROM|| (tanpa RTRANS)", () => {
+    const result = parseStreamedSections("안녕하세요!\n||ROM||\nannyeonghaseyo!");
+    expect(result).toEqual({
+      replyText: "안녕하세요!",
+      replyRomanization: "annyeonghaseyo!",
+    });
+    expect(result.replyTranslation).toBeUndefined();
+  });
 });

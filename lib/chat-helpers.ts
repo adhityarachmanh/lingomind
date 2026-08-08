@@ -52,6 +52,7 @@ export interface ParsedStreamSections {
   userRomanization?: string;
   userTranslation?: string;
   replyText: string;
+  replyTranslation?: string;
   replyRomanization?: string;
 }
 
@@ -59,15 +60,33 @@ export function parseStreamedSections(acc: string): ParsedStreamSections {
   const lines = acc.split("\n");
   let userRomanization: string | undefined;
   let userTranslation: string | undefined;
+  let replyTranslation: string | undefined;
+  let replyRomanization: string | undefined;
   const replyLines: string[] = [];
+  const transLines: string[] = [];
   const romLines: string[] = [];
-  let mode: "before" | "reply" | "rom" = "before";
+  let mode: "before" | "reply" | "after" = "before";
+  let afterSection: "trans" | "rom" | null = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (mode !== "rom" && line.startsWith("||ROM||")) {
-      mode = "rom";
+    if (line.startsWith("||RTRANS||")) {
+      mode = "after";
+      afterSection = "trans";
+      const rest = line.slice("||RTRANS||".length);
+      if (rest.trim()) {
+        transLines.push(rest);
+      } else if (lines[i + 1] !== undefined) {
+        transLines.push(lines[i + 1]);
+        i += 1;
+      }
+      continue;
+    }
+
+    if (line.startsWith("||ROM||")) {
+      mode = "after";
+      afterSection = "rom";
       const rest = line.slice("||ROM||".length);
       if (rest.trim()) {
         romLines.push(rest);
@@ -104,8 +123,12 @@ export function parseStreamedSections(acc: string): ParsedStreamSections {
 
     if (mode === "reply") {
       replyLines.push(line);
-    } else if (mode === "rom") {
-      romLines.push(line);
+    } else if (mode === "after") {
+      if (afterSection === "trans") {
+        transLines.push(line);
+      } else {
+        romLines.push(line);
+      }
     }
   }
 
@@ -113,6 +136,7 @@ export function parseStreamedSections(acc: string): ParsedStreamSections {
     ...(userRomanization ? { userRomanization } : {}),
     ...(userTranslation ? { userTranslation } : {}),
     replyText: replyLines.join("\n").trim(),
+    ...(transLines.length > 0 ? { replyTranslation: transLines.join("\n").trim() } : {}),
     ...(romLines.length > 0 ? { replyRomanization: romLines.join("\n").trim() } : {}),
   };
 }
