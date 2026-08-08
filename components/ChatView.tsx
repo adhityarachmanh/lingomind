@@ -285,8 +285,9 @@ export default function ChatView() {
     const parsed = parseStreamedSections(acc);
     const replyText = parsed.replyText;
     const romanization = parsed.replyRomanization ?? "";
+    const replyTranslation = parsed.replyTranslation ?? "";
     setStreamingRomanization(romanization);
-    setStreamingReplyTranslation(parsed.replyTranslation ?? "");
+    setStreamingReplyTranslation(replyTranslation);
     if (parsed.userRomanization || parsed.userTranslation) {
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
@@ -421,7 +422,7 @@ export default function ChatView() {
           content: replyText,
           analysis: res.analysis,
           romanization: romanization || res.analysis.reply_romanization,
-          translation: streamingReplyTranslation || res.analysis.reply_translation_in_indonesian,
+          translation: replyTranslation || res.analysis.reply_translation_in_indonesian,
         },
       ]);
       sentCountRef.current += 1;
