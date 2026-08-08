@@ -99,13 +99,17 @@ model Message {
 }
 
 model Flashcard {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  frontText       String   @map("front_text")
-  backText        String   @map("back_text")
-  language        String   @default("English")
-  createdAt       DateTime @default(now())
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  frontText    String   @map("front_text")
+  backText     String   @map("back_text")
+  language     String   @default("English")
+  easeFactor   Float    @default(2.5) @map("ease_factor")
+  intervalDays Int      @default(0) @map("interval_days")
+  repetitions  Int      @default(0)
+  dueAt        DateTime @default(now()) @map("due_at")
+  createdAt    DateTime @default(now())
 
   @@map("flashcards")
 }
