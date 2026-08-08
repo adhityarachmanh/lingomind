@@ -608,8 +608,7 @@ export default function ChatView() {
                   <div className="pl-10 space-y-1">
                     {!isGeneral && streamingRomanization && <RomanizationLine text={streamingRomanization} />}
                     {!isGeneral && streamingReplyTranslation && <TranslationLine text={streamingReplyTranslation} />}
-                    <Skeleton className="h-3 w-44" />
-                    <p className="text-[11px] text-muted-foreground">{isGeneral ? "Memproses balasan..." : "Menerjemahkan & menganalisis..."}</p>
+                    {isGeneral && <p className="text-[11px] text-muted-foreground">Memproses balasan...</p>}
                   </div>
                 )}
               </div>
@@ -620,6 +619,17 @@ export default function ChatView() {
 
         <div className="pt-3 space-y-3">
           {error && <p className="text-xs text-destructive">{error}</p>}
+
+          {!isGeneral && analyzing && (
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Saran jawaban:</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <Skeleton className="h-8 w-40 rounded-md" />
+                <Skeleton className="h-8 w-32 rounded-md" />
+                <Skeleton className="h-8 w-44 rounded-md" />
+              </div>
+            </div>
+          )}
 
           {suggestions.length > 0 && !streaming && !analyzing && !isGeneral && (
             <div className="flex flex-col gap-1.5">
