@@ -648,7 +648,7 @@ export async function sendPolyglotMessageAction(
   });
   if (!dbSession) return { error: "Percakapan tidak ditemukan." };
   const language = dbSession.scenario?.language ?? dbSession.language;
-  const scenario = dbSession.scenario?.title ?? dbSession.scenario;
+  const scenario = dbSession.scenario?.title ?? "Percakapan";
   const history = await db.message.findMany({
     where: { sessionId },
     orderBy: { createdAt: "asc" },
@@ -1196,9 +1196,7 @@ export default function ChatView() {
 
   return (
     <div className="flex h-[calc(100dvh-3.5rem)]">
-      <div className="hidden lg:flex w-80 shrink-0 border-r border-border">
-        {/* ChatSidebar dipasang di Task 8 */}
-      </div>
+      <div className="hidden lg:flex w-80 shrink-0 border-r border-border" />
       <div className="flex-1 min-w-0 flex flex-col max-w-3xl mx-auto w-full px-4 py-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <div className="flex items-center gap-2 min-w-0">
@@ -1724,12 +1722,12 @@ export default function VoiceChatPage() {
 - [ ] **Step 3: Verifikasi**
 
 Run: `npx tsc --noEmit && npm run lint && npm test`
-Expected: sukses.
+Expected: sukses. Cek juga tidak ada importer tersisa ke `components/useSpeechRecognition.ts`; bila tidak ada, hapus file tersebut (dead code) dan lint lagi.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add components/VoiceChatView.tsx components/voice-tts.ts components/SpeakButton.tsx "app/(app)/voice-chat/page.tsx"
+git add components/VoiceChatView.tsx components/voice-tts.ts components/SpeakButton.tsx components/useSpeechRecognition.ts "app/(app)/voice-chat/page.tsx"
 git commit -m "feat: voice chat unified (skenario user + session di URL)"
 ```
 
