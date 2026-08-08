@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, BookmarkPlus, ChevronDown, ChevronUp, Copy, FileCheck2, RotateCcw, Send, Square, Trash2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { analyzeChatMessageAction, generateSummaryAction, removeLastAiMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendGeneralMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
+import { analyzeChatMessageAction, generateSummaryAction, getSavedVocabWordsAction, removeLastAiMessageAction, saveFlashcardAction, saveStreamedMessageAction, sendGeneralMessageAction, sendPolyglotMessageAction, type PolyglotAnalysis } from "@/lib/actions/chat";
 import MarkdownContent from "./MarkdownContent";
+import { normalizeVocabWord } from "@/lib/vocab";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
 import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
 import { TTS_LANG_MAP } from "@/lib/languages";
@@ -77,6 +78,7 @@ export default function ChatView() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("lingomind_autosave_vocab") === "1";
   });
+  const [savedVocabWords, setSavedVocabWords] = useState<Set<string>>(new Set());
   const abortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(true);
   const tempIdRef = useRef(0);
@@ -121,6 +123,10 @@ export default function ChatView() {
           return;
         }
         setSession(res.session);
+        getSavedVocabWordsAction(res.session.language).then((w) => {
+          if (cancelled || "error" in w) return;
+          setSavedVocabWords(new Set(w.words));
+        });
         setMessages(res.messages.map((m) => {
           const aj = m.analysisJson as (PolyglotAnalysis & { translation_in_indonesian?: string; romanization?: string }) | null;
           return {
@@ -337,6 +343,9 @@ export default function ChatView() {
           return;
         }
         applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+        if (res.vocabSaved && res.analysis.vocab_highlight?.word_target) {
+          setSavedVocabWords((prev) => new Set(prev).add(normalizeVocabWord(res.analysis.vocab_highlight!.word_target)));
+        }
         setMessages((m) => m.map((msg) =>
           msg.id === userMsgId
             ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
@@ -378,6 +387,9 @@ export default function ChatView() {
         return;
       }
       applySuggestions(normalizeSuggestedReplies(res.analysis.suggested_replies));
+      if (res.vocabSaved && res.analysis.vocab_highlight?.word_target) {
+        setSavedVocabWords((prev) => new Set(prev).add(normalizeVocabWord(res.analysis.vocab_highlight!.word_target)));
+      }
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
           ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
@@ -411,7 +423,13 @@ export default function ChatView() {
   async function saveVocab(word: string, meaning: string) {
     const res = await saveFlashcardAction(word, meaning, session?.language ?? "English");
     if ("error" in res) { setError(res.error ?? null); return; }
-    toast.success(`${word} disimpan ke flashcard!`);
+    const normalized = normalizeVocabWord(word);
+    setSavedVocabWords((prev) => new Set(prev).add(normalized));
+    if (res.alreadySaved) {
+      toast.info(`${word} sudah tersimpan.`);
+    } else {
+      toast.success(`${word} disimpan ke flashcard!`);
+    }
   }
 
   async function deleteSession() {
@@ -701,8 +719,16 @@ export default function ChatView() {
                       variant="outline"
                       onClick={() => saveVocab(analysisTarget!.analysis!.vocab_highlight.word_target, analysisTarget!.analysis!.vocab_highlight.meaning_in_indonesian)}
                       className="shrink-0"
+                      disabled={savedVocabWords.has(normalizeVocabWord(analysisTarget.analysis.vocab_highlight.word_target))}
                     >
-                      <Bookmark className="h-3.5 w-3.5 mr-1" /> Simpan
+                      {savedVocabWords.has(normalizeVocabWord(analysisTarget.analysis.vocab_highlight.word_target)) ? (
+                        <BookmarkCheck className="h-3.5 w-3.5 mr-1" />
+                      ) : (
+                        <Bookmark className="h-3.5 w-3.5 mr-1" />
+                      )}
+                      {savedVocabWords.has(normalizeVocabWord(analysisTarget.analysis.vocab_highlight.word_target))
+                        ? "Tersimpan"
+                        : "Simpan"}
                     </Button>
                   </div>
                 )}
