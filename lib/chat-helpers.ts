@@ -47,3 +47,72 @@ export function normalizeSuggestedReplies(raw: unknown): SuggestedReply[] {
   }
   return out;
 }
+
+export interface ParsedStreamSections {
+  userRomanization?: string;
+  userTranslation?: string;
+  replyText: string;
+  replyRomanization?: string;
+}
+
+export function parseStreamedSections(acc: string): ParsedStreamSections {
+  const lines = acc.split("\n");
+  let userRomanization: string | undefined;
+  let userTranslation: string | undefined;
+  const replyLines: string[] = [];
+  const romLines: string[] = [];
+  let mode: "before" | "reply" | "rom" = "before";
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    if (mode !== "rom" && line.startsWith("||ROM||")) {
+      mode = "rom";
+      const rest = line.slice("||ROM||".length);
+      if (rest.trim()) {
+        romLines.push(rest);
+      } else if (lines[i + 1] !== undefined) {
+        romLines.push(lines[i + 1]);
+        i += 1;
+      }
+      continue;
+    }
+
+    if (mode === "before") {
+      if (line.startsWith("||UROM||")) {
+        const rest = line.slice("||UROM||".length);
+        if (rest.trim()) {
+          userRomanization = rest.trim();
+        } else if (lines[i + 1] !== undefined) {
+          userRomanization = lines[i + 1].trim() || undefined;
+          i += 1;
+        }
+        continue;
+      }
+      if (line.startsWith("||UTRANS||")) {
+        const rest = line.slice("||UTRANS||".length);
+        if (rest.trim()) {
+          userTranslation = rest.trim();
+        } else if (lines[i + 1] !== undefined) {
+          userTranslation = lines[i + 1].trim() || undefined;
+          i += 1;
+        }
+        continue;
+      }
+      mode = "reply";
+    }
+
+    if (mode === "reply") {
+      replyLines.push(line);
+    } else if (mode === "rom") {
+      romLines.push(line);
+    }
+  }
+
+  return {
+    ...(userRomanization ? { userRomanization } : {}),
+    ...(userTranslation ? { userTranslation } : {}),
+    replyText: replyLines.join("\n").trim(),
+    ...(romLines.length > 0 ? { replyRomanization: romLines.join("\n").trim() } : {}),
+  };
+}
