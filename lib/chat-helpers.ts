@@ -60,8 +60,6 @@ export function parseStreamedSections(acc: string): ParsedStreamSections {
   const lines = acc.split("\n");
   let userRomanization: string | undefined;
   let userTranslation: string | undefined;
-  let replyTranslation: string | undefined;
-  let replyRomanization: string | undefined;
   const replyLines: string[] = [];
   const transLines: string[] = [];
   const romLines: string[] = [];
