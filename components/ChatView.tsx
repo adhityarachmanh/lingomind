@@ -7,7 +7,7 @@ import { analyzeChatMessageAction, generateSummaryAction, getSavedVocabWordsActi
 import MarkdownContent from "./MarkdownContent";
 import { normalizeVocabWord } from "@/lib/vocab";
 import { deleteSessionAction, getSessionMessagesAction, type SessionDto } from "@/lib/actions/scenario";
-import { normalizeSuggestedReplies, type SuggestedReply } from "@/lib/chat-helpers";
+import { normalizeSuggestedReplies, parseStreamedSections, type SuggestedReply } from "@/lib/chat-helpers";
 import { TTS_LANG_MAP } from "@/lib/languages";
 import { toast } from "sonner";
 import SpeakButton from "./SpeakButton";
@@ -281,10 +281,21 @@ export default function ChatView() {
       setStreaming(false);
     }
 
-    const parts = acc.split("||ROM||");
-    const replyText = (parts[0] ?? "").trim();
-    const romanization = (parts[1] ?? "").trim();
+    const parsed = parseStreamedSections(acc);
+    const replyText = parsed.replyText;
+    const romanization = parsed.replyRomanization ?? "";
     setStreamingRomanization(romanization);
+    if (parsed.userRomanization || parsed.userTranslation) {
+      setMessages((m) => m.map((msg) =>
+        msg.id === userMsgId
+          ? {
+              ...msg,
+              romanization: parsed.userRomanization ?? msg.romanization,
+              translation: parsed.userTranslation ?? msg.translation,
+            }
+          : msg
+      ));
+    }
 
     if (isGeneral) {
       if (!replyText) {
@@ -353,7 +364,7 @@ export default function ChatView() {
         }
         setMessages((m) => m.map((msg) =>
           msg.id === userMsgId
-            ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
+            ? { ...msg, romanization: msg.romanization || res.analysis.user_message_romanization, translation: msg.translation || res.analysis.user_message_translation_in_indonesian }
             : msg
         ));
         setMessages((m) => [
@@ -397,7 +408,7 @@ export default function ChatView() {
       }
       setMessages((m) => m.map((msg) =>
         msg.id === userMsgId
-          ? { ...msg, romanization: res.analysis.user_message_romanization || msg.romanization, translation: res.analysis.user_message_translation_in_indonesian || msg.translation }
+          ? { ...msg, romanization: msg.romanization || res.analysis.user_message_romanization, translation: msg.translation || res.analysis.user_message_translation_in_indonesian }
           : msg
       ));
       setMessages((m) => [
@@ -519,8 +530,11 @@ export default function ChatView() {
           {messages.map((m) =>
             m.role === "user" ? (
               <div key={m.id} className="flex flex-col items-end gap-1">
-                <div dir="auto" className="max-w-[80%] px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
-                  {m.content}
+                <div className="flex items-start gap-2 max-w-[80%]">
+                  <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tr-none bg-primary text-primary-foreground text-sm whitespace-pre-wrap">
+                    {m.content}
+                  </div>
+                  <SpeakButton text={m.content} lang={ttsLang} />
                 </div>
                 {m.romanization && (
                   <div className="max-w-[80%]"><RomanizationLine text={m.romanization} /></div>
@@ -583,7 +597,7 @@ export default function ChatView() {
               </Avatar>
               <div className="max-w-[85%] space-y-1.5">
                 <div dir="auto" className="px-4 py-2.5 rounded-2xl rounded-tl-none bg-card border border-border text-sm whitespace-pre-wrap">
-                  {isGeneral ? <MarkdownContent content={streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText} /> : streamingText.includes("||ROM||") ? streamingText.split("||ROM||")[0] : streamingText}
+                  {isGeneral ? <MarkdownContent content={streamingText} /> : parseStreamedSections(streamingText).replyText}
                   {streaming && <span className="animate-pulse">▌</span>}
                 </div>
                 {analyzing && (
