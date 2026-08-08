@@ -131,17 +131,18 @@ export function buildPolyglotStreamPrompt(
         : [
             "- Di awal balasan, tambahkan baris '||UTRANS||' lalu arti pesan USER dalam Bahasa Indonesia pada baris yang sama. Contoh: '||UTRANS||Halo, apa kabar?'.",
           ]),
+      "- Setelah balasan, tambahkan baris '||RTRANS||' lalu arti balasan dalam Bahasa Indonesia pada baris yang sama. Contoh: '||RTRANS||Halo, saya minta kopi'.",
       ...(isNonLatin
         ? [
-            "- Setelah balasan, tambahkan baris baru, lalu pemisah persis ||ROM||, lalu cara baca (romanisasi) SELURUH balasan tersebut dengan huruf Latin. Contoh: '안녕하세요!\\n||ROM||\\nannyeonghaseyo!'",
+            "- Setelah baris ||RTRANS||, tambahkan baris baru, lalu pemisah persis ||ROM||, lalu cara baca (romanisasi) SELURUH balasan tersebut dengan huruf Latin. Contoh: '안녕하세요!\\n||ROM||\\nannyeonghaseyo!'",
           ]
         : []),
       ...(isNonLatin
         ? [
-            "- Setiap pemisah (||UROM||, ||UTRANS||, ||ROM||) harus berada di AWAL baris; isinya langsung menyusul di baris yang sama (bila kosong, letakkan di baris berikutnya). Hanya gunakan pemisah tersebut sesuai aturan di atas — tidak ada teks lain di luar balasan.",
+            "- Setiap pemisah (||UROM||, ||UTRANS||, ||RTRANS||, ||ROM||) harus berada di AWAL baris; isinya langsung menyusul di baris yang sama (bila kosong, letakkan di baris berikutnya). Hanya gunakan pemisah tersebut sesuai aturan di atas — tidak ada teks lain di luar balasan.",
           ]
         : [
-            "- Setiap pemisah (||UTRANS||) harus berada di AWAL baris; isinya langsung menyusul di baris yang sama (bila kosong, letakkan di baris berikutnya). Hanya gunakan pemisah tersebut sesuai aturan di atas — tidak ada teks lain di luar balasan.",
+            "- Setiap pemisah (||UTRANS||, ||RTRANS||) harus berada di AWAL baris; isinya langsung menyusul di baris yang sama (bila kosong, letakkan di baris berikutnya). Hanya gunakan pemisah tersebut sesuai aturan di atas — tidak ada teks lain di luar balasan.",
           ]),
     ].join("\n"),
     messages: [...history, { role: "user", content: userMessage }],

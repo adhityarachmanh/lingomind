@@ -122,6 +122,18 @@ describe("buildPolyglotStreamPrompt", () => {
     expect(instructions).toContain("||UTRANS||");
     expect(instructions).not.toContain("||UROM||");
   });
+
+  it("menyertakan pemisah ||RTRANS|| untuk bahasa non-Latin", () => {
+    const { instructions } = buildPolyglotStreamPrompt("안녕하세요", "Korean", "A1", "Restaurant", []);
+    expect(instructions).toContain("||RTRANS||");
+  });
+
+  it("menyertakan ||RTRANS|| tanpa ||UROM||/||ROM|| untuk bahasa Latin", () => {
+    const { instructions } = buildPolyglotStreamPrompt("Hello", "English", "A1", "Restaurant", []);
+    expect(instructions).toContain("||RTRANS||");
+    expect(instructions).not.toContain("||UROM||");
+    expect(instructions).not.toContain("||ROM||");
+  });
 });
 
 describe("buildGeneralStreamPrompt", () => {
@@ -135,6 +147,7 @@ describe("buildGeneralStreamPrompt", () => {
     expect(instructions).not.toContain("||ROM||");
     expect(instructions).not.toContain("||UROM||");
     expect(instructions).not.toContain("||UTRANS||");
+    expect(instructions).not.toContain("||RTRANS||");
     expect(messages).toEqual([
       { role: "assistant", content: "Silakan tanya!" },
       { role: "user", content: "Halo" },
