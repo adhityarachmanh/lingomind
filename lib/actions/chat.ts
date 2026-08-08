@@ -167,6 +167,7 @@ export async function saveFlashcardAction(
   if (!user) return { error: "Pengguna tidak ditemukan." };
   const existing = await db.flashcard.findFirst({
     where: { userId: user.id, language, frontText: { equals: frontText, mode: "insensitive" } },
+    select: { id: true },
   });
   if (existing) return { message: "ok", alreadySaved: true };
   await db.flashcard.create({
@@ -395,6 +396,7 @@ async function maybeAutoSaveVocab(
   if (!word || !meaning) return false;
   const existing = await db.flashcard.findFirst({
     where: { userId, language, frontText: { equals: word, mode: "insensitive" } },
+    select: { id: true },
   });
   if (existing) return true;
   await db.flashcard.create({

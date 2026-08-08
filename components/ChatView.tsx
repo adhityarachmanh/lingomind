@@ -114,6 +114,7 @@ export default function ChatView() {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setSavedVocabWords(new Set());
       try {
         const res = await getSessionMessagesAction(sessionId);
         if (cancelled) return;
